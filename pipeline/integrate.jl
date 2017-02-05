@@ -15,10 +15,10 @@ function integrate(spw; input="visibilities", output="integrated")
     nothing
 end
 
-function create_template_ms(spw, name)
+function create_template_ms(spw, name, idx=4000)
     dir = getdir(spw)
     name = joinpath(dir, name)
-    dada = listdadas(spw)[4000]
+    dada = listdadas(spw)[idx]
     dada2ms_core(dada, name)
     Table(ascii(name)), name
 end
