@@ -20,7 +20,7 @@ function getdata(spw, start, stop; istest=false)
         increment_progress() = (lock(l); next!(p); unlock(l))
 
         times = zeros(Ntime)
-        data  = zeros(Complex128, Nbase(meta), Ntime)
+        data  = zeros(Complex128, 2, Nbase(meta), Ntime)
         flags = zeros(Bool, Nbase(meta), Ntime)
         @sync for worker in workers()
             @async begin
@@ -38,7 +38,7 @@ function getdata(spw, start, stop; istest=false)
                     put!(input, myidx)
                     if !istest
                         times[myidx] = take!(output_time)
-                        data[:,myidx] = take!(output_data)
+                        data[:,:,myidx] = take!(output_data)
                         flags[:,myidx] = take!(output_flags)
                     end
                     increment_progress()
@@ -129,15 +129,18 @@ function process_integration(spw, file, sources, calinfo, istest)
     # - do the source removal
     rfi_flux = rm_rfi(spw, data, meta)
     sun = rm_sun(spw, data, meta)
-    calibrations = peel!(data, meta, beam, A, peeliter=5, maxiter=30, tolerance=1e-3, quiet=!istest)
+    coherencies = [genvis(meta, beam, source) for source in A]
+    #coherencies = [coherencies; rfi_model]
+    calibrations = [GainCalibration(Nant(meta), 1) for idx = 1:length(coherencies)]
+    peel!(calibrations, coherencies, data, meta, 5, 30, 1e-3, !istest)
     B, _, _ = update_source_list(data, meta, B)
     subsrc!(data, meta, beam, B)
 
     # - restore a source as a test
     #idx = 1
-    #coherency = genvis(meta, beam, A[idx])
-    #corrupt!(coherency, meta, calibrations[idx])
-    #data.data = coherency.data
+    ##coherency = genvis(meta, beam, A[idx])
+    #corrupt!(coherencies[idx], meta, calibrations[idx])
+    #data.data = coherencies[idx].data
 
     # - write to the measurement set
     output_visibilities = Visibilities(Nbase(meta), 109)
@@ -153,9 +156,10 @@ function process_integration(spw, file, sources, calinfo, istest)
     getdata_output(spw, path, sources, spectra, directions, A, B, calibrations, rfi_flux, sun, istest)
     rm(path, recursive=true) # note this needs to happen after imaging
 
-    output = zeros(Complex128, Nbase(meta))
+    output = zeros(Complex128, 2, Nbase(meta))
     for α = 1:Nbase(meta)
-        output[α] = 0.5*(data.data[α,1].xx + data.data[α,1].yy)
+        output[1, α] = data.data[α,1].xx
+        output[2, α] = data.data[α,1].yy
     end
     flags = oldflags[:, 55]
     time, output, flags
@@ -220,7 +224,7 @@ function pick_removal_method(spw, frame, sources, ν)
                 push!(B, source)
             end
         elseif source.name == "Vir A"# || source.name == "Tau A"
-            if TTCal.isabovehorizon(frame, source, deg2rad(60))
+            if TTCal.isabovehorizon(frame, source, deg2rad(45))
                 push!(A, source)
                 push!(fluxes, flux)
             else
@@ -236,25 +240,82 @@ function pick_removal_method(spw, frame, sources, ν)
 end
 
 function rm_rfi(spw, data, meta)
+    #models = load(joinpath(getdir(spw), "rfi-models.jld"), "models") :: Vector{Visibilities}
+    #N = length(models)
+    #A = zeros(Complex128, 2Nbase(data), N)
+    #b = zeros(Complex128, 2Nbase(data))
+    ##A = zeros(Complex128, Nbase(data), N)
+    ##b = zeros(Complex128, Nbase(data))
+    #α = 1
+    #for ant1 = 1:Nant(meta), ant2 = ant1:Nant(meta)
+    #    if !data.flags[α, 1] && ant1 != ant2
+    #        for idx = 1:N
+    #            #A[α, idx] = models[idx].data[α, 1].xx
+    #            A[2α-1, idx] = models[idx].data[α, 1].xx
+    #            A[2α-0, idx] = conj(models[idx].data[α, 1].xx)
+    #        end
+    #        #b[α] = data.data[α, 1].xx
+    #        b[2α-1] = data.data[α, 1].xx
+    #        b[2α-0] = conj(data.data[α, 1].xx)
+    #    end
+    #    α += 1
+    #end
+    #x = real(A\b)
+    #@show x
+    #xx = A*x
+    #@show real(A\(b-xx))
+    #α = 1
+    #for ant1 = 1:Nant(meta), ant2 = ant1:Nant(meta)
+    #    if !data.flags[α, 1] && ant1 != ant2
+    #        for idx = 1:N
+    #            #A[α, idx] = models[idx].data[α, 1].yy
+    #            A[2α-1, idx] = models[idx].data[α, 1].yy
+    #            A[2α-0, idx] = conj(models[idx].data[α, 1].yy)
+    #        end
+    #        #b[α] = data.data[α, 1].yy
+    #        b[2α-1] = data.data[α, 1].yy
+    #        b[2α-0] = conj(data.data[α, 1].yy)
+    #    end
+    #    α += 1
+    #end
+    #y = real(A\b)
+    #@show y
+    #yy = A*y
+    #@show real(A\(b-yy))
+    #for α = 1:Nbase(data)
+    #    #J = JonesMatrix(xx[α], 0, 0, yy[α])
+    #    J = JonesMatrix(xx[2α-1], 0, 0, yy[2α-1])
+    #    data.data[α, 1] -= J
+    #end
+    #0.5*(x+y)
     if spw == 18
         N = 3
     else
         N = 0
     end
     dir = getdir(spw)
-    fluxes = zeros(N)
+    fluxes = zeros(HermitianJonesMatrix, N)
+    #models = Array{Visibilities}(N)
     for idx = 1:N
-        model = load(joinpath(dir, "rfi-$idx.jld"), "model") :: Visibilities
+        #model = models[idx]
+        model = load(joinpath(dir, "old-rfi", "rfi-$idx.jld"), "model") :: Visibilities
         spectrum = zeros(HermitianJonesMatrix, 1)
         TTCal.getspec_internal!(spectrum, data, meta, model.data)
         J = spectrum[1]
-        I = StokesVector(J).I
+        #I = StokesVector(J).I
+        #Jd = DiagonalJonesMatrix(J.xx, J.yy)
+        #@show J I
+        #@show model.data[258, 1]
         for α = 1:Nbase(meta)
-            model.data[α, 1] *= I
+            # TODO I can't decide if we need to multiply on the left or the right here
+            # if we make sure the model doesn't carry any polarization information than it shouldn't matter
+            model.data[α, 1] = J * model.data[α, 1]
         end
         subsrc!(data, model)
-        fluxes[idx] = I
+        fluxes[idx] = J
+        #models[idx] = model
     end
+    #fluxes, models
     fluxes
 end
 
@@ -294,7 +355,8 @@ end
 function rm_sun(spw, data, meta)
     frame = TTCal.reference_frame(meta)
     sun = fit_shapelets("Sun", meta, data, Direction(dir"SUN"), 5, deg2rad(0.2))
-    subsrc!(data, meta, ConstantBeam(), sun)
+    model = genvis(meta, ConstantBeam(), sun)
+    subsrc!(data, model)
     sun
 end
 
