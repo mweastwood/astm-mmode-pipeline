@@ -51,7 +51,7 @@ function flag!(spw, data)
     # integration flags
     do_integration_flags!(flags, data)
 
-    data, flags
+    flags
 end
 
 function do_integration_flags!(flags, data)
