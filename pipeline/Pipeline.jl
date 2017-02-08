@@ -10,7 +10,8 @@ using BPJSpec
 using FileIO, JLD
 using FITSIO, WCS
 
-using NLopt # for fitting the beam and RFI
+using NLopt
+using Dierckx
 #using Interpolations
 
 const tempdir = "/dev/shm/mweastwood"
@@ -32,7 +33,9 @@ function getdir(spw)
     dir
 end
 
-baseline_index(ant1, ant2) = div((ant1-1)*(512-(ant1-2)), 2) + (ant2-ant1+1)
+baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
+Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
+Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
 
 # Setup logging
 using ProgressMeter
@@ -59,11 +62,13 @@ end
 include("dada2ms.jl")
 include("wsclean.jl")
 
-include("flags.jl")
+#include("flags.jl")
 include("getmeta.jl")
-include("getcal.jl")
-include("getsun.jl")
 include("getdata.jl")
+include("calibrate.jl")
+
+#include("getcal.jl")
+include("getsun.jl")
 include("getdata_experimental.jl")
 include("compress.jl")
 include("folddata.jl")
