@@ -5,10 +5,23 @@ function calibrate(spw)
     flags = flag!(spw, data)
     sawtooth = smooth_out_the_sawtooth!(data, flags)
 
-    # save the intermediate data here while we try to figure out the calibration strategy
+    # save the intermediate result for later analysis
     save(joinpath(dir, "smoothed-and-flagged-visibilities.jld"),
          "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
 
+    day1_calibration_range =  3000: 5500
+    day2_calibration_range =  9628:12128
+    day3_calibration_range = 16256:18756
+    day4_calibration_range = 22884:25384
+
+    day1_calibration = solve_for_gain_calibration(spw, times, data, flags, day1_calibration_range)
+    day2_calibration = solve_for_gain_calibration(spw, times, data, flags, day2_calibration_range)
+    day3_calibration = solve_for_gain_calibration(spw, times, data, flags, day3_calibration_range)
+    day4_calibration = solve_for_gain_calibration(spw, times, data, flags, day4_calibration_range)
+
+    save(joinpath(dir, "gain-calibrations.jld"),
+         "day1", day1_calibration, "day2", day2_calibration,
+         "day3", day3_calibration, "day4", day4_calibration)
 end
 
 """
@@ -191,6 +204,54 @@ function smooth_out_the_sawtooth!(data, flags)
     end
 
     sawtooth
+end
+
+"""
+    solve_for_gain_calibration(spw, data, flags, range)
+
+Solve for the gain calibration of the given data. We will take a large track of data in order to
+mitigate the effect of unmodeled sky components on the gain calibration.
+"""
+function solve_for_gain_calibration(spw, times, data, flags, range)
+    Ntime = length(range)
+    Nbase = size(data, 2)
+    Nant = Nbase2Nant(Nbase)
+
+    # TTCal currently doesn't natively support using multiple integrations to solve for the gain
+    # calibration. However it does support using multiple frequency channels. So we will use a hack
+    # to get this working.
+
+    measured = Visibilities(Nbase, Ntime)
+    for t = 1:Ntime, α = 1:Nbase
+        measured.data[α, t] = JonesMatrix(data[1, α, range[t]], 0, 0, data[2, α, range[t]])
+        measured.flags[α, t] = flags[α, range[t]]
+    end
+
+    sources = readsources(joinpath(sourcelists, "getdata-sources.json"))[1:2]
+    beam = SineBeam()
+    model = Visibilities(Nbase, Ntime)
+    meta = getmeta(spw)
+
+    # We need to generate the model visibilities one-by-one because TTCal will only do one
+    # integration at a time. At this point we need to make sure TTCal knows that we only want a
+    # single channel.
+
+    meta.channels = meta.channels[55:55]
+    for t = 1:Ntime
+        meta.time = Epoch(epoch"UTC", times[range[t]]*seconds)
+        meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+        _model = genvis(meta, beam, sources)
+        model.data[:, t] = _model.data[:, 1]
+    end
+
+    # Now that we have all of the model visibilities, we can pretend that each integration is a
+    # different frequency channel, but the frequency of each of these channels is the same.
+
+    meta.channels = fill(meta.channels[1], Ntime)
+    calibration = GainCalibration(Nant, 1)
+    TTCal.solve_allchannels!(calibration, measured, model, meta1, 100, 1e-3)
+
+    calibration
 end
 
 """
