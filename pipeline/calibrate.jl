@@ -7,7 +7,7 @@ function calibrate(spw)
 
     # save the intermediate data here while we try to figure out the calibration strategy
     save(joinpath(dir, "smoothed-and-flagged-visibilities.jld"),
-         "data", data, "flags", flags, "sawtooth", sawtooth)
+         "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
 
 end
 
@@ -31,8 +31,12 @@ function flag!(spw, data)
     if spw == 18
         antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
     end
-    for ant1 in antennas, ant2 = ant1:Nant
-        α = baseline_index(ant1, ant2)
+    for ant1 in antennas, ant2 = 1:Nant
+        if ant1 ≤ ant2
+            α = baseline_index(ant1, ant2)
+        else
+            α = baseline_index(ant2, ant1)
+        end
         flags[α, :] = true
         data[:, α, :] = 0
     end
