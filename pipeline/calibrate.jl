@@ -248,8 +248,9 @@ function solve_for_gain_calibration(spw, times, data, flags, range)
     # different frequency channel, but the frequency of each of these channels is the same.
 
     meta.channels = fill(meta.channels[1], Ntime)
+    TTCal.flag_short_baselines!(measured, meta, 15.0)
     calibration = GainCalibration(Nant, 1)
-    TTCal.solve_allchannels!(calibration, measured, model, meta1, 100, 1e-3)
+    TTCal.solve_allchannels!(calibration, measured, model, meta, 100, 1e-3)
 
     calibration
 end
