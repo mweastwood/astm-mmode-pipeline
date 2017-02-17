@@ -126,7 +126,7 @@ function do_integration_flags!(flags, data)
 
         # Use the median-absolute-deviation to test for bursts of RFI.
         mad = median(abs(galaxy_subtracted))
-        cutoff = 10mad
+        cutoff = 5mad
         rfi = abs(galaxy_subtracted) .> cutoff
         votes[rfi] += 1
         total[:] += 1
