@@ -7,7 +7,7 @@ using MLPFlagger
 using TTCal
 using BPJSpec
 
-using FileIO, JLD
+using FileIO, JLD, NPZ
 using FITSIO, WCS
 
 using NLopt
@@ -62,47 +62,59 @@ end
 include("dada2ms.jl")
 include("wsclean.jl")
 
-#include("flags.jl")
+include("working-with-source-models.jl")
+
 include("getmeta.jl")
 include("getdata.jl")
+include("flag.jl")
+include("sawtooth.jl")
 include("calibrate.jl")
-
-#include("getcal.jl")
-include("getsun.jl")
-include("getdata_experimental.jl")
-include("compress.jl")
-include("folddata.jl")
-include("divide_and_image.jl")
-
-include("makemovie.jl")
-include("integrate.jl")
+include("imaging.jl")
 include("fitrfi.jl")
-include("makecurves.jl")
-include("postprocess.jl")
-#include("getsubresiduals.jl")
-include("fitbeam.jl")
+include("peeling.jl")
 
 # m-mode analysis
+include("folddata.jl")
 include("getmmodes.jl")
-include("gettransfermatrix.jl")
 include("getalm.jl")
-include("getmodel.jl")
-include("makemap.jl")
 
-# post-processing
-include("getpsf.jl")
-#include("residualsvd.jl")
-#include("imagesvd.jl")
-#include("reconstruct.jl")
+#include("getsun.jl")
+#include("getdata_experimental.jl")
+#include("compress.jl")
+#include("folddata.jl")
+#include("divide_and_image.jl")
+#
+#include("makemovie.jl")
+#include("integrate.jl")
+#include("fitrfi.jl")
+#include("makecurves.jl")
+#include("postprocess.jl")
+##include("getsubresiduals.jl")
+#include("fitbeam.jl")
+#
+## m-mode analysis
+#include("gettransfermatrix.jl")
+#include("getmodel.jl")
+#include("makemap.jl")
+#
+## post-processing
+#include("getpsf.jl")
+##include("residualsvd.jl")
+##include("imagesvd.jl")
+##include("reconstruct.jl")
+#
+#
+## cleaning
+#include("cleaningregions.jl")
+##include("cleaning.jl")
+#
+## testing
+#include("getcyg.jl")
+#include("getrfi.jl")
 
-
-# cleaning
-include("cleaningregions.jl")
-#include("cleaning.jl")
-
-# testing
-include("getcyg.jl")
-include("getrfi.jl")
+include("flags.jl")
+include("getcal.jl")
+include("ionosphere.jl") # for Esayas
 
 end
 
