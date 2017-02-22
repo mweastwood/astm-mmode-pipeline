@@ -1,14 +1,9 @@
 function sawtooth(spw)
     dir = getdir(spw)
-    times, phase, data = load(joinpath(dir, "raw-visibilities.jld"), "times", "phase", "data")
-
-    flags = flag!(spw, data)
+    times, data, flags = load(joinpath(dir, "flagged-visibilities.jld"), "times", "data", "flags")
     sawtooth = smooth_out_the_sawtooth!(data, flags)
-
-    # save the intermediate result for later analysis
     save(joinpath(dir, "smoothed-visibilities.jld"),
-         "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
-
+         "times", times, "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
     nothing
 end
 
@@ -25,11 +20,14 @@ empirical measure.
 function smooth_out_the_sawtooth!(data, flags)
     autos = just_the_autos(data)
     auto_flags = just_the_auto_flags(flags)
-    _, Nant, Ntime = size(autos)
-    Nbase = size(data, 2)
+    sawtooth = get_the_sawtooth(autos, auto_flags)
+    apply_the_sawtooth_correction!(data, flags, sawtooth)
+    sawtooth
+end
 
-    sawtooth = zeros(Ntime)
-    sawtooth_normalization = zeros(Int, Ntime)
+function get_the_sawtooth(autos, auto_flags)
+    _, Nant, Ntime = size(autos)
+    sawtooth = zeros(2, Nant, Ntime)
     for ant = 1:Nant, pol = 1:2
         myautos = autos[pol, ant, :]
         myflags = auto_flags[ant, :]
@@ -58,20 +56,30 @@ function smooth_out_the_sawtooth!(data, flags)
         # Divide by the smoothed component to pick out the gain fluctuations.
         for t = 1:Ntime
             if !myflags[t]
-                sawtooth[t] += myautos[t] / smoothed[t]
-                sawtooth_normalization[t] += 1
+                sawtooth[pol, ant, t] = myautos[t] / smoothed[t]
             end
-        end
-    end
-    sawtooth ./= sawtooth_normalization
-
-    for t = 1:Ntime, α = 1:Nbase
-        if !flags[α, t]
-            data[1, α, t] /= sawtooth[t]
-            data[2, α, t] /= sawtooth[t]
         end
     end
 
     sawtooth
+end
+
+function apply_the_sawtooth_correction!(data, flags, sawtooth)
+    _, Nbase, Ntime = size(data)
+    Nant = Nbase2Nant(Nbase)
+    for t = 1:Ntime
+        for ant1 = 1:Nant, ant2 = ant1:Nant
+            α = baseline_index(ant1, ant2)
+            if !flags[α, t]
+                if ant1 == ant2
+                    data[1, α, t] /= sawtooth[1, ant1, t]
+                    data[2, α, t] /= sawtooth[2, ant1, t]
+                else
+                    data[1, α, t] /= sqrt(sawtooth[1, ant1, t]) * sqrt(sawtooth[1, ant2, t])
+                    data[2, α, t] /= sqrt(sawtooth[2, ant1, t]) * sqrt(sawtooth[2, ant2, t])
+                end
+            end
+        end
+    end
 end
 
