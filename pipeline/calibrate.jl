@@ -1,13 +1,6 @@
 function calibrate(spw)
     dir = getdir(spw)
-    times, phase, data = load(joinpath(dir, "raw-visibilities.jld"), "times", "phase", "data")
-
-    flags = flag!(spw, data)
-    sawtooth = smooth_out_the_sawtooth!(data, flags)
-
-    # save the intermediate result for later analysis
-    save(joinpath(dir, "smoothed-and-flagged-visibilities.jld"),
-         "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
+    times, data, flags = load(joinpath(dir, "smoothed-visibilities.jld"), "times", "data", "flags")
 
     day1_calibration_range =  3000: 5500
     day2_calibration_range =  9628:12128
@@ -21,7 +14,7 @@ function calibrate(spw)
 
     save(joinpath(dir, "gain-calibrations.jld"),
          "day1", day1_calibration, "day2", day2_calibration,
-         "day3", day3_calibration, "day4", day4_calibration)
+         "day3", day3_calibration, "day4", day4_calibration, compress=true)
 
     # decide which integrations get which calibrations
     middle_of_day1 = round(Int, middle(day1_calibration_range))
