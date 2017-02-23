@@ -16,53 +16,43 @@ function getdata(spw, range)
     increment_progress() = (lock(l); next!(p); unlock(l))
 
     times = zeros(Ntime)
-    phase = zeros(Float64, 2, Ntime) # the phase center (ra and dec)
     data = zeros(Complex128, 2, Nbase(meta), Ntime)
 
     @sync for worker in workers()
         @async begin
             input = RemoteChannel()
-            output_time  = RemoteChannel()
-            output_phase = RemoteChannel()
-            output_data  = RemoteChannel()
-            remotecall(getdata_worker_loop, worker, dadas,
-                       input, output_time, output_phase, output_data)
+            output = RemoteChannel()
+            remotecall(getdata_worker_loop, worker, dadas, input, output)
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
                 put!(input, myidx)
-                times[myidx] = take!(output_time)
-                phase[:, myidx] = take!(output_phase)
-                data[:, :, myidx] = take!(output_data)
+                times[myidx], data[:, :, myidx] = take!(output)
                 increment_progress()
             end
             close(input)
-            close(output_time)
-            close(output_phase)
-            close(output_data)
+            close(output)
         end
     end
 
     dir = getdir(spw)
     output_file = joinpath(dir, "raw-visibilities.jld")
-    save(output_file, "times", times, "phase", phase, "data", data, compress=true)
+    save(output_file, "times", times, "data", data, compress=true)
 
     nothing
 end
 
-function getdata_worker_loop(dadas, input, output_time, output_phase, output_data)
+function getdata_worker_loop(dadas, input, output)
     while true
         try
             idx = take!(input)
-            time, phase, data = getdata_do_the_work(dadas[idx])
-            put!(output_time, time)
-            put!(output_phase, phase)
-            put!(output_data, data)
+            time, data = getdata_do_the_work(dadas[idx])
+            put!(output, (time, data))
         catch exception
-            if isa(exception, InvalidStateException)
-                # channel was closed
+            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
                 break
             else
+                println(exception)
                 rethrow(exception)
             end
         end
@@ -70,26 +60,30 @@ function getdata_worker_loop(dadas, input, output_time, output_phase, output_dat
 end
 
 function getdata_do_the_work(dada)
-    ms, path = dada2ms(dada)
-    data = ms["DATA"]
-    time = ms["TIME", 1]
+    local time, output
+    try
+        ms, path = dada2ms(dada)
+        data = ms["DATA"] :: Array{Complex64, 3}
+        time = ms["TIME", 1] :: Float64
 
-    field = Table(ms[kw"FIELD"])
-    phase = squeeze(field["PHASE_DIR", 1], 2)
-    finalize(field)
+        # discard the xy and yx correlations because we don't really have the information to
+        # calibrate them (no polarization calibration)
+        keep = [true; false; false; true]
 
-    # discard the xy and yx correlations because we don't really have the information to calibrate
-    # them (no polarization calibration)
-    keep = [true; false; false; true]
+        # discard all channels except the single channel we are interested in
+        channel = 55
 
-    # discard all channels except the single channel we are interested in
-    channel = 55
-
-    output = data[keep, channel, :]
-
-    finalize(ms)
-    rm(path, recursive=true)
-
-    time, phase, output
+        output = data[keep, channel, :]
+        finalize(ms)
+        rm(path, recursive=true)
+    catch exception
+        println(dada)
+        println(exception)
+        # we will indicate that this integration should be flagged by setting the time to something
+        # absurd (ie. negative)
+        output = zeros(Complex64, 2, Nant2Nbase(256))
+        time = -1.0
+    end
+    time, output
 end
 
