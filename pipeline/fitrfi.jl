@@ -1,3 +1,76 @@
+function fitrfi(spw)
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, "calibrated-visibilities.jld"), "data", "flags")
+    if spw == 4
+        return fitrfi_spw04(data, flags)
+    elseif spw == 6
+        return fitrfi_spw06(data, flags)
+    elseif spw == 8
+        return fitrfi_spw08(data, flags)
+    elseif spw == 10
+        return fitrfi_spw10(data, flags)
+    elseif spw == 12
+        return fitrfi_spw12(data, flags)
+    elseif spw == 14
+        return fitrfi_spw14(data, flags)
+    elseif spw == 16
+        return fitrfi_spw16(data, flags)
+    elseif spw == 18
+        return fitrfi_spw18(data, flags)
+    end
+end
+
+function fitrfi_spw04(data, flags)
+end
+
+function fitrfi_spw06(data, flags)
+end
+
+function fitrfi_spw08(data, flags)
+end
+
+function fitrfi_spw10(data, flags)
+end
+
+function fitrfi_spw12(data, flags)
+end
+
+function fitrfi_spw14(data, flags)
+end
+
+function fitrfi_spw16(data, flags)
+    spw = 16
+    dadas = listdadas(spw)
+    ms, ms_path = dada2ms(dadas[1])
+    finalize(ms)
+
+    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
+
+    lat = 37.145402389570144
+    lon = -118.3147833410907
+    el = 1226.7091391887516
+    N = 2
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                         lat, lon, el, 1, N, checkpoint=true)
+
+    lat = 37.3078474772316
+    lon = -118.3852914162684
+    el = 1214.248326037079
+    N = 2
+    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
+                                                         lat, lon, el, 2, N, checkpoint=true)
+
+    #lat = 37.06249388547446
+    #lon = -118.23417138204732
+    #el = 1608.21583019197
+    #N = 2
+    #rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
+    #                                                     lat, lon, el, 3, N, checkpoint=false)
+
+    fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi1; rfi2], [calibrations1; calibrations2])
+    fitrfi_output(spw, meta, [rfi1; rfi2], [calibrations1; calibrations2])
+end
+
 function fitrfi_spw18(data, flags)
     spw = 18
 
@@ -6,32 +79,32 @@ function fitrfi_spw18(data, flags)
     ms, ms_path = dada2ms(dadas[1])
     finalize(ms)
 
-    #@time meta, visibilities = fitrfi_sum_the_visibilities(spw, data, flags)
-    #@time fitrfi_image_visibilities(spw, ms_path, "fitrfi-base", meta, visibilities)
-    #save("/dev/shm/mweastwood/checkpoint1.jld", "meta", meta, "visibilities", visibilities)
-    meta, visibilities = load("/dev/shm/mweastwood/checkpoint1.jld", "meta", "visibilities")
+    @time meta, visibilities = fitrfi_sum_the_visibilities(spw, data, flags)
+    @time fitrfi_image_visibilities(spw, ms_path, "fitrfi-base", meta, visibilities)
+    save("/dev/shm/mweastwood/checkpoint1.jld", "meta", meta, "visibilities", visibilities)
+    #meta, visibilities = load("/dev/shm/mweastwood/checkpoint1.jld", "meta", "visibilities")
 
-    #lat = 37.24861167954518
-    #lon = -118.36229648059934
-    #el = 1232.6294581335637
-    #@time rfi1 = fitrfi_optimization(visibilities, meta, lat, lon, el)
-    #@time visibilities1, calibrations1 = fitrfi_peel(meta, visibilities, [rfi1])
-    #@time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-1", meta, visibilities1)
-    #save("/dev/shm/mweastwood/checkpoint2.jld", "rfi1", rfi1, "visibilities1", visibilities1,
-    #     "calibrations1", calibrations1)
-    rfi1, visibilities1, calibrations1 = load("/dev/shm/mweastwood/checkpoint2.jld", "rfi1",
-                                              "visibilities1", "calibrations1")
+    lat = 37.24861167954518
+    lon = -118.36229648059934
+    el = 1232.6294581335637
+    @time rfi1 = fitrfi_optimization(visibilities, meta, lat, lon, el)
+    @time visibilities1, calibrations1 = fitrfi_peel(meta, visibilities, [rfi1])
+    @time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-1", meta, visibilities1)
+    save("/dev/shm/mweastwood/checkpoint2.jld", "rfi1", rfi1, "visibilities1", visibilities1,
+         "calibrations1", calibrations1)
+    #rfi1, visibilities1, calibrations1 = load("/dev/shm/mweastwood/checkpoint2.jld", "rfi1",
+    #                                          "visibilities1", "calibrations1")
 
-    #lat = 37.3078474772316
-    #lon = -118.3852914162684
-    #el = 1214.248326037079
-    #@time rfi2 = fitrfi_optimization(visibilities1, meta, lat, lon, el)
-    #@time visibilities2, calibrations2 = fitrfi_peel(meta, visibilities1, [rfi2, rfi2, rfi2, rfi2])
-    #@time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-2", meta, visibilities2)
-    #save("/dev/shm/mweastwood/checkpoint3.jld", "rfi2", rfi2, "visibilities2", visibilities2,
-    #     "calibrations2", calibrations2)
-    rfi2, visibilities2, calibrations2 = load("/dev/shm/mweastwood/checkpoint3.jld", "rfi2",
-                                              "visibilities2", "calibrations2")
+    lat = 37.3078474772316
+    lon = -118.3852914162684
+    el = 1214.248326037079
+    @time rfi2 = fitrfi_optimization(visibilities1, meta, lat, lon, el)
+    @time visibilities2, calibrations2 = fitrfi_peel(meta, visibilities1, [rfi2, rfi2, rfi2, rfi2])
+    @time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-2", meta, visibilities2)
+    save("/dev/shm/mweastwood/checkpoint3.jld", "rfi2", rfi2, "visibilities2", visibilities2,
+         "calibrations2", calibrations2)
+    #rfi2, visibilities2, calibrations2 = load("/dev/shm/mweastwood/checkpoint3.jld", "rfi2",
+    #                                          "visibilities2", "calibrations2")
 
     # At this point we begin to start removing the smeared out tracks of Cyg A and Cas A
     #lat = 37.335911
@@ -48,6 +121,38 @@ function fitrfi_spw18(data, flags)
     fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi1, rfi2, rfi2, rfi2, rfi2], [calibrations1; calibrations2])
 
     fitrfi_output(spw, meta, [rfi1, rfi2, rfi2, rfi2, rfi2], [calibrations1; calibrations2])
+end
+
+function fitrfi_start(spw, data, flags, ms_path; checkpoint=false) :: Tuple{Metadata, Visibilities}
+    checkpoint_path = "/dev/shm/mweastwood/fitrfi-start-checkpoint.jld"
+    if checkpoint && isfile(checkpoint_path)
+        myspw = load(checkpoint_path, "spw")
+        if myspw == spw
+            meta, visibilities = load(checkpoint_path, "meta", "visibilities")
+            return meta, visibilities
+        end
+    end
+    meta, visibilities = fitrfi_sum_the_visibilities(spw, data, flags)
+    fitrfi_image_visibilities(spw, ms_path, "fitrfi-start", meta, visibilities)
+    save(checkpoint_path, "spw", spw, "meta", meta, "visibilities", visibilities)
+    meta, visibilities
+end
+
+function fitrfi_do_source(spw, meta, visibilities, ms_path, lat, lon, el, idx, N; checkpoint=false)
+    checkpoint_path = @sprintf("/dev/shm/mweastwood/fitrfi-checkpoint-%02d.jld", idx)
+    if checkpoint && isfile(checkpoint_path)
+        myspw = load(checkpoint_path, "spw")
+        if myspw == spw
+            rfi_list, visibilities, calibrations = load(checkpoint_path, "rfi", "visibilities", "calibrations")
+            return rfi_list, visibilities, calibrations
+        end
+    end
+    rfi = fitrfi_optimization(visibilities, meta, lat, lon, el)
+    rfi_list = fill(rfi, N)
+    visibilities, calibrations = fitrfi_peel(meta, visibilities, rfi_list)
+    fitrfi_image_visibilities(spw, ms_path, @sprintf("fitrfi-peeled-%02d", idx), meta, visibilities)
+    save(checkpoint_path, "spw", spw, "rfi", rfi_list, "visibilities", visibilities, "calibrations", calibrations)
+    rfi_list, visibilities, calibrations
 end
 
 function fitrfi_output(spw, meta, sources, calibrations)
