@@ -1,3 +1,11 @@
+function smeared_image(spw)
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, "calibrated-visibilities.jld"), "data", "flags")
+    _, Nbase, Ntime = size(data)
+    output = joinpath(dir, "smeared-image")
+    image(spw, data, flags, 1:Ntime, output)
+end
+
 """
     image(spw, data, flags, range, image_path)
 
