@@ -47,9 +47,51 @@ function source_dictionary(name)
 end
 
 function fitrfi_spw04(data, flags)
+    spw = 4
+    dadas = listdadas(spw)
+    ms, ms_path = dada2ms(dadas[1])
+    finalize(ms)
+
+    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
+
+    lat, lon, el = source_dictionary("B")
+    N = 1
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                          lat, lon, el, 1, N, checkpoint=true)
+
+    #lat, lon, el = source_dictionary("A")
+    #N = 1
+    #rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
+    #                                                      lat, lon, el, 2, N, checkpoint=false)
+
+    rfi = rfi1
+    calibrations = calibrations1
+    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
+    fitrfi_output(spw, meta, rfi1, calibrations)
 end
 
 function fitrfi_spw06(data, flags)
+    spw = 6
+    dadas = listdadas(spw)
+    ms, ms_path = dada2ms(dadas[1])
+    finalize(ms)
+
+    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
+
+    lat, lon, el = source_dictionary("B")
+    N = 1
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                          lat, lon, el, 1, N, checkpoint=true)
+
+    lat, lon, el = source_dictionary("A")
+    N = 1
+    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
+                                                          lat, lon, el, 2, N, checkpoint=false)
+
+    rfi = [rfi1; rfi2]
+    calibrations = [calibrations1; calibrations2]
+    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
+    fitrfi_output(spw, meta, rfi1, calibrations)
 end
 
 function fitrfi_spw08(data, flags)
@@ -60,7 +102,20 @@ function fitrfi_spw08(data, flags)
 
     meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
 
+    lat, lon, el = source_dictionary("A")
+    N = 1
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                          lat, lon, el, 1, N, checkpoint=true)
 
+    lat, lon, el = source_dictionary("B")
+    N = 1
+    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
+                                                          lat, lon, el, 2, N, checkpoint=false)
+
+    rfi = [rfi1; rfi2]
+    calibrations = [calibrations1; calibrations2]
+    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
+    fitrfi_output(spw, meta, rfi1, calibrations)
 end
 
 function fitrfi_spw10(data, flags)
