@@ -20,6 +20,32 @@ function fitrfi(spw)
     end
 end
 
+function source_dictionary(name)
+    if name == "A"
+        # Big Pine
+        lat = 37.145402389570144
+        lon = -118.3147833410907
+        el = 1226.7091391887516
+    elseif name == "B"
+        # Bishop
+        lat = 37.3078474772316
+        lon = -118.3852914162684
+        el = 1214.248326037079
+    elseif name == "C"
+        # Keough's Hot Springs
+        lat = 37.24861167954518
+        lon = -118.36229648059934
+        el = 1232.6294581335637
+    elseif name == "D"
+        lat = 37.06249388547446
+        lon = -118.23417138204732
+        el = 1608.21583019197
+    else
+        Lumberjack.error("unknown source")
+    end
+    lat, lon, el
+end
+
 function fitrfi_spw04(data, flags)
 end
 
@@ -33,9 +59,51 @@ function fitrfi_spw10(data, flags)
 end
 
 function fitrfi_spw12(data, flags)
+    spw = 12
+    dadas = listdadas(spw)
+    ms, ms_path = dada2ms(dadas[1])
+    finalize(ms)
+
+    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
+
+    lat, lon, el = source_dictionary("B")
+    N = 3
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                          lat, lon, el, 1, N, checkpoint=true)
+
+    rfi = rfi1
+    calibrations = calibrations1
+    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
+    fitrfi_output(spw, meta, rfi1, calibrations)
 end
 
 function fitrfi_spw14(data, flags)
+    spw = 14
+    dadas = listdadas(spw)
+    ms, ms_path = dada2ms(dadas[1])
+    finalize(ms)
+
+    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
+
+    lat, lon, el = source_dictionary("A")
+    N = 1
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                          lat, lon, el, 1, N, checkpoint=true)
+
+    lat, lon, el = source_dictionary("C")
+    N = 1
+    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
+                                                          lat, lon, el, 2, N, checkpoint=true)
+
+    lat, lon, el = source_dictionary("B")
+    N = 3
+    rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
+                                                          lat, lon, el, 3, N, checkpoint=true)
+
+    rfi = [rfi1; rfi2; rfi3]
+    calibrations = [calibrations1; calibrations2; calibrations3]
+    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
+    fitrfi_output(spw, meta, rfi1, calibrations)
 end
 
 function fitrfi_spw16(data, flags)
@@ -46,26 +114,20 @@ function fitrfi_spw16(data, flags)
 
     meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
 
-    lat = 37.145402389570144
-    lon = -118.3147833410907
-    el = 1226.7091391887516
+    lat, lon, el = source_dictionary("A")
     N = 2
     rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-                                                         lat, lon, el, 1, N, checkpoint=true)
+                                                          lat, lon, el, 1, N, checkpoint=true)
 
-    lat = 37.3078474772316
-    lon = -118.3852914162684
-    el = 1214.248326037079
+    lat, lon, el = source_dictionary("B")
     N = 2
     rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-                                                         lat, lon, el, 2, N, checkpoint=true)
+                                                          lat, lon, el, 2, N, checkpoint=true)
 
-    #lat = 37.06249388547446
-    #lon = -118.23417138204732
-    #el = 1608.21583019197
+    #lat, lon, el = source_dictionary("D")
     #N = 2
     #rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
-    #                                                     lat, lon, el, 3, N, checkpoint=false)
+    #                                                      lat, lon, el, 3, N, checkpoint=false)
 
     fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi1; rfi2], [calibrations1; calibrations2])
     fitrfi_output(spw, meta, [rfi1; rfi2], [calibrations1; calibrations2])
@@ -73,54 +135,31 @@ end
 
 function fitrfi_spw18(data, flags)
     spw = 18
-
-    # create a measurement set to use for imaging
     dadas = listdadas(spw)
     ms, ms_path = dada2ms(dadas[1])
     finalize(ms)
 
-    @time meta, visibilities = fitrfi_sum_the_visibilities(spw, data, flags)
-    @time fitrfi_image_visibilities(spw, ms_path, "fitrfi-base", meta, visibilities)
-    save("/dev/shm/mweastwood/checkpoint1.jld", "meta", meta, "visibilities", visibilities)
-    #meta, visibilities = load("/dev/shm/mweastwood/checkpoint1.jld", "meta", "visibilities")
+    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
 
-    lat = 37.24861167954518
-    lon = -118.36229648059934
-    el = 1232.6294581335637
-    @time rfi1 = fitrfi_optimization(visibilities, meta, lat, lon, el)
-    @time visibilities1, calibrations1 = fitrfi_peel(meta, visibilities, [rfi1])
-    @time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-1", meta, visibilities1)
-    save("/dev/shm/mweastwood/checkpoint2.jld", "rfi1", rfi1, "visibilities1", visibilities1,
-         "calibrations1", calibrations1)
-    #rfi1, visibilities1, calibrations1 = load("/dev/shm/mweastwood/checkpoint2.jld", "rfi1",
-    #                                          "visibilities1", "calibrations1")
+    lat, lon, el = source_dictionary("C")
+    N = 1
+    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
+                                                          lat, lon, el, 1, N, checkpoint=true)
 
-    lat = 37.3078474772316
-    lon = -118.3852914162684
-    el = 1214.248326037079
-    @time rfi2 = fitrfi_optimization(visibilities1, meta, lat, lon, el)
-    @time visibilities2, calibrations2 = fitrfi_peel(meta, visibilities1, [rfi2, rfi2, rfi2, rfi2])
-    @time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-2", meta, visibilities2)
-    save("/dev/shm/mweastwood/checkpoint3.jld", "rfi2", rfi2, "visibilities2", visibilities2,
-         "calibrations2", calibrations2)
-    #rfi2, visibilities2, calibrations2 = load("/dev/shm/mweastwood/checkpoint3.jld", "rfi2",
-    #                                          "visibilities2", "calibrations2")
+    lat, lon, el = source_dictionary("B")
+    N = 4
+    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
+                                                          lat, lon, el, 2, N, checkpoint=true)
 
-    # At this point we begin to start removing the smeared out tracks of Cyg A and Cas A
     #lat = 37.335911
     #lon = -118.394817
     #el = 1214.248326037079
-    #@time rfi3 = fitrfi_optimization(visibilities2, meta, lat, lon, el)
-    #@time visibilities3, calibrations3 = fitrfi_peel(meta, visibilities2, [rfi3, rfi3])
-    #@time fitrfi_image_visibilities(spw, ms_path, "fitrfi-peeled-3", meta, visibilities3)
+    #N = 2
+    #rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
+    #                                                      lat, lon, el, 3, N, checkpoint=false)
 
-    #rfi = [rfi1, rfi2, rfi3]
-    #@time fitrfi_image_models(spw, ms_path, meta, rfi)
-
-    #fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi3, rfi3], calibrations3)
-    fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi1, rfi2, rfi2, rfi2, rfi2], [calibrations1; calibrations2])
-
-    fitrfi_output(spw, meta, [rfi1, rfi2, rfi2, rfi2, rfi2], [calibrations1; calibrations2])
+    fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi1; rfi2], [calibrations1; calibrations2])
+    fitrfi_output(spw, meta, [rfi1; rfi2], [calibrations1; calibrations2])
 end
 
 function fitrfi_start(spw, data, flags, ms_path; checkpoint=false) :: Tuple{Metadata, Visibilities}
