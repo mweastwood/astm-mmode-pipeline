@@ -1,9 +1,29 @@
-function smeared_image(spw)
+function smeared_image(spw, filename="calibrated-visibilities")
     dir = getdir(spw)
-    data, flags = load(joinpath(dir, "calibrated-visibilities.jld"), "data", "flags")
+    data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
     _, Nbase, Ntime = size(data)
-    output = joinpath(dir, "smeared-image")
+    output = joinpath(dir, "smeared-"*filename)
     image(spw, data, flags, 1:Ntime, output)
+end
+
+function smeared_image_cas_a(spw, filename="calibrated-visibilities")
+    dir = getdir(spw)
+    times = load(joinpath(dir, "raw-visibilities.jld"), "times")
+    data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
+    _, Nbase, Ntime = size(data)
+    output = joinpath(dir, "smeared-cas-a-"*filename)
+    image_with_new_phase_center(spw, times, data, flags, 1:Ntime,
+                                Direction(dir"J2000", "23h23m24s", "+58d48m54s"), output)
+end
+
+function smeared_image_cyg_a(spw, filename="calibrated-visibilities")
+    dir = getdir(spw)
+    times = load(joinpath(dir, "raw-visibilities.jld"), "times")
+    data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
+    _, Nbase, Ntime = size(data)
+    output = joinpath(dir, "smeared-cyg-a-"*filename)
+    image_with_new_phase_center(spw, times, data, flags, 1:Ntime,
+                                Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"), output)
 end
 
 """
