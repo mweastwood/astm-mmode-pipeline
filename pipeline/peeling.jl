@@ -1,3 +1,10 @@
+function peel(spw)
+    dir = getdir(spw)
+    times = load(joinpath(dir, "raw-visibilities.jld"), "times")
+    data, flags = load(joinpath(dir, "calibrated-visibilities.jld"), "data", "flags");
+    peel(spw, times, data, flags)
+end
+
 function peel(spw, times, data, flags; istest=false)
     Ntime = length(times)
     idx = 1
