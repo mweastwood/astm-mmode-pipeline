@@ -5,6 +5,27 @@ function peel(spw)
     peel(spw, times, data, flags)
 end
 
+immutable PeelingData_rfi
+    xx_rfi_flux :: Vector{Complex128}
+    yy_rfi_flux :: Vector{Complex128}
+end
+
+immutable PeelingData_sources
+    sources :: Vector{Source}
+    I :: Vector{Float64}
+    Q :: Vector{Float64}
+    directions :: Vector{Direction}
+    peeling_sources :: Vector{Source}
+    subtraction_sources :: Vector{Source}
+    calibrations :: Vector{GainCalibration}
+end
+
+immutable PeelingData
+    time :: Float64
+    rfi_data :: PeelingData_rfi
+    sources_data :: PeelingData_sources
+end
+
 function peel(spw, times, data, flags; istest=false)
     Ntime = length(times)
     idx = 1
@@ -14,6 +35,7 @@ function peel(spw, times, data, flags; istest=false)
     l = ReentrantLock()
     increment_progress() = (lock(l); next!(p); unlock(l))
 
+    peeling_data = Vector{PeelingData}(Ntime)
     @sync for worker in workers()
         @async begin
             input  = RemoteChannel()
@@ -23,7 +45,7 @@ function peel(spw, times, data, flags; istest=false)
                 myidx = nextidx()
                 myidx ≤ Ntime || break
                 put!(input, (times[myidx], data[:, :, myidx], flags[:, myidx]))
-                data[:, :, myidx], flags[:, myidx] = take!(output)
+                data[:, :, myidx], flags[:, myidx], peeling_data[myidx] = take!(output)
                 increment_progress()
             end
             close(input)
@@ -34,8 +56,12 @@ function peel(spw, times, data, flags; istest=false)
     if !istest
         dir = getdir(spw)
         output_file = joinpath(dir, "peeled-visibilities.jld")
-        save(output_file, "times", times, "data", data, "flags", flags, compress=true)
+        isfile(output_file) && rm(output_file)
+        save(output_file, "times", times, "data", data, "flags", flags,
+             "peeling-data", peeling_data, compress=true)
     end
+
+    peeling_data
 end
 
 function peel_worker_loop(spw, input, output)
@@ -47,8 +73,8 @@ function peel_worker_loop(spw, input, output)
     while true
         try
             time, data, flags = take!(input)
-            peel_do_the_work(time, data, flags, spw, dir, meta, xx_rfi, yy_rfi, sources)
-            put!(output, (data, flags))
+            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, xx_rfi, yy_rfi, sources)
+            put!(output, (data, flags, peeling_data))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
                 # If this is a remote worker, we will see a RemoteException when the channel is
@@ -76,11 +102,13 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, xx_rfi, yy_rfi, sou
         flags[α] = true
     end
 
-    xx, yy = rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
-    xx, yy = rm_sources(flags, xx, yy, spw, meta, sources)
+    xx, yy, rfi_data = rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
+    xx, yy, sources_data  = rm_sources(flags, xx, yy, spw, meta, sources)
 
     data[1, :] = xx
     data[2, :] = yy
+
+    PeelingData(time, rfi_data, sources_data)
 end
 
 function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
@@ -93,8 +121,13 @@ function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
         yy_flux = yy_rfi_flagged \ yy_flagged
         xx -= xx_rfi * xx_flux
         yy -= yy_rfi * yy_flux
+    else
+        N = size(xx_rfi, 2) # the number of RFI sources
+        xx_flux = zeros(Complex128, N)
+        yy_flux = zeros(Complex128, N)
     end
-    xx, yy
+    data = PeelingData_rfi(xx_flux, yy_flux)
+    xx, yy, data
 end
 
 function rm_sources(flags, xx, yy, spw, meta, sources)
@@ -113,10 +146,11 @@ function rm_sources(flags, xx, yy, spw, meta, sources)
     calibrations = peel!(visibilities, meta, ConstantBeam(), peeling_sources,
                          peeliter=5, maxiter=100, tolerance=1e-3, quiet=true)
     subsrc!(visibilities, meta, ConstantBeam(), subtraction_sources)
+    data = PeelingData_sources(sources, I, Q, directions, peeling_sources, subtraction_sources, calibrations)
 
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
-    xx, yy
+    xx, yy, data
 end
 
 function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
