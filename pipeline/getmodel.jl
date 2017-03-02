@@ -1,27 +1,17 @@
-function getmodel(spw, input="alm", output_mmodes="mmodes-model", output_vis="visibilities-model", Ntime = 6628)
-    Lumberjack.info("Computing model visibilities for spectral window $spw")
+function getmodel(spw, Ntime=6628)
     dir = getdir(spw)
-
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
-    Lumberjack.info("Using transfer matrix $(transfermatrix.path)")
-
-    path_to_alm = joinpath(dir, input*".jld")
-    alm = load(path_to_alm, "alm")
-    Lumberjack.info("Using spherical harmonic coefficients $path_to_alm")
-
-    mmodes = MModes(joinpath(dir, output_mmodes), transfermatrix.mmax, transfermatrix.frequencies)
-    Lumberjack.info("Saving model m-modes to $(mmodes.path)")
-    _getmodel(transfermatrix, alm, mmodes)
-
-    meta = getmeta(spw)
-    path_to_visibilities = joinpath(dir, output_vis)
-    Lumberjack.info("Saving model visibilities to $(path_to_visibilities)")
-    visibilities = GriddedVisibilities(path_to_visibilities, meta, mmodes, Ntime)
+    alm = load(joinpath(dir, "alm.jld"), "alm")
+    mmodes = getmodel_mmodes(transfermatrix, alm)
+    save(joinpath(dir, "model-mmodes.jld"), "blocks", mmodes, compress=true)
+    visibilities = getmodel_visibilities(mmodes, Ntime)
+    save(joinpath(dir, "model-visibilities.jld"), "data", visibilities, compress=true)
 end
 
-function _getmodel(transfermatrix::TransferMatrix, alm, mmodes)
+function getmodel_mmodes(transfermatrix, alm)
     lmax = transfermatrix.lmax
     mmax = transfermatrix.mmax
+    mmodes = Vector{Vector{Complex128}}(mmax+1)
     m = 0
     nextm() = (m′ = m; m += 1; m′)
     p = Progress(mmax+1, "Progress: ")
@@ -32,7 +22,8 @@ function _getmodel(transfermatrix::TransferMatrix, alm, mmodes)
             input_channel  = RemoteChannel()
             output_channel = RemoteChannel()
             try
-                remotecall(getmodel_remote_processing_loop, worker, input_channel, output_channel, transfermatrix, alm)
+                remotecall(getmodel_mmodes_remote_processing_loop, worker, input_channel, output_channel,
+                           transfermatrix, alm)
                 Lumberjack.debug("Worker $worker has been started")
                 while true
                     m′ = nextm()
@@ -40,7 +31,7 @@ function _getmodel(transfermatrix::TransferMatrix, alm, mmodes)
                     Lumberjack.debug("Worker $worker is processing m=$(m′)")
                     put!(input_channel, m′)
                     block = take!(output_channel)
-                    mmodes[m′,1] = block
+                    mmodes[m′+1] = block
                     increment_progress()
                 end
             finally
@@ -49,22 +40,71 @@ function _getmodel(transfermatrix::TransferMatrix, alm, mmodes)
             end
         end
     end
-    nothing
+    mmodes
 end
 
-function getmodel_remote_processing_loop(input, output, transfermatrix, alm)
+function getmodel_mmodes_remote_processing_loop(input, output, transfermatrix, alm)
     BLAS.set_num_threads(16) # compensate for a bug in `addprocs`
     lmax = transfermatrix.lmax
     mmax = transfermatrix.mmax
     while true
-        m = take!(input)
-        A = transfermatrix[m,1]
-        x = zeros(Complex128, lmax-m+1)
-        for l = m:lmax
-            x[l-m+1] = alm[l,m]
+        try
+            m = take!(input)
+            A = transfermatrix[m, 1]
+            x = zeros(Complex128, lmax-m+1)
+            for l = m:lmax
+                x[l-m+1] = alm[l,m]
+            end
+            b = A*x
+            put!(output, b)
+        catch exception
+            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
+                # If this is a remote worker, we will see a RemoteException when the channel is
+                # closed. However, if this is the master process (ie. we're running without any
+                # workers) then this will be an InvalidStateException. This is kind of messy...
+                break
+            else
+                println(exception)
+                rethrow(exception)
+            end
         end
-        b = A*x
-        put!(output, b)
     end
+end
+
+function getmodel_visibilities(mmodes, Ntime)
+    Nbase = length(mmodes[1])
+    matrix = zeros(Complex128, Nbase, Ntime)
+    pack_matrix!(matrix, mmodes)
+    visibilities = do_inverse_fourier_transform(matrix)
+    visibilities
+end
+
+function pack_matrix!(matrix, mmodes)
+    Nbase, Ntime = size(matrix)
+    mmax = length(mmodes)-1
+    for m = 0:mmax
+        block = mmodes[m+1]
+        if m == 0
+            for α = 1:Nbase
+                matrix[α, 1] = block[α]
+            end
+        else
+            for α = 1:Nbase
+                α1 = 2α - 1 # positive m
+                α2 = 2α - 0 # negative m
+                matrix[α, m+1] = block[α1]
+                matrix[α, Ntime+1-m] = conj(block[α2])
+            end
+        end
+    end
+end
+
+function do_inverse_fourier_transform(matrix)
+    Nbase, Ntime = size(matrix)
+    FFTW.set_num_threads(16)
+    transposed = permutedims(matrix, (2, 1)) # put time on the fast axis
+    planned_ifft = plan_ifft(transposed, 1)
+    fourier = planned_ifft * transposed * Ntime
+    permutedims(fourier, (2, 1)) # undo the previous transpose
 end
 

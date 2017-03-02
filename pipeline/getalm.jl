@@ -1,3 +1,9 @@
+function getalm(spw, tolerance=0.01)
+    dir = getdir(spw)
+    mmodes, mmode_flags = load(joinpath(dir, "mmodes.jld"), "blocks", "flags")
+    getalm(spw, mmodes, mmode_flags, tolerance)
+end
+
 function getalm(spw, mmodes, mmode_flags, tolerance=0.01)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
