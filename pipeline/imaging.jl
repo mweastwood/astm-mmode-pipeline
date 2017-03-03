@@ -1,6 +1,12 @@
 function smeared_image(spw, filename="calibrated-visibilities")
     dir = getdir(spw)
     data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
+    if ndims(data) == 2
+        # if we want to image the folded dataset, the polarizations have been averaged together,
+        # so we'll replicate the data for each polarization
+        data = reshape(data, (1, size(data)...))
+        data = vcat(data, data)
+    end
     _, Nbase, Ntime = size(data)
     output = joinpath(dir, "smeared-"*filename)
     image(spw, data, flags, 1:Ntime, output)
