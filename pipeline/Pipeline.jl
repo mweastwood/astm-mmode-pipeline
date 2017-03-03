@@ -77,6 +77,8 @@ include("peeling.jl")
 include("folddata.jl")
 include("getmmodes.jl")
 include("getalm.jl")
+include("getmodel.jl")
+include("difference.jl")
 
 #include("getsun.jl")
 #include("getdata_experimental.jl")
@@ -111,10 +113,10 @@ include("getalm.jl")
 ## testing
 #include("getcyg.jl")
 #include("getrfi.jl")
-
-include("flags.jl")
-include("getcal.jl")
-include("ionosphere.jl") # for Esayas
+#
+#include("flags.jl")
+#include("getcal.jl")
+#include("ionosphere.jl") # for Esayas
 
 end
 
