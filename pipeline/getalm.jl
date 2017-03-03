@@ -8,7 +8,7 @@ function getalm(spw, mmodes, mmode_flags, tolerance=0.01)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
     alm = _getalm(transfermatrix, mmodes, mmode_flags, tolerance)
-    save(joinpath(dir, "alm.jld"), "alm", alm)
+    save(joinpath(dir, "alm.jld"), "alm", alm, "tolerance", tolerance)
     alm
 end
 
