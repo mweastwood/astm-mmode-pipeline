@@ -1,11 +1,3 @@
-function difference(spw)
-    dir = getdir(spw)
-    folded, flags = load(joinpath(dir, "folded-visibilities.jld"), "data", "flags")
-    model = load(joinpath(dir, "model-visibilities.jld"), "data")
-    diff = folded - model
-    save(joinpath(dir, "differenced-visibilities.jld"), "data", diff, "flags", flags)
-end
-
 # Differencing the model from the measured visibilities is actually a complicated operation.
 # Pictorially, what's going on here is that we started with a set of measured visibilities that
 # include some contribution from the sky and some contribution from RFI and cross-talk. When we
@@ -33,6 +25,113 @@ end
 # 2Nbase x 2Nbase. This analysis assumed ϵ<<1. Because we want to do the least possible amount of
 # work, we're going to begin by taking the singular value decomposition of B because all of these
 # operations then reduce to simple operations on the singular values.
+
+function filter_non_sky_like_components(spw)
+    dir = getdir(spw)
+    #diff, flags = difference(spw)
+    @time diff, flags = load(joinpath(dir, "differenced-visibilities.jld"), "data", "flags")
+    # eventually we're going to want to pick out the dominant components of diff using an svd so
+    # that we avoid taking sky with us, but for now we'll neglect this
+    @time mmodes, mmode_flags = getmmodes_internal(diff, flags)
+    @time transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    @time output_mmodes = do_the_deprojection(transfermatrix, mmodes, mmode_flags)
+    @time output_visibilities = getmodel_visibilities(output_mmodes, 6628)
+    save(joinpath(dir, "deprojected-visibilities.jld"),
+         "data", output_visibilities, "flags", flags, compress=true)
+end
+
+function difference(spw)
+    dir = getdir(spw)
+    folded, flags = load(joinpath(dir, "folded-visibilities.jld"), "data", "flags")
+    model = load(joinpath(dir, "model-visibilities.jld"), "data")
+    diff = folded - model
+    save(joinpath(dir, "differenced-visibilities.jld"), "data", diff, "flags", flags, compress=true)
+    diff, flags
+end
+
+function do_the_deprojection(transfermatrix::TransferMatrix, mmodes, mmode_flags)
+    # TODO: read the tolerance properly, but for now it's hard-coded
+    tolerance = 1e-4
+    mmax = transfermatrix.mmax
+    output = Vector{Vector{Complex128}}(mmax+1)
+    m = 0
+    nextm() = (m′ = m; m += 1; m′)
+    prg = Progress(mmax+1, "Progress: ")
+    lck = ReentrantLock()
+    increment_progress() = (lock(lck); next!(prg); unlock(lck))
+    @sync for worker in workers()
+        @async begin
+            input_channel  = RemoteChannel()
+            output_channel = RemoteChannel()
+            try
+                remotecall(deprojection_remote_processing_loop, worker, input_channel, output_channel,
+                           transfermatrix, mmodes, mmode_flags, tolerance)
+                Lumberjack.debug("Worker $worker has been started")
+                while true
+                    m′ = nextm()
+                    m′ ≤ mmax || break
+                    Lumberjack.debug("Worker $worker is processing m=$(m′)")
+                    put!(input_channel, m′)
+                    output[m+1] = take!(output_channel)
+                    increment_progress()
+                end
+            finally
+                close(input_channel)
+                close(output_channel)
+            end
+        end
+    end
+    output
+end
+
+function deprojection_remote_processing_loop(input_channel, output_channel,
+                                             transfermatrix, mmodes, mmode_flags, tolerance)
+    BLAS.set_num_threads(16) # compensate for a bug in `addprocs`
+    while true
+        try
+            m = take!(input_channel)
+            B = transfermatrix[m, 1]
+            v = mmodes[m+1]
+            f = mmode_flags[m+1]
+            output = deprojection_remote_work(B, v, f, tolerance)
+            put!(output_channel, output)
+        catch exception
+            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
+                break
+            else
+                println(exception)
+                rethrow(exception)
+            end
+        end
+    end
+end
+
+function deprojection_remote_work(B, v, f, tolerance)
+    N = length(f)
+    B = B[!f, :]
+    v = v[!f]
+    U, σ, V = svd(B)
+    inverse_projection_eigenvalues!(σ, tolerance)
+    Σ = diagm(σ)
+    output = U'*v
+    output = Σ*output
+    output = U*output
+    output
+end
+
+function inverse_projection_eigenvalues!(σ, ϵ)
+    N = length(σ)
+    for idx = 1:N
+        s = σ[idx]
+        if s < 1e-2 # arbitrary hard-coded cutoff for now, this should probably be a lot smaller
+            σ[idx] = inv(1 - s^2/(s^2 + ϵ))
+        else
+            σ[idx] = 0
+        end
+    end
+end
+
+
 
 
 
