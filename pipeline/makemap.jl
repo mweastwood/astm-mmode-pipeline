@@ -1,50 +1,33 @@
-function makemap(spw, input="alm", output="map")
-    Lumberjack.info("Creating a map for spectral window $spw")
+function makemap(spw; pass=1)
     dir = getdir(spw)
     meta = getmeta(spw)
+    alm = load(joinpath(dir, "alm-$pass.jld"), "alm")
+    map = alm2map(alm, 512)
 
-    path_to_alm = joinpath(dir, input*".jld")
-    Lumberjack.info("Using the spherical harmonic coefficients located at $path_to_alm")
-    alm = load(joinpath(dir, input*".jld"), "alm")
+    ## TODO: does this need a factor of the beam solid angle?
+    #mmodes = MModes(joinpath(dir, "mmodes")) # read the frequency from the m-modes
+    #map = map * (BPJSpec.Jy * (BPJSpec.c/mmodes.frequencies[1])^2 / (2*BPJSpec.k))
 
-    Lumberjack.info("Running alm2map")
-    map = alm2map(alm, 2048)
-
-    Lumberjack.info("Converting to temperature units")
-    # TODO: does this need a factor of the beam solid angle?
-    mmodes = MModes(joinpath(dir, "mmodes")) # read the frequency from the m-modes
-    map = map * (BPJSpec.Jy * (BPJSpec.c/mmodes.frequencies[1])^2 / (2*BPJSpec.k))
-
-    Lumberjack.info("Rotating the map to J2016 coordinates")
-    newmap = HealpixMap(Float64, 2048)
+    # rotate the map to Galactic coordinates
     frame = TTCal.reference_frame(meta)
-    j2016_z = Direction(dir"JTRUE", 0.0degrees, 90degrees)
-    j2016_z_in_itrf = measure(frame, j2016_z, dir"ITRF")
-    j2016_x = Direction(dir"JTRUE", 0.0degrees, 0.0degrees)
-    j2016_x_in_itrf = measure(frame, j2016_x, dir"ITRF")
-    z = [j2016_z_in_itrf.x, j2016_z_in_itrf.y, j2016_z_in_itrf.z]
-    x = [j2016_x_in_itrf.x, j2016_x_in_itrf.y, j2016_x_in_itrf.z]
-    y = cross(z, x)
-    p = Progress(length(newmap), "Rotating: ")
-    for i = 1:length(newmap)
-        vec = LibHealpix.pix2vec_ring(nside(newmap), i)
-        vec′ = vec[1]*x + vec[2]*y + vec[3]*z
-        j = LibHealpix.vec2pix_ring(nside(newmap), vec′)
-        newmap[i] = map[j]
-        next!(p)
+    z = Direction(dir"ITRF", 0.0degrees, 90degrees)
+    z_ = measure(frame, z, dir"GALACTIC")
+    x = Direction(dir"ITRF", 0.0degrees, 0.0degrees)
+    x_ = measure(frame, x, dir"GALACTIC")
+    zvec = [z_.x, z_.y, z_.z]
+    xvec = [x_.x, x_.y, x_.z]
+    yvec = cross(zvec, xvec)
+    θ = zeros(length(map))
+    ϕ = zeros(length(map))
+    for idx = 1:length(map)
+        vec = LibHealpix.pix2vec_ring(nside(map), idx)
+        θ[idx] = acos(dot(vec, zvec))
+        ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
     end
+    pixels = LibHealpix.interpolate(map, θ, ϕ)
+    newmap = HealpixMap(pixels)
 
-    Lumberjack.info("Creating a low resolution version of the map")
-    newalm = map2alm(newmap, lmax(alm), mmax(alm), iterations=10)
-    lowresmap = alm2map(newalm, 512)
-
-    path_to_highres_map = joinpath(dir, output*"-2048.fits")
-    Lumberjack.info("Saving a high resolution map to $path_to_highres_map")
-    writehealpix(path_to_highres_map, newmap, replace=true)
-
-    path_to_lowres_map = joinpath(dir, output*"-512.fits")
-    Lumberjack.info("Saving a low resolution map to $path_to_lowres_map")
-    writehealpix(path_to_lowres_map, lowresmap, replace=true)
+    writehealpix(joinpath(dir, "map-$pass.fits"), newmap, coordsys="G", replace=true)
 
     nothing
 end
