@@ -1,16 +1,12 @@
 function peel(spw)
     dir = getdir(spw)
     times = load(joinpath(dir, "raw-visibilities.jld"), "times")
-    data, flags = load(joinpath(dir, "calibrated-visibilities.jld"), "data", "flags");
+    data, flags = load(joinpath(dir, "rfi-subtracted-calibrated-visibilities.jld"), "data", "flags")
     peel(spw, times, data, flags)
 end
 
-immutable PeelingData_rfi
-    xx_rfi_flux :: Vector{Complex128}
-    yy_rfi_flux :: Vector{Complex128}
-end
-
-immutable PeelingData_sources
+immutable PeelingData
+    time :: Float64
     sources :: Vector{Source}
     I :: Vector{Float64}
     Q :: Vector{Float64}
@@ -18,12 +14,6 @@ immutable PeelingData_sources
     peeling_sources :: Vector{Source}
     subtraction_sources :: Vector{Source}
     calibrations :: Vector{GainCalibration}
-end
-
-immutable PeelingData
-    time :: Float64
-    rfi_data :: PeelingData_rfi
-    sources_data :: PeelingData_sources
 end
 
 function peel(spw, times, data, flags; istest=false)
@@ -68,12 +58,11 @@ function peel_worker_loop(spw, input, output)
     dir = getdir(spw)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
-    xx_rfi, yy_rfi = load(joinpath(dir, "rfi-components.jld"), "xx", "yy")
     sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
     while true
         try
             time, data, flags = take!(input)
-            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, xx_rfi, yy_rfi, sources)
+            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, sources)
             put!(output, (data, flags, peeling_data))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -89,7 +78,7 @@ function peel_worker_loop(spw, input, output)
     end
 end
 
-function peel_do_the_work(time, data, flags, spw, dir, meta, xx_rfi, yy_rfi, sources)
+function peel_do_the_work(time, data, flags, spw, dir, meta, sources)
     xx = data[1, :]
     yy = data[2, :]
 
@@ -102,35 +91,15 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, xx_rfi, yy_rfi, sou
         flags[α] = true
     end
 
-    xx, yy, rfi_data = rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
-    xx, yy, sources_data  = rm_sources(flags, xx, yy, spw, meta, sources)
+    xx, yy, peeling_data  = rm_sources(time, flags, xx, yy, spw, meta, sources)
 
     data[1, :] = xx
     data[2, :] = yy
 
-    PeelingData(time, rfi_data, sources_data)
+    peeling_data
 end
 
-function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
-    if !all(flags)
-        xx_flagged = xx[!flags]
-        yy_flagged = yy[!flags]
-        xx_rfi_flagged = xx_rfi[!flags, :]
-        yy_rfi_flagged = yy_rfi[!flags, :]
-        xx_flux = xx_rfi_flagged \ xx_flagged
-        yy_flux = yy_rfi_flagged \ yy_flagged
-        xx -= xx_rfi * xx_flux
-        yy -= yy_rfi * yy_flux
-    else
-        N = size(xx_rfi, 2) # the number of RFI sources
-        xx_flux = zeros(Complex128, N)
-        yy_flux = zeros(Complex128, N)
-    end
-    data = PeelingData_rfi(xx_flux, yy_flux)
-    xx, yy, data
-end
-
-function rm_sources(flags, xx, yy, spw, meta, sources)
+function rm_sources(time, flags, xx, yy, spw, meta, sources)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
         visibilities.data[α, 1] = JonesMatrix(xx[α], 0, 0, yy[α])
@@ -146,7 +115,8 @@ function rm_sources(flags, xx, yy, spw, meta, sources)
     calibrations = peel!(visibilities, meta, ConstantBeam(), peeling_sources,
                          peeliter=5, maxiter=100, tolerance=1e-3, quiet=true)
     subsrc!(visibilities, meta, ConstantBeam(), subtraction_sources)
-    data = PeelingData_sources(sources, I, Q, directions, peeling_sources, subtraction_sources, calibrations)
+    data = PeelingData(time, sources, I, Q, directions,
+                       peeling_sources, subtraction_sources, calibrations)
 
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
