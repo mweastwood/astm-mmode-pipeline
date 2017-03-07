@@ -94,9 +94,6 @@ macro fitrfi_construct_sources(args...)
             push!(output.args, expr)
         end
     end
-    show_the_sources = quote
-    end
-    push!(output.args, show_the_sources)
     esc(output)
 end
 
