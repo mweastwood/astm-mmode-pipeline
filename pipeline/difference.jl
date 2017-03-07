@@ -72,7 +72,7 @@ function do_the_deprojection(transfermatrix::TransferMatrix, mmodes, mmode_flags
                     m′ ≤ mmax || break
                     Lumberjack.debug("Worker $worker is processing m=$(m′)")
                     put!(input_channel, m′)
-                    output[m+1] = take!(output_channel)
+                    output[m′+1] = take!(output_channel)
                     increment_progress()
                 end
             finally
@@ -113,9 +113,11 @@ function deprojection_remote_work(B, v, f, tolerance)
     U, σ, V = svd(B)
     inverse_projection_eigenvalues!(σ, tolerance)
     Σ = diagm(σ)
-    output = U'*v
-    output = Σ*output
-    output = U*output
+    temp = U'*v
+    temp = Σ*temp
+    temp = U*temp
+    output = zeros(Complex128, N)
+    output[!f] = temp
     output
 end
 
