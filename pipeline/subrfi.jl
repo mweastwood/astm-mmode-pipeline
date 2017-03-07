@@ -78,6 +78,9 @@ function subrfi_do_the_work(meta, data, flags, xx_rfi, yy_rfi)
 end
 
 function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
+    # TODO: I'm getting extremely small amplitudes for xx_rfi_flux and yy_rfi_flux. I'm not entirely
+    # sure what's going on. I should also think about constraining these to be real. At the moment
+    # I'm just letting them be complex.
     if !all(flags)
         xx_flagged = xx[!flags]
         yy_flagged = yy[!flags]
