@@ -48,7 +48,11 @@ function updateflux!(spec::Vector{HermitianJonesMatrix}, meta, source)
     I = getfield.(stokes, 1)
     Q = getfield.(stokes, 2)
     scale = (model_I \ I)[1]
-    polarization_fraction = (I \ Q)[1]
+    if I[1] == 0
+        polarization_fraction = 0.0
+    else
+        polarization_fraction = (I \ Q)[1]
+    end
     #polarization_fraction *= -1 # THIS SIGN FLIP IS NECESSARY TO MATCH WSCLEAN
     scaleflux!(source, scale, polarization_fraction)
 end
