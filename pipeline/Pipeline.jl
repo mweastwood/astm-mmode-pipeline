@@ -71,14 +71,15 @@ include("sawtooth.jl")
 include("calibrate.jl")
 include("imaging.jl")
 include("fitrfi.jl")
+include("subrfi.jl")
 include("peeling.jl")
 
 # m-mode analysis
 include("folddata.jl")
 include("getmmodes.jl")
 include("getalm.jl")
-include("getmodel.jl")
-include("difference.jl")
+#include("getmodel.jl")
+include("makemap.jl")
 
 #include("getsun.jl")
 #include("getdata_experimental.jl")
