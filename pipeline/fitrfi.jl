@@ -53,7 +53,7 @@ function fitrfi_sum_the_visibilities(spw, data, flags)
             visibilities.flags[α, 1] = false
         end
     end
-    TTCal.flag_short_baselines!(visibilities, meta, 5.0)
+    TTCal.flag_short_baselines!(visibilities, meta, 15.0)
     meta, visibilities
 end
 
@@ -61,7 +61,10 @@ const fitrfi_source_dictionary = Dict(
     :A => (37.145402389570144, -118.3147833410907,  1226.7091391887516), # Big Pine
     :B => (37.3078474772316,   -118.3852914162684,  1214.248326037079),  # Bishop
     :C => (37.24861167954518,  -118.36229648059934, 1232.6294581335637), # Keough's Hot Springs
-    :D => (37.06249388547446,  -118.23417138204732, 1608.21583019197)
+    :D => (37.06249388547446,  -118.23417138204732, 1608.21583019197),
+    # the following locations were eye-balled by Marin
+    :B2 => (37.323000, -118.401953, 1214.248326037079), # the northern most source in the triplet
+    :B3 => (37.320125, -118.377464, 1214.248326037079)  # the middle source in the triplet
 )
 
 function fitrfi_known_source(visibilities, meta, lat, lon, el)
@@ -190,7 +193,13 @@ end
 
 function fitrfi_spw18(data, flags, target)
     @fitrfi_start 18
-    @fitrfi_construct_sources C A B 2
+    if target == "calibrated-visibilities"
+        @fitrfi_construct_sources C A B 2
+    elseif target == "peeled-visibilities"
+        @fitrfi_construct_sources B3 B 3
+    else
+        Lumberjack.error("unknown target")
+    end
     @fitrfi_peel_sources
     @fitrfi_finish
 end
