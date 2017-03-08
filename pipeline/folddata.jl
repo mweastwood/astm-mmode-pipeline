@@ -1,10 +1,10 @@
-function fold(spw)
+function fold(spw, target="peeled-visibilities")
     dir = getdir(spw)
-    data, flags = load(joinpath(dir, "peeled-visibilities.jld"), "data", "flags")
-    fold(spw, data, flags)
+    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
+    fold(spw, data, flags, target)
 end
 
-function fold(spw, data, flags)
+function fold(spw, data, flags, target)
     _, Nbase, Ntime = size(data)
     sidereal_day = 6628 # number of integrations in one sidereal day
     normalization = zeros(Int, Nbase, sidereal_day)
@@ -25,7 +25,7 @@ function fold(spw, data, flags)
             output_data[α, jdx] /= normalization[α, jdx]
         end
     end
-    save(joinpath(getdir(spw), "folded-visibilities.jld"),
+    save(joinpath(getdir(spw), "folded-$target.jld"),
          "data", output_data, "flags", output_flags, compress=true)
     output_data, output_flags
 end

@@ -1,7 +1,7 @@
-function makemap(spw; pass=1)
+function makemap(spw, target="alm-peeled")
     dir = getdir(spw)
     meta = getmeta(spw)
-    alm = load(joinpath(dir, "alm-$pass.jld"), "alm")
+    alm = load(joinpath(dir, target*".jld"), "alm")
     map = alm2map(alm, 512)
 
     ## TODO: does this need a factor of the beam solid angle?
@@ -27,7 +27,8 @@ function makemap(spw; pass=1)
     pixels = LibHealpix.interpolate(map, θ, ϕ)
     newmap = HealpixMap(pixels)
 
-    writehealpix(joinpath(dir, "map-$pass.fits"), newmap, coordsys="G", replace=true)
+    output = replace(target, "alm", "map")
+    writehealpix(joinpath(dir, output*".fits"), newmap, coordsys="G", replace=true)
 
     nothing
 end

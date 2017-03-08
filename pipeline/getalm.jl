@@ -1,14 +1,15 @@
-function getalm(spw, tolerance=0.01)
+function getalm(spw, target="mmodes-peeled"; tolerance=0.01)
     dir = getdir(spw)
-    mmodes, mmode_flags = load(joinpath(dir, "mmodes.jld"), "blocks", "flags")
-    getalm(spw, mmodes, mmode_flags, tolerance)
+    mmodes, mmode_flags = load(joinpath(dir, target*".jld"), "blocks", "flags")
+    getalm(spw, mmodes, mmode_flags, target, tolerance=tolerance)
 end
 
-function getalm(spw, mmodes, mmode_flags, tolerance=0.01)
+function getalm(spw, mmodes, mmode_flags, target; tolerance=0.01, pass=1)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
     alm = _getalm(transfermatrix, mmodes, mmode_flags, tolerance)
-    save(joinpath(dir, "alm.jld"), "alm", alm, "tolerance", tolerance)
+    output = replace(target, "mmodes", "alm")
+    save(joinpath(dir, output*".jld"), "alm", alm, "tolerance", tolerance)
     alm
 end
 

@@ -1,4 +1,19 @@
-function getmmodes(spw, data, flags)
+function getmmodes(spw, target="folded-peeled-visibilities")
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
+    getmmodes(spw, data, flags, target)
+end
+
+function getmmodes(spw, data, flags, target)
+    blocks, block_flags = getmmodes_internal(data, flags)
+    output = replace(target, "folded-", "")
+    output = replace(output, "-visibilities", "")
+    save(joinpath(getdir(spw), "mmodes-$output.jld"),
+         "blocks", blocks, "flags", block_flags, compress=true)
+    blocks, block_flags
+end
+
+function getmmodes_internal(data, flags)
     mmax = 1000
     Nbase, Ntime = size(data)
     two(m) = ifelse(m != 0, 2, 1)
@@ -6,7 +21,6 @@ function getmmodes(spw, data, flags)
     fourier = do_fourier_transform(data)
     pack_mmodes!(blocks, fourier, mmax)
     block_flags = decide_on_baseline_flags(flags, mmax)
-    save(joinpath(getdir(spw), "mmodes.jld"), "blocks", blocks, "flags", block_flags, compress=true)
     blocks, block_flags
 end
 
