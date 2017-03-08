@@ -1,4 +1,4 @@
-function smeared_image(spw, filename="calibrated-visibilities")
+function smeared_image(spw, filename="calibrated-visibilities"; minuvw=0)
     dir = getdir(spw)
     data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
     if ndims(data) == 2
@@ -9,7 +9,7 @@ function smeared_image(spw, filename="calibrated-visibilities")
     end
     _, Nbase, Ntime = size(data)
     output = joinpath(dir, "smeared-"*filename)
-    image(spw, data, flags, 1:Ntime, output)
+    image(spw, data, flags, 1:Ntime, output, minuvw=minuvw)
 end
 
 function smeared_image_cas_a(spw, filename="calibrated-visibilities")
@@ -37,7 +37,7 @@ end
 
 Create an image of the data integrated over the specified range of times.
 """
-function image(spw, data, flags, range, image_path)
+function image(spw, data, flags, range, image_path; minuvw=0)
     Nbase = size(data, 2)
     output = Visibilities(Nbase, 109)
     output.data[:] = zero(JonesMatrix)
@@ -55,7 +55,7 @@ function image(spw, data, flags, range, image_path)
     ms, ms_path = dada2ms(dadas[1])
     TTCal.write(ms, "DATA", output)
     finalize(ms)
-    wsclean(ms_path, image_path, j=8)
+    wsclean(ms_path, image_path, j=8, minuvw=minuvw)
     rm(ms_path, recursive=true)
 end
 
