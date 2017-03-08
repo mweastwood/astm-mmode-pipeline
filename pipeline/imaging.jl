@@ -101,3 +101,36 @@ function image_with_new_phase_center(spw, times, data, flags, range, phase_cente
     rm(ms_path, recursive=true)
 end
 
+function image_mmodes(spw, target="mmodes-peeled", m=0)
+    dir = getdir(spw)
+    meta = getmeta(spw)
+    mmodes, flags = load(joinpath(dir, target*".jld"), "blocks", "flags")
+    block = mmodes[abs(m)+1]
+    f = flags[abs(m)+1]
+
+    output = Visibilities(Nbase(meta), 109)
+    output.data[:] = zero(JonesMatrix)
+    output.flags[:] = true
+    for α1 = 1:Nbase(meta)
+        if m > 0
+            I = block[2α-1]
+        elseif m < 0
+            I = conj(block[2α-0])
+        else # m == 0
+            I = block[α]
+        end
+        if !f[α2]
+            output.data[α1, 55] = JonesMatrix(I, 0, 0, I)
+            output.flags[α1, 55] = false
+        end
+    end
+
+    dadas = listdadas(spw)[1]
+    ms, ms_path = dada2ms(dadas)
+    TTCal.write(ms, "DATA", output)
+    finalize(ms)
+    image_path = joinpath(dir, "tmp", "image-$target-m=$m")
+    wsclean(ms_path, image_path, j=8)
+    rm(ms_path, recursive=true)
+end
+
