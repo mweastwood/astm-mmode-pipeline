@@ -106,22 +106,25 @@ function image_mmodes(spw, target="mmodes-peeled", m=0)
     meta = getmeta(spw)
     mmodes, flags = load(joinpath(dir, target*".jld"), "blocks", "flags")
     block = mmodes[abs(m)+1]
-    f = flags[abs(m)+1]
+    block_flags = flags[abs(m)+1]
 
     output = Visibilities(Nbase(meta), 109)
     output.data[:] = zero(JonesMatrix)
     output.flags[:] = true
-    for α1 = 1:Nbase(meta)
+    for α = 1:Nbase(meta)
         if m > 0
             I = block[2α-1]
+            f = block_flags[2α-1]
         elseif m < 0
             I = conj(block[2α-0])
+            f = block_flags[2α-0]
         else # m == 0
             I = block[α]
+            f = block_flags[α]
         end
-        if !f[α2]
-            output.data[α1, 55] = JonesMatrix(I, 0, 0, I)
-            output.flags[α1, 55] = false
+        if !f
+            output.data[α, 55] = JonesMatrix(I, 0, 0, I)
+            output.flags[α, 55] = false
         end
     end
 
