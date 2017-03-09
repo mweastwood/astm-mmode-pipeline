@@ -139,6 +139,8 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             else
                 push!(subtraction_sources, source)
             end
+        elseif source.name == "Vir A" || source.name == "Tau A"
+            push!(subtraction_sources, source)
         elseif source.name == "Sun"
             if TTCal.isabovehorizon(frame, source, deg2rad(30))
                 push!(peeling_sources, source)
