@@ -17,8 +17,8 @@ function subrfi(spw, data, flags, target)
     xx_rfi, yy_rfi = load(joinpath(dir, "$target-rfi-components.jld"), "xx", "yy")
     Nrfi = size(xx_rfi, 2)
     Ntime = size(data, 3)
-    xx_rfi_flux = zeros(Complex128, Nrfi, Ntime)
-    yy_rfi_flux = zeros(Complex128, Nrfi, Ntime)
+    xx_rfi_flux = zeros(Nrfi, Ntime)
+    yy_rfi_flux = zeros(Nrfi, Ntime)
     @sync for worker in workers()
         @async begin
             input  = RemoteChannel()
@@ -86,14 +86,18 @@ function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
         yy_flagged = yy[!flags]
         xx_rfi_flagged = xx_rfi[!flags, :]
         yy_rfi_flagged = yy_rfi[!flags, :]
-        xx_rfi_flux = xx_rfi_flagged \ xx_flagged
-        yy_rfi_flux = yy_rfi_flagged \ yy_flagged
+        xx_flagged = [xx_flagged; conj(xx_flagged)]
+        yy_flagged = [yy_flagged; conj(yy_flagged)]
+        xx_rfi_flagged = [xx_rfi_flagged; conj(xx_rfi_flagged)]
+        yy_rfi_flagged = [yy_rfi_flagged; conj(yy_rfi_flagged)]
+        xx_rfi_flux = real(xx_rfi_flagged \ xx_flagged)
+        yy_rfi_flux = real(yy_rfi_flagged \ yy_flagged)
         xx -= xx_rfi * xx_rfi_flux
         yy -= yy_rfi * yy_rfi_flux
     else
         N = size(xx_rfi, 2) # the number of RFI sources
-        xx_rfi_flux = zeros(Complex128, N)
-        yy_rfi_flux = zeros(Complex128, N)
+        xx_rfi_flux = zeros(N)
+        yy_rfi_flux = zeros(N)
     end
     xx, yy, xx_rfi_flux, yy_rfi_flux
 end
