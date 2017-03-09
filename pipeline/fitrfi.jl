@@ -217,7 +217,7 @@ end
 
 macro fitrfi_mmodes_start(spw)
     output = quote
-        @fitrfi_preamble 18
+        @fitrfi_preamble $spw
 
         meta = getmeta(spw)
         meta.channels = meta.channels[55:55]
@@ -248,6 +248,7 @@ macro fitrfi_mmodes_start(spw)
         target = @sprintf("mmodes-peeled-m=%+05d", m)
         fitrfi_image_visibilities(spw, ms_path, "fitrfi-start-"*target, meta, visibilities)
     end
+    esc(output)
 end
 
 function reconstruct_mmodes(spw)
@@ -261,7 +262,7 @@ function reconstruct_mmodes(spw)
         mmodes[1] = newblock
     end
 
-    for m = 1:1
+    for m = 1:10
         path = joinpath(dir, "tmp", "updated-block-m=$m.jld")
         if isfile(path)
             newblock = load(path, "block")
@@ -269,7 +270,7 @@ function reconstruct_mmodes(spw)
         end
     end
 
-    for m = -1:-1:-1
+    for m = -1:-1:-10
         path = joinpath(dir, "tmp", "updated-block-m=$m.jld")
         if isfile(path)
             newblock = load(path, "block")
@@ -288,6 +289,16 @@ function fitrfi_spw18_mmodes(mmodes, mmode_flags, m)
         @fitrfi_construct_sources A C 2
     elseif m == -1
         @fitrfi_construct_sources A C 2
+    elseif m == +2
+        @fitrfi_construct_sources 4
+    elseif m == -2
+        @fitrfi_construct_sources 2
+    elseif m == +3
+        @fitrfi_construct_sources C 3
+    elseif m == -3
+        @fitrfi_construct_sources C 2
+    else
+        @fitrfi_construct_sources 1
     end
     @fitrfi_peel_sources
     @fitrfi_finish
