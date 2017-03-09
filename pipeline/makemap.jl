@@ -1,7 +1,12 @@
 function makemap(spw, target="alm-peeled")
     dir = getdir(spw)
-    meta = getmeta(spw)
     alm = load(joinpath(dir, target*".jld"), "alm")
+    makemap(spw, alm, target)
+end
+
+function makemap(spw, alm::Alm, target)
+    dir = getdir(spw)
+    meta = getmeta(spw)
     map = alm2map(alm, 512)
 
     ## TODO: does this need a factor of the beam solid angle?
