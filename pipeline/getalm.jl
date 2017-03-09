@@ -58,7 +58,7 @@ function getalm_remote_processing_loop(input, output, transfermatrix, mmodes, mm
             A = transfermatrix[m, 1]
             b = mmodes[m+1]
             f = mmode_flags[m+1]
-            prototype_additional_baseline_flags!(f, m)
+            #prototype_additional_baseline_flags!(f, m)
             A = A[!f, :]
             b = b[!f]
             x = tikhonov(A, b, tolerance)
