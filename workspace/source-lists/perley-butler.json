@@ -1,0 +1,112 @@
+[
+{
+    "ref": "Michael (2016-07-30T10:52:45) on Baars scale",
+    "name": "Cyg A",
+    "components": [
+        {
+            "name": "1",
+            "ra":"19h59m29.990s",
+            "dec": "+40d43m57.53s",
+            "I":43170.55527073293,
+            "freq": 1.0e6,
+            "index": [0.085, -0.178],
+            "major-fwhm": 127.86780196141683,
+            "minor-fwhm": 22.459884076169928,
+            "position-angle": -74.50271323639498
+        },
+        {
+            "name": "2",
+            "ra":"19h59m24.316s",
+            "dec": "+40d44m50.70s",
+            "I":6374.4647292670625,
+            "freq": 1.0e6,
+            "index": [0.085, -0.178],
+            "major-fwhm": 183.42701763410113,
+            "minor-fwhm": 141.44188315233822,
+            "position-angle": 43.449049376516
+        }
+    ]
+},
+{
+    "ref": "Harish on Baars scale",
+    "name": "Cas A",
+    "components": [
+        {
+            "name": "1",
+            "ra": "23h23m12.78s",
+            "dec": "+58d50m41.0s",
+            "I": 287570.39,
+            "freq": 1e6,
+            "index": [-0.770],
+            "major-fwhm": 208.9,
+            "minor-fwhm": 84.1,
+            "position-angle": 38.9
+        },
+        {
+            "name": "2",
+            "ra": "23h23m28.09s",
+            "dec": "+58d49m18.1s",
+            "I": 268333.87,
+            "freq": 1e6,
+            "index": [-0.770],
+            "major-fwhm": 230.9,
+            "minor-fwhm": 121.9,
+            "position-angle": 43.8
+        }
+    ]
+},
+{
+    "ref": "Perley & Butler 2016",
+    "name": "Tau A",
+    "ra": "05h34m31.94s",
+    "dec": "+22d00m52.2s",
+    "I": 894.54,
+    "freq": 1.0e9,
+    "index": [-0.217,-0.047,-0.067]
+},
+{
+    "ref": "Perley & Butler 2016",
+    "name": "Vir A",
+    "ra": "12h30m49.42338s",
+    "dec": "+12d23m28.0439s",
+    "I": 279.64,
+    "freq": 1.0e9,
+    "index": [-0.8116,-0.048]
+},
+{
+    "ref": "Perley & Butler 2016",
+    "name": "Her A",
+    "ra": "16h51m11.4s",
+    "dec": "+04d59m20s",
+    "I": 67.577,
+    "freq": 1.0e9,
+    "index": [-1.0247,-0.0951]
+},
+{
+    "ref": "Perley & Butler 2016",
+    "name": "Hya A",
+    "ra": "09h18m05.651s",
+    "dec": "-12d05m43.99s",
+    "I": 60.186,
+    "freq": 1.0e9,
+    "index": [-0.9176,-0.084,-0.0139,0.030]
+},
+{
+    "ref": "Perley & Butler 2016",
+    "name": "Per B",
+    "ra": "04h37m04.3753s",
+    "dec": "+29d40m13.819s",
+    "I": 63.343,
+    "freq": 1.0e9,
+    "index": [-0.7884,-0.1035,-0.0248,0.0090]
+},
+{
+    "ref": "Perley & Butler 2016",
+    "name": "3C 353",
+    "ra": "17h20m28.147s",
+    "dec": "-00d58m47.12s",
+    "I": 72.895,
+    "freq": 1.0e6,
+    "index": [-0.6938,-0.100,-0.032]
+}
+]

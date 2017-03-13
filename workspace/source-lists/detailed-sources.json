@@ -1,0 +1,50 @@
+[
+{
+    "name": "Cyg A",
+    "components": [
+        {
+            "name": "east",
+            "ra": "19h59m29.99s",
+            "dec": "+40d43m57.53s",
+            "I": 29523.00,
+            "freq": 1e6,
+            "index": [0.085, -0.178]
+        },
+        {
+            "name": "west",
+            "ra": "19h59m23.23s",
+            "dec": "+40d44m23.03s",
+            "I": 20021.02,
+            "freq": 1e6,
+            "index": [0.085, -0.178]
+        }
+    ]
+},
+{
+    "name": "Cas A",
+    "components": [
+        {
+            "name": "1",
+            "ra": "23h23m12.78s",
+            "dec": "+58d50m41.0s",
+            "I": 287570.39,
+            "freq": 1e6,
+            "index": [-0.770],
+            "major-fwhm": 208.9,
+            "minor-fwhm": 84.1,
+            "position-angle": 38.9
+        },
+        {
+            "name": "2",
+            "ra": "23h23m28.09s",
+            "dec": "+58d49m18.1s",
+            "I": 268333.87,
+            "freq": 1e6,
+            "index": [-0.770],
+            "major-fwhm": 230.9,
+            "minor-fwhm": 121.9,
+            "position-angle": 43.8
+        }
+    ]
+}
+]
