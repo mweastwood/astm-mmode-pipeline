@@ -32,7 +32,7 @@ end
 are_pols_swapped(dataset) = dataset == "100hr"
 
 # The rainy data is offset from the 100 hour run by one spectral window.
-fix_spw_offset(spw, dataset) = dataset == "rainy"? spw + 1 : spw
+fix_spw_offset(spw, dataset) = dataset == "rainy"? spw - 1 : spw
 
 function dada2ms_core(dada::AbstractString, ms, swap_polarizations=true)
     if swap_polarizations
