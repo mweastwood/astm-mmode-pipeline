@@ -1,8 +1,9 @@
-function sawtooth(spw)
+function sawtooth(spw, target="flagged-raw-visiblities")
     dir = getdir(spw)
-    times, data, flags = load(joinpath(dir, "flagged-visibilities.jld"), "times", "data", "flags")
+    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
     sawtooth = smooth_out_the_sawtooth!(data, flags)
-    save(joinpath(dir, "smoothed-visibilities.jld"),
+    output = replace(target, "flagged-raw", "smoothed")
+    save(joinpath(dir, output*".jld"),
          "times", times, "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
     nothing
 end

@@ -1,5 +1,4 @@
 function getdata(spw, dataset="100hr")
-    spw = fix_spw_offset(spw, dataset)
     dadas = listdadas(spw, dataset)
     getdata(spw, 1:length(dadas), dataset)
 end

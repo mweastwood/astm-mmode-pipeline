@@ -1,50 +1,64 @@
-function flag(spw)
+function flag(spw, target="raw-visibilities")
     dir = getdir(spw)
-    times, data = load(joinpath(dir, "raw-visibilities.jld"), "times", "data")
-    flags = flag!(spw, data)
-    save(joinpath(dir, "flagged-visibilities.jld"),
+    times, data = load(joinpath(dir, target*".jld"), "times", "data")
+    flags = flag!(spw, data, target)
+    save(joinpath(dir, "flagged-$target.jld"),
          "times", times, "data", data, "flags", flags, compress=true)
 end
 
 """
-    flag!(spw, data)
+    flag!(spw, data, target)
 
 Apply a set of a priori antenna and baseline flags. Additionally look for and flag extremely
 egregious integrations.
 
 This function will modify the input `data` by zero-ing out the flagged pieces.
 """
-function flag!(spw, data)
+function flag!(spw, data, target)
     _, Nbase, Ntime = size(data)
     Nant = Nbase2Nant(Nbase)
     flags = zeros(Bool, Nbase, Ntime)
 
     # antenna flags
-    files = ["coreflags_arxpickup.ants", "coreflags_gregg.ants", "coreflags_nosignal.ants",
-             "expansionflags.ants", "ledaants.ants", "flagsRyan.ants", "flagsMarin.ants"]
-    antennas = sort!(vcat(collect(read_antenna_flags(file) for file in files)...)) :: Vector{Int}
-    if spw == 18
-        antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
+    if target == "raw-visibilities"
+        files = ["coreflags_arxpickup.ants", "coreflags_gregg.ants", "coreflags_nosignal.ants",
+                 "expansionflags.ants", "ledaants.ants", "flagsRyan.ants", "flagsMarin.ants"]
+    elseif target == "raw-rainy-visibilities"
+        files = ["rainy.ants"]
+    else
+        files = String[]
     end
-    for ant1 in antennas, ant2 = 1:Nant
-        if ant1 ≤ ant2
-            α = baseline_index(ant1, ant2)
-        else
-            α = baseline_index(ant2, ant1)
+    if length(files) > 0
+        antennas = sort!(vcat(collect(read_antenna_flags(file) for file in files)...)) :: Vector{Int}
+        if target == "raw-visibilities" && spw == 18
+            antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
         end
-        flags[α, :] = true
-        data[:, α, :] = 0
+        for ant1 in antennas, ant2 = 1:Nant
+            if ant1 ≤ ant2
+                α = baseline_index(ant1, ant2)
+            else
+                α = baseline_index(ant2, ant1)
+            end
+            flags[α, :] = true
+            data[:, α, :] = 0
+        end
     end
 
     # baseline flags
-    files = ["flagsRyan_adjacent.bl", "flagsRyan_score.bl", "flagsMarin.bl"]
-    baselines = vcat(collect(read_baseline_flags(file) for file in files)...) :: Matrix{Int}
-    for idx = 1:size(baselines, 1)
-        ant1 = baselines[idx, 1]
-        ant2 = baselines[idx, 2]
-        α = baseline_index(ant1, ant2)
-        flags[α, :] = true
-        data[:, α, :] = 0
+    if target == "raw-visibilities"
+        files = ["flagsRyan_adjacent.bl", "flagsRyan_score.bl", "flagsMarin.bl"]
+    else
+        files = String[]
+    end
+    if length(files) > 0
+        baselines = vcat(collect(read_baseline_flags(file) for file in files)...) :: Matrix{Int}
+        for idx = 1:size(baselines, 1)
+            ant1 = baselines[idx, 1]
+            ant2 = baselines[idx, 2]
+            α = baseline_index(ant1, ant2)
+            flags[α, :] = true
+            data[:, α, :] = 0
+        end
     end
 
     # integration flags

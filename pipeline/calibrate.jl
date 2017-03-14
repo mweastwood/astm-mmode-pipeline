@@ -1,46 +1,54 @@
-function calibrate(spw)
+function calibrate(spw, target="smoothed-visibilities")
     dir = getdir(spw)
-    times, data, flags = load(joinpath(dir, "smoothed-visibilities.jld"), "times", "data", "flags")
+    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
 
-    day1_calibration_range =  3000: 5500
-    day2_calibration_range =  9628:12128
-    day3_calibration_range = 16256:18756
-    day4_calibration_range = 22884:25384
+    if target == "smoothed-visibilities"
+        day1_calibration_range =  3000: 5500
+        day2_calibration_range =  9628:12128
+        day3_calibration_range = 16256:18756
+        day4_calibration_range = 22884:25384
 
-    day1_calibration = solve_for_gain_calibration(spw, times, data, flags, day1_calibration_range)
-    day2_calibration = solve_for_gain_calibration(spw, times, data, flags, day2_calibration_range)
-    day3_calibration = solve_for_gain_calibration(spw, times, data, flags, day3_calibration_range)
-    day4_calibration = solve_for_gain_calibration(spw, times, data, flags, day4_calibration_range)
+        day1_calibration = solve_for_gain_calibration(spw, times, data, flags, day1_calibration_range)
+        day2_calibration = solve_for_gain_calibration(spw, times, data, flags, day2_calibration_range)
+        day3_calibration = solve_for_gain_calibration(spw, times, data, flags, day3_calibration_range)
+        day4_calibration = solve_for_gain_calibration(spw, times, data, flags, day4_calibration_range)
 
-    save(joinpath(dir, "gain-calibrations.jld"),
-         "day1", day1_calibration, "day2", day2_calibration,
-         "day3", day3_calibration, "day4", day4_calibration, compress=true)
+        save(joinpath(dir, "gain-calibrations.jld"),
+             "day1", day1_calibration, "day2", day2_calibration,
+             "day3", day3_calibration, "day4", day4_calibration, compress=true)
 
-    # decide which integrations get which calibrations
-    middle_of_day1 = round(Int, middle(day1_calibration_range))
-    middle_of_day2 = round(Int, middle(day2_calibration_range))
-    middle_of_day3 = round(Int, middle(day3_calibration_range))
-    middle_of_day4 = round(Int, middle(day4_calibration_range))
-    day1_day2_boundary = round(Int, middle(middle_of_day1:middle_of_day2))
-    day2_day3_boundary = round(Int, middle(middle_of_day2:middle_of_day3))
-    day3_day4_boundary = round(Int, middle(middle_of_day3:middle_of_day4))
-    data_day1 = @view data[:, :, 1:day1_day2_boundary]
-    data_day2 = @view data[:, :, day1_day2_boundary+1:day2_day3_boundary]
-    data_day3 = @view data[:, :, day2_day3_boundary+1:day3_day4_boundary]
-    data_day4 = @view data[:, :, day3_day4_boundary+1:end]
-    flags_day1 = @view flags[:, 1:day1_day2_boundary]
-    flags_day2 = @view flags[:, day1_day2_boundary+1:day2_day3_boundary]
-    flags_day3 = @view flags[:, day2_day3_boundary+1:day3_day4_boundary]
-    flags_day4 = @view flags[:, day3_day4_boundary+1:end]
+        # decide which integrations get which calibrations
+        middle_of_day1 = round(Int, middle(day1_calibration_range))
+        middle_of_day2 = round(Int, middle(day2_calibration_range))
+        middle_of_day3 = round(Int, middle(day3_calibration_range))
+        middle_of_day4 = round(Int, middle(day4_calibration_range))
+        day1_day2_boundary = round(Int, middle(middle_of_day1:middle_of_day2))
+        day2_day3_boundary = round(Int, middle(middle_of_day2:middle_of_day3))
+        day3_day4_boundary = round(Int, middle(middle_of_day3:middle_of_day4))
+        data_day1 = @view data[:, :, 1:day1_day2_boundary]
+        data_day2 = @view data[:, :, day1_day2_boundary+1:day2_day3_boundary]
+        data_day3 = @view data[:, :, day2_day3_boundary+1:day3_day4_boundary]
+        data_day4 = @view data[:, :, day3_day4_boundary+1:end]
+        flags_day1 = @view flags[:, 1:day1_day2_boundary]
+        flags_day2 = @view flags[:, day1_day2_boundary+1:day2_day3_boundary]
+        flags_day3 = @view flags[:, day2_day3_boundary+1:day3_day4_boundary]
+        flags_day4 = @view flags[:, day3_day4_boundary+1:end]
 
-    # and finally apply the calibration
-    apply_the_calibration(data_day1, flags_day1, day1_calibration)
-    apply_the_calibration(data_day2, flags_day2, day2_calibration)
-    apply_the_calibration(data_day3, flags_day3, day3_calibration)
-    apply_the_calibration(data_day4, flags_day4, day4_calibration)
+        # and finally apply the calibration
+        apply_the_calibration(data_day1, flags_day1, day1_calibration)
+        apply_the_calibration(data_day2, flags_day2, day2_calibration)
+        apply_the_calibration(data_day3, flags_day3, day3_calibration)
+        apply_the_calibration(data_day4, flags_day4, day4_calibration)
+    elseif target == "smoothed-rainy-visibilities"
+        calibration_range = 3863:4063
+        calibration = solve_for_gain_calibration(spw, times, data, flags, calibration_range)
+        output = replace(replace(target, "smoothed-", ""), "visibilities", "gain-calibrations")
+        save(joinpath(dir, output*".jld"), "calibration", calibration, compress=true)
+        apply_the_calibration(data, flags, calibration)
+    end
 
-    save(joinpath(dir, "calibrated-visibilities.jld"),
-         "data", data, "flags", flags, compress=true)
+    output = replace(target, "smoothed", "calibrated")
+    save(joinpath(dir, output*".jld"), "data", data, "flags", flags, compress=true)
 
     nothing
 end

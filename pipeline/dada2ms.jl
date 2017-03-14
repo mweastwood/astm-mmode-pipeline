@@ -4,6 +4,7 @@
 Return a list of the path to every dada file from the given spectral window.
 """
 function listdadas(spw, dataset="100hr")
+    spw = fix_spw_offset(spw, dataset)
     str = @sprintf("%02d", spw)
     if dataset == "100hr"
         dir = "/lustre/data/2016-03-19_100hour_run"
@@ -13,6 +14,7 @@ function listdadas(spw, dataset="100hr")
         prefix = "2017-02-11-02:36:59"
     else
         dir = joinpath("/lustre/data", dataset)
+        prefix = ""
     end
     files = readdir(joinpath(dir, str))
     filter!(files) do file
