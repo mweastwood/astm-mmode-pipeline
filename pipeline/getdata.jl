@@ -1,9 +1,10 @@
-function getdata(spw)
-    dadas = listdadas(spw)
-    getdata(spw, 1:length(dadas))
+function getdata(spw, dataset="100hr")
+    spw = fix_spw_offset(spw, dataset)
+    dadas = listdadas(spw, dataset)
+    getdata(spw, 1:length(dadas), dataset)
 end
 
-function getdata(spw, range)
+function getdata(spw, range, dataset)
     dadas = listdadas(spw)[range]
     Ntime = length(range)
     meta = getmeta(spw)
@@ -22,7 +23,7 @@ function getdata(spw, range)
         @async begin
             input = RemoteChannel()
             output = RemoteChannel()
-            remotecall(getdata_worker_loop, worker, dadas, input, output)
+            remotecall(getdata_worker_loop, worker, dataset, dadas, input, output)
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
@@ -36,17 +37,17 @@ function getdata(spw, range)
     end
 
     dir = getdir(spw)
-    output_file = joinpath(dir, "raw-visibilities.jld")
+    output_file = joinpath(dir, "raw-$dataset-visibilities.jld")
     save(output_file, "times", times, "data", data, compress=true)
 
     nothing
 end
 
-function getdata_worker_loop(dadas, input, output)
+function getdata_worker_loop(dataset, dadas, input, output)
     while true
         try
             idx = take!(input)
-            time, data = getdata_do_the_work(dadas[idx])
+            time, data = getdata_do_the_work(dataset, dadas[idx])
             put!(output, (time, data))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -59,10 +60,10 @@ function getdata_worker_loop(dadas, input, output)
     end
 end
 
-function getdata_do_the_work(dada)
+function getdata_do_the_work(dataset, dada)
     local time, output
     try
-        ms, path = dada2ms(dada)
+        ms, path = dada2ms(dada, swap_polarizations=are_pols_swapped(dataset))
         data = ms["DATA"] :: Array{Complex64, 3}
         time = ms["TIME", 1] :: Float64
 
