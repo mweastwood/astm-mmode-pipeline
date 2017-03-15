@@ -1,9 +1,9 @@
 """
-    listdadas(spw, dataset="100hr")
+    listdadas(spw, dataset)
 
 Return a list of the path to every dada file from the given spectral window.
 """
-function listdadas(spw, dataset="100hr")
+function listdadas(spw, dataset)
     spw = fix_spw_offset(spw, dataset)
     str = @sprintf("%02d", spw)
     if dataset == "100hr"

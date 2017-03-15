@@ -4,7 +4,7 @@ function getdata(spw, dataset="100hr")
 end
 
 function getdata(spw, range, dataset)
-    dadas = listdadas(spw)[range]
+    dadas = listdadas(spw, dataset)[range]
     Ntime = length(range)
     meta = getmeta(spw)
 
