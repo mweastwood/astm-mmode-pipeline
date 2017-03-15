@@ -10,7 +10,7 @@ function fold(spw, data, flags, target)
     normalization = zeros(Int, Nbase, sidereal_day)
     output_data = zeros(Complex128, Nbase, sidereal_day)
     output_flags = trues(Nbase, sidereal_day)
-    flags = apply_special_case_flags(spw, flags)
+    flags = apply_special_case_flags(spw, flags, target)
     for idx = 1:Ntime, α = 1:Nbase
         if !flags[α, idx]
             jdx = mod1(idx, sidereal_day)
@@ -30,10 +30,15 @@ function fold(spw, data, flags, target)
     output_data, output_flags
 end
 
-function apply_special_case_flags(spw, flags)
+function apply_special_case_flags(spw, flags, target)
     myflags = copy(flags)
-    if spw == 18
-        myflags[:, 8590] = true # peeling failure associated with Vir A
+    if !contains(target, "rainy")
+        if spw == 18
+            myflags[:, 3807] = true # Sun
+            myflags[:, 3828] = true # Sun
+            myflags[:, 8590] = true # Vir A
+            myflags[:, 8593] = true # Vir A
+        end
     end
     myflags
 end
