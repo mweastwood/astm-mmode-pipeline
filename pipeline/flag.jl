@@ -32,6 +32,8 @@ function flag!(spw, data, target)
         antennas = sort!(vcat(collect(read_antenna_flags(file) for file in files)...)) :: Vector{Int}
         if target == "raw-visibilities" && spw == 18
             antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
+        elseif target == "raw-rainy-visibilities" && spw == 18
+            antennas = [antennas; 15; 59; 64; 68; 69; 70; 123; 167; 168; 184; 186; 189; 191]
         end
         antennas = unique(antennas)
         for ant1 in antennas, ant2 = 1:Nant
