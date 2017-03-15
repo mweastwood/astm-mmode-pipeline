@@ -33,6 +33,7 @@ function flag!(spw, data, target)
         if target == "raw-visibilities" && spw == 18
             antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
         end
+        antennas = unique(antennas)
         for ant1 in antennas, ant2 = 1:Nant
             if ant1 ≤ ant2
                 α = baseline_index(ant1, ant2)
@@ -47,8 +48,10 @@ function flag!(spw, data, target)
     # baseline flags
     if target == "raw-visibilities"
         files = ["flagsRyan_adjacent.bl", "flagsRyan_score.bl", "flagsMarin.bl"]
+    elseif target == "raw-rainy-visibilities"
+        files = ["rainy.bl"]
     else
-        files = String[]
+        files = ["flagsRyan_adjacent.bl"]
     end
     if length(files) > 0
         baselines = vcat(collect(read_baseline_flags(file) for file in files)...) :: Matrix{Int}
