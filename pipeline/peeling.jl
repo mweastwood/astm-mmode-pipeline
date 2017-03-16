@@ -1,8 +1,9 @@
-function peel(spw)
+function peel(spw, target="rfi-subtracted-calibrated-visiblities")
     dir = getdir(spw)
-    times = load(joinpath(dir, "raw-visibilities.jld"), "times")
-    data, flags = load(joinpath(dir, "rfi-subtracted-calibrated-visibilities.jld"), "data", "flags")
-    peel(spw, times, data, flags)
+    raw_file = replace(replace(target, "calibrated", "raw"), "rfi-subtracted-", "")*".jld"
+    times = load(joinpath(dir, raw_file), "times")
+    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
+    peel(spw, target, times, data, flags)
 end
 
 immutable PeelingData
@@ -16,7 +17,7 @@ immutable PeelingData
     calibrations :: Vector{GainCalibration}
 end
 
-function peel(spw, times, data, flags; istest=false)
+function peel(spw, target, times, data, flags; istest=false)
     Ntime = length(times)
     idx = 1
     nextidx() = (myidx = idx; idx += 1; myidx)
@@ -30,7 +31,7 @@ function peel(spw, times, data, flags; istest=false)
         @async begin
             input  = RemoteChannel()
             output = RemoteChannel()
-            remotecall(peel_worker_loop, worker, spw, input, output)
+            remotecall(peel_worker_loop, worker, spw, input, output, istest)
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
@@ -45,7 +46,8 @@ function peel(spw, times, data, flags; istest=false)
 
     if !istest
         dir = getdir(spw)
-        output_file = joinpath(dir, "peeled-visibilities.jld")
+        output_file = replace(replace(target, "calibrated", "peeled"), "rfi-subtracted-", "")
+        output_file = joinpath(dir, output_file*".jld")
         isfile(output_file) && rm(output_file)
         save(output_file, "times", times, "data", data, "flags", flags,
              "peeling-data", peeling_data, compress=true)
@@ -54,7 +56,7 @@ function peel(spw, times, data, flags; istest=false)
     peeling_data
 end
 
-function peel_worker_loop(spw, input, output)
+function peel_worker_loop(spw, input, output, istest)
     dir = getdir(spw)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
@@ -62,7 +64,7 @@ function peel_worker_loop(spw, input, output)
     while true
         try
             time, data, flags = take!(input)
-            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, sources)
+            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, sources, istest)
             put!(output, (data, flags, peeling_data))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -78,7 +80,7 @@ function peel_worker_loop(spw, input, output)
     end
 end
 
-function peel_do_the_work(time, data, flags, spw, dir, meta, sources)
+function peel_do_the_work(time, data, flags, spw, dir, meta, sources, istest)
     xx = data[1, :]
     yy = data[2, :]
 
@@ -91,7 +93,7 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, sources)
         flags[α] = true
     end
 
-    xx, yy, peeling_data  = rm_sources(time, flags, xx, yy, spw, meta, sources)
+    xx, yy, peeling_data  = rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
 
     data[1, :] = xx
     data[2, :] = yy
@@ -99,7 +101,7 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, sources)
     peeling_data
 end
 
-function rm_sources(time, flags, xx, yy, spw, meta, sources)
+function rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
         visibilities.data[α, 1] = JonesMatrix(xx[α], 0, 0, yy[α])
@@ -113,7 +115,7 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources)
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     peeling_sources, subtraction_sources = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
     calibrations = peel!(visibilities, meta, ConstantBeam(), peeling_sources,
-                         peeliter=5, maxiter=100, tolerance=1e-3, quiet=true)
+                         peeliter=5, maxiter=100, tolerance=1e-3, quiet=!istest)
     subsrc!(visibilities, meta, ConstantBeam(), subtraction_sources)
     data = PeelingData(time, sources, I, Q, directions,
                        peeling_sources, subtraction_sources, calibrations)
@@ -140,6 +142,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
                 push!(subtraction_sources, source)
             end
         elseif source.name == "Vir A" || source.name == "Tau A"
+            I[idx] ≥ 30 || continue
             push!(subtraction_sources, source)
         elseif source.name == "Sun"
             if TTCal.isabovehorizon(frame, source, deg2rad(30))
