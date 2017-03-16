@@ -24,7 +24,7 @@ end
 macro fitrfi_preamble(spw)
     output = quote
         spw = $spw
-        dadas = listdadas(spw)
+        dadas = listdadas(spw, "100hr")
         ms, ms_path = dada2ms(dadas[1])
         finalize(ms)
     end
@@ -126,9 +126,9 @@ end
 
 macro fitrfi_finish()
     output = quote
-        fitrfi_image_visibilities(spw, ms_path, "fitrfi-finish-"*target, meta, visibilities)
         #fitrfi_image_models(spw, ms_path, meta, sources, target)
         fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, target)
+        fitrfi_image_visibilities(spw, ms_path, "fitrfi-finish-"*target, meta, visibilities)
         fitrfi_output(spw, meta, sources, calibrations, target)
     end
     esc(output)
@@ -202,8 +202,8 @@ function fitrfi_spw18(data, flags, target)
     @fitrfi_start 18
     if target == "calibrated-visibilities"
         @fitrfi_construct_sources C A B 2
-    elseif target == "peeled-visibilities"
-        @fitrfi_construct_sources B3 B 3
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 5
     else
         Lumberjack.error("unknown target")
     end
@@ -251,9 +251,9 @@ macro fitrfi_mmodes_start(spw)
     esc(output)
 end
 
-function reconstruct_mmodes(spw)
+function reconstruct_mmodes(spw, mmodes, flags)
     dir = getdir(spw)
-    mmodes, flags = load(joinpath(dir, "mmodes-peeled.jld"), "blocks", "flags")
+    #mmodes, flags = load(joinpath(dir, "mmodes-peeled.jld"), "blocks", "flags")
 
     m = 0
     path = joinpath(dir, "tmp", "updated-block-m=0.jld")
@@ -283,22 +283,17 @@ end
 
 function fitrfi_spw18_mmodes(mmodes, mmode_flags, m)
     @fitrfi_mmodes_start 18
+    bad = (63, 190)
+    for α = 1:Nbase
+        ant1 = meta.baselines[α].antenna1
+        ant2 = meta.baselines[α].antenna2
+        if ant1 in bad || ant2 in bad
+            visibilities.flags[α, 1] = true
+        end
+    end
     if m == 0
-        @fitrfi_construct_sources B3 B 4
-    elseif m == +1
-        @fitrfi_construct_sources A C 2
-    elseif m == -1
-        @fitrfi_construct_sources A C 2
-    elseif m == +2
-        @fitrfi_construct_sources 4
-    elseif m == -2
-        @fitrfi_construct_sources 2
-    elseif m == +3
-        @fitrfi_construct_sources C 3
-    elseif m == -3
-        @fitrfi_construct_sources C 2
-    else
-        @fitrfi_construct_sources 1
+        #@fitrfi_construct_sources 20
+        @fitrfi_construct_sources 5
     end
     @fitrfi_peel_sources
     @fitrfi_finish
