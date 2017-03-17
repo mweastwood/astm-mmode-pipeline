@@ -8,5 +8,5 @@ MACHINEFILE_MAX=../workspace/machine-files/max-processes-each.machinefile
 cd `dirname $0`/../..
 cd pipeline
 $JULIA --machinefile $MACHINEFILE_MAX -e \
-    "reload(\"Pipeline\"); @time Pipeline.getdata($1, \"$2\")"
+    "reload(\"Pipeline\"); @time Pipeline.peel($1, \"$2\")"
 

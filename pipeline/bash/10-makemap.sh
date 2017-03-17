@@ -6,5 +6,5 @@ JULIA=julia-0.5.0
 
 cd `dirname $0`/../..
 $JULIA -e \
-    "include(\"pipeline/Pipeline.jl\"); @time Pipeline.flag($1, \"$2\")"
+    "include(\"pipeline/Pipeline.jl\"); @time Pipeline.makemap($1, \"$2\")"
 
