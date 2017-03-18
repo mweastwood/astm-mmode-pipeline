@@ -115,8 +115,6 @@ macro fitrfi_peel_sources()
 end
 
 function fitrfi_peel(meta, visibilities, sources)
-    println("Sources")
-    println("=======")
     for source in sources
         println(source)
     end
@@ -129,7 +127,7 @@ macro fitrfi_finish()
         #fitrfi_image_models(spw, ms_path, meta, sources, target)
         fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, target)
         fitrfi_image_visibilities(spw, ms_path, "fitrfi-finish-"*target, meta, visibilities)
-        fitrfi_output(spw, meta, sources, calibrations, target)
+        xx, yy = fitrfi_output(spw, meta, sources, calibrations, target)
     end
     esc(output)
 end
@@ -198,107 +196,38 @@ function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations
     end
 end
 
+function fitrfi_spw04(data, flags, target)
+end
+
+function fitrfi_spw06(data, flags, target)
+end
+
+function fitrfi_spw08(data, flags, target)
+end
+
+function fitrfi_spw10(data, flags, target)
+end
+
+function fitrfi_spw12(data, flags, target)
+end
+
+function fitrfi_spw14(data, flags, target)
+end
+
+function fitrfi_spw16(data, flags, target)
+end
+
 function fitrfi_spw18(data, flags, target)
     @fitrfi_start 18
     if target == "calibrated-visibilities"
         @fitrfi_construct_sources C A B 2
     elseif target == "calibrated-rainy-visibilities"
-        @fitrfi_construct_sources 5
+        @fitrfi_construct_sources 3
     else
         Lumberjack.error("unknown target")
     end
     @fitrfi_peel_sources
     @fitrfi_finish
-end
-
-########################################################
-# Peeling from the m-modes instead of the visibilities #
-########################################################
-
-macro fitrfi_mmodes_start(spw)
-    output = quote
-        @fitrfi_preamble $spw
-
-        meta = getmeta(spw)
-        meta.channels = meta.channels[55:55]
-
-        block = mmodes[abs(m)+1]
-        flags = mmode_flags[abs(m)+1]
-        if m > 0
-            block = block[1:2:end]
-            flags = flags[1:2:end]
-        elseif m < 0
-            block = conj(block[2:2:end])
-            flags = flags[2:2:end]
-        end
-
-        Nbase = length(block)
-        visibilities = Visibilities(Nbase, 1)
-        visibilities.flags[:] = true
-        for α = 1:Nbase
-            if !flags[α]
-                xx = block[α]
-                yy = block[α]
-                visibilities.data[α, 1] = JonesMatrix(xx, 0, 0, yy)
-                visibilities.flags[α, 1] = false
-            end
-        end
-        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
-
-        target = @sprintf("mmodes-peeled-m=%+05d", m)
-        fitrfi_image_visibilities(spw, ms_path, "fitrfi-start-"*target, meta, visibilities)
-    end
-    esc(output)
-end
-
-function reconstruct_mmodes(spw, mmodes, flags)
-    dir = getdir(spw)
-    #mmodes, flags = load(joinpath(dir, "mmodes-peeled.jld"), "blocks", "flags")
-
-    m = 0
-    path = joinpath(dir, "tmp", "updated-block-m=0.jld")
-    if isfile(path)
-        newblock = load(path, "block")
-        mmodes[1] = newblock
-    end
-
-    for m = 1:10
-        path = joinpath(dir, "tmp", "updated-block-m=$m.jld")
-        if isfile(path)
-            newblock = load(path, "block")
-            mmodes[m+1][1:2:end] = newblock
-        end
-    end
-
-    for m = -1:-1:-10
-        path = joinpath(dir, "tmp", "updated-block-m=$m.jld")
-        if isfile(path)
-            newblock = load(path, "block")
-            mmodes[abs(m)+1][1:2:end] = conj(newblock)
-        end
-    end
-
-    save(joinpath(dir, "mmodes-cleaned.jld"), "blocks", mmodes, "flags", flags)
-end
-
-function fitrfi_spw18_mmodes(mmodes, mmode_flags, m)
-    @fitrfi_mmodes_start 18
-    bad = (63, 190)
-    for α = 1:Nbase
-        ant1 = meta.baselines[α].antenna1
-        ant2 = meta.baselines[α].antenna2
-        if ant1 in bad || ant2 in bad
-            visibilities.flags[α, 1] = true
-        end
-    end
-    if m == 0
-        #@fitrfi_construct_sources 20
-        @fitrfi_construct_sources 5
-    end
-    @fitrfi_peel_sources
-    @fitrfi_finish
-    block = getfield.(visibilities.data[:, 1], 1)
-    save(joinpath(getdir(spw), "tmp", "updated-block-m=$m.jld"), "block", block)
 end
 
 #function fitrfi_spw04(data, flags)

@@ -48,7 +48,7 @@ function calibrate(spw, target="smoothed-visibilities")
     end
 
     output = replace(target, "smoothed", "calibrated")
-    save(joinpath(dir, output*".jld"), "data", data, "flags", flags, compress=true)
+    save(joinpath(dir, output*".jld"), "times", times, "data", data, "flags", flags, compress=true)
 
     nothing
 end

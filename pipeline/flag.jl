@@ -30,9 +30,9 @@ function flag!(spw, data, target)
     end
     if length(files) > 0
         antennas = sort!(vcat(collect(read_antenna_flags(file) for file in files)...)) :: Vector{Int}
-        if target == "raw-visibilities" && spw == 18
+        if target == "raw-visibilities"
             antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
-        elseif target == "raw-rainy-visibilities" && spw == 18
+        elseif target == "raw-rainy-visibilities"
             antennas = [antennas; 15; 59; 63; 64; 68; 69; 70; 123; 167; 168; 184; 186; 189; 190; 191]
         end
         antennas = unique(antennas)
@@ -57,6 +57,11 @@ function flag!(spw, data, target)
     end
     if length(files) > 0
         baselines = vcat(collect(read_baseline_flags(file) for file in files)...) :: Matrix{Int}
+        if target == "raw-rainy-visibilities" && spw == 18
+            baselines = [baselines; 61 122; 61 122; 61 124; 61 124; 61 241; 61 241; 61 244;
+                         61 244; 122 244; 122 244; 124 185; 124 185; 124 241; 124 241; 124 244;
+                         124 244; 185 244; 185 244; 241 244; 241 244]
+        end
         for idx = 1:size(baselines, 1)
             ant1 = baselines[idx, 1]
             ant2 = baselines[idx, 2]

@@ -70,8 +70,12 @@ include("flag.jl")
 include("sawtooth.jl")
 include("calibrate.jl")
 include("imaging.jl")
+
 include("fitrfi.jl")
+include("fitrfi-special.jl")
+include("fitrfi-mmodes.jl")
 include("subrfi.jl")
+
 include("peeling.jl")
 
 # m-mode analysis
@@ -80,6 +84,8 @@ include("getmmodes.jl")
 include("getalm.jl")
 #include("getmodel.jl")
 include("makemap.jl")
+
+include("experimental.jl")
 
 #include("getsun.jl")
 #include("getdata_experimental.jl")

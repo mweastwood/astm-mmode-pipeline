@@ -1,8 +1,6 @@
 function peel(spw, target="rfi-subtracted-calibrated-visiblities")
     dir = getdir(spw)
-    raw_file = replace(replace(target, "calibrated", "raw"), "rfi-subtracted-", "")*".jld"
-    times = load(joinpath(dir, raw_file), "times")
-    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
+    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
     peel(spw, target, times, data, flags)
 end
 
@@ -47,6 +45,8 @@ function peel(spw, target, times, data, flags; istest=false)
     if !istest
         dir = getdir(spw)
         output_file = replace(replace(target, "calibrated", "peeled"), "rfi-subtracted-", "")
+        output_file = replace(output_file, "rfi-subtracted-", "")
+        output_file = replace(output_file, "twice-", "")
         output_file = joinpath(dir, output_file*".jld")
         isfile(output_file) && rm(output_file)
         save(output_file, "times", times, "data", data, "flags", flags,
@@ -114,6 +114,7 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
 
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     peeling_sources, subtraction_sources = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
+    istest && @show peeling_sources subtraction_sources
     calibrations = peel!(visibilities, meta, ConstantBeam(), peeling_sources,
                          peeliter=5, maxiter=100, tolerance=1e-3, quiet=!istest)
     subsrc!(visibilities, meta, ConstantBeam(), subtraction_sources)
@@ -135,7 +136,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
         TTCal.isabovehorizon(frame, source) || continue
         if source.name == "Cyg A" || source.name == "Cas A"
             I[idx] ≥ 30 || continue
-            if TTCal.isabovehorizon(frame, source, deg2rad(10))
+            if TTCal.isabovehorizon(frame, source, deg2rad(15))
                 push!(peeling_sources, source)
                 push!(fluxes, I[idx])
             else

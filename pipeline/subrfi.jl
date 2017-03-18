@@ -1,10 +1,10 @@
 function subrfi(spw, target="calibrated-visibilities")
     dir = getdir(spw)
-    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
-    subrfi(spw, data, flags, target)
+    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
+    subrfi(spw, times, data, flags, target)
 end
 
-function subrfi(spw, data, flags, target)
+function subrfi(spw, times, data, flags, target)
     Ntime = size(data, 3)
     idx = 1
     nextidx() = (myidx = idx; idx += 1; myidx)
@@ -36,9 +36,13 @@ function subrfi(spw, data, flags, target)
         end
     end
 
-    output_file = joinpath(dir, "rfi-subtracted-$target.jld")
+    if startswith(target, "rfi-subtracted-")
+        output_file = joinpath(dir, "twice-$target.jld")
+    else
+        output_file = joinpath(dir, "rfi-subtracted-$target.jld")
+    end
     isfile(output_file) && rm(output_file)
-    save(output_file, "data", data, "flags", flags,
+    save(output_file, "times", times, "data", data, "flags", flags,
          "xx-rfi-flux", xx_rfi_flux, "yy-rfi-flux", yy_rfi_flux, compress=true)
 
     data, flags
