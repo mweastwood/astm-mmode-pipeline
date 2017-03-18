@@ -7,6 +7,7 @@ MACHINEFILE_ONE=../workspace/machine-files/one-process-each.machinefile
 
 cd `dirname $0`/../..
 cd pipeline
+input="mmodes-peeled-$2"
 $JULIA --machinefile $MACHINEFILE_ONE -e \
-    "reload(\"Pipeline\"); @time Pipeline.getalm($1, \"$2\")"
+    "reload(\"Pipeline\"); @time Pipeline.getalm($1, \"$input\")"
 
