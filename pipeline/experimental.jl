@@ -3,44 +3,23 @@ function experiment()
     dir = getdir(spw)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
-    mmodes = load(joinpath(dir, "mmodes-peeled.jld"), "blocks")
-    block = mmodes[1]
-    integration_flags = load(joinpath(dir, "calibrated-visibilities.jld"), "flags")
-    block_flags = squeeze(all(integration_flags, 2), 2)
 
-    #visibilities = block_to_visibilities(block, block_flags)
-    #TTCal.flag_short_baselines!(visibilities, meta, 15.0)
-    #@fitrfi_construct_sources 20
-    #peel!(visibilities, meta, ConstantBeam(), sources, peeliter=10, maxiter=200, tolerance=1e-5)
-    #block, block_flags = visibilities_to_block(visibilities)
+    # Let's try restoring the RFI to the visibilities before peeling them
+    data, flags = load(joinpath(dir, "peeled-visibilities.jld"), "data", "flags")
+    xx_rfi, yy_rfi = load(joinpath(dir, "calibrated-visibilities-rfi-components.jld"), "xx", "yy")
+    xx_rfi_flux, yy_rfi_flux = load(joinpath(dir, "rfi-subtracted-calibrated-visibilities.jld"),
+                                    "xx-rfi-flux", "yy-rfi-flux")
+    restore_the_rfi(data, xx_rfi, yy_rfi, xx_rfi_flux, yy_rfi_flux)
+    save(joinpath(dir, "rfi-restored-peeled-visibilities.jld"),
+         "data", data, "flags", flags, compress=true)
+end
 
-    square = block_to_square(block, block_flags)
-    D, V = eig(Hermitian(square))
-
-    transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
-    B = transfermatrix[0, 1]
-
-    answers = zeros(256)
-    for component = 1:256
-        myD = copy(D)
-        myD[component] = 0
-        myD[253] = 0
-        myD[251] = 0
-        myD[235] = 0
-        myD[255] = 0
-        myD[241] = 0
-        #myD[237] = 0
-        #myD[55] = 0
-        square = V*diagm(myD)*V'
-        block = square_to_block(square)
-        a = tikhonov(B[!block_flags, :], block[!block_flags], 1e-2)
-        res = sum(abs2(a[100:end])) |> sqrt
-        @show component, res
-        answers[component] = res
-    end
-    components = sortperm(answers)
-    for idx = 1:10
-        @show components[idx] answers[components[idx]]
+function restore_the_rfi(data, xx_rfi, yy_rfi, xx_rfi_flux, yy_rfi_flux)
+    _, Nbase, Ntime = size(data)
+    Nrfi = size(xx_rfi, 2)
+    for idx = 1:Ntime, s = 1:Nrfi, α = 1:Nbase
+        data[1, α, idx] += xx_rfi_flux[s, idx]*xx_rfi[α, s]
+        data[2, α, idx] += yy_rfi_flux[s, idx]*yy_rfi[α, s]
     end
 end
 
