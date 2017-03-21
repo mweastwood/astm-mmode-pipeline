@@ -2,7 +2,7 @@ function calibrate(spw, target="smoothed-visibilities")
     dir = getdir(spw)
     times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
 
-    if target == "smoothed-visibilities"
+    if target == "smoothed-100hr-visibilities"
         day1_calibration_range =  3000: 5500
         day2_calibration_range =  9628:12128
         day3_calibration_range = 16256:18756
