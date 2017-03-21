@@ -57,10 +57,9 @@ function flag!(spw, data, target)
     end
     if length(files) > 0
         baselines = vcat(collect(read_baseline_flags(file) for file in files)...) :: Matrix{Int}
-        if target == "raw-rainy-visibilities" && spw == 18
-            baselines = [baselines; 61 122; 61 122; 61 124; 61 124; 61 241; 61 241; 61 244;
-                         61 244; 122 244; 122 244; 124 185; 124 185; 124 241; 124 241; 124 244;
-                         124 244; 185 244; 185 244; 241 244; 241 244]
+        if target == "raw-rainy-visibilities"
+            baselines = [baselines; 61 122; 61 124; 61 240; 61 241; 61 244; 122 244; 124 185; 124 241;
+                         124 244; 185 244; 241 244]
         end
         for idx = 1:size(baselines, 1)
             ant1 = baselines[idx, 1]
