@@ -85,6 +85,7 @@ include("getalm.jl")
 #include("getmodel.jl")
 include("makemap.jl")
 
+include("bisect.jl")
 include("experimental.jl")
 
 #include("getsun.jl")
