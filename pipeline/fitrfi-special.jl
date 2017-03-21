@@ -50,30 +50,80 @@ function fitrfi_pick_an_integration(spw, times, data, flags, idx)
 end
 
 function fitrfi_special_spw04(times, data, flags, target)
+    @fitrfi_preamble 4
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw06(times, data, flags, target)
+    @fitrfi_preamble 6
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw08(times, data, flags, target)
+    @fitrfi_preamble 8
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw10(times, data, flags, target)
+    @fitrfi_preamble 10
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw12(times, data, flags, target)
+    @fitrfi_preamble 12
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw14(times, data, flags, target)
+    @fitrfi_preamble 14
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw16(times, data, flags, target)
+    @fitrfi_preamble 16
+    output_sources = Source[]
+    output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
+    if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    end
+    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
 function fitrfi_special_spw18(times, data, flags, target)
     @fitrfi_preamble 18
     output_sources = Source[]
     output_calibrations = GainCalibration[]
+    meta = getmeta(spw)
     if target == "rfi-subtracted-calibrated-rainy-visibilities"
         # this component causes peeling to choke on Cas A
         idx = 925

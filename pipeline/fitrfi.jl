@@ -70,8 +70,13 @@ const fitrfi_source_dictionary = Dict(
     :C => (37.24861167954518,  -118.36229648059934, 1232.6294581335637), # Keough's Hot Springs
     :D => (37.06249388547446,  -118.23417138204732, 1608.21583019197),
     # the following locations were eye-balled by Marin
+    :A2 => (37.143397, -118.322727, 1226.709), # another Big Pine source
     :B2 => (37.323000, -118.401953, 1214.248326037079), # the northern most source in the triplet
-    :B3 => (37.320125, -118.377464, 1214.248326037079)  # the middle source in the triplet
+    :B3 => (37.320125, -118.377464, 1214.248326037079), # the middle source in the triplet
+    # fit for with the position fitting routine
+    :A3 => (37.17025133416173,  -118.32196666958995, 1895.923202819064),
+    :B4 => (37.712871601687155, -118.92190463586564, 1647.8143169306663),
+    :E => (37.27751649756355, -118.37534090029699, 726.6254751399765)
 )
 
 function fitrfi_known_source(visibilities, meta, lat, lon, el)
@@ -124,7 +129,7 @@ end
 
 macro fitrfi_finish()
     output = quote
-        #fitrfi_image_models(spw, ms_path, meta, sources, target)
+        fitrfi_image_models(spw, ms_path, meta, sources, target)
         fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, target)
         fitrfi_image_visibilities(spw, ms_path, "fitrfi-finish-"*target, meta, visibilities)
         xx, yy = fitrfi_output(spw, meta, sources, calibrations, target)
@@ -197,29 +202,99 @@ function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations
 end
 
 function fitrfi_spw04(data, flags, target)
+    @fitrfi_start 4
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources B
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 0
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw06(data, flags, target)
+    @fitrfi_start 6
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources B A
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 0
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw08(data, flags, target)
+    @fitrfi_start 8
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources A B
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 1
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw10(data, flags, target)
+    @fitrfi_start 10
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources B 1 A 1 C
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 2
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw12(data, flags, target)
+    @fitrfi_start 12
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources 2 B
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 3
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw14(data, flags, target)
+    @fitrfi_start 14
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources A C 2 B
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 2 E
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw16(data, flags, target)
+    @fitrfi_start 16
+    if target == "calibrated-100hr-visibilities"
+        @fitrfi_construct_sources 1 A 1 B
+    elseif target == "calibrated-rainy-visibilities"
+        @fitrfi_construct_sources 2
+    else
+        Lumberjack.error("unknown target")
+    end
+    @fitrfi_peel_sources
+    @fitrfi_finish
 end
 
 function fitrfi_spw18(data, flags, target)
     @fitrfi_start 18
-    if target == "calibrated-visibilities"
+    if target == "calibrated-100hr-visibilities"
         @fitrfi_construct_sources C A B 2
     elseif target == "calibrated-rainy-visibilities"
         @fitrfi_construct_sources 3
@@ -230,179 +305,33 @@ function fitrfi_spw18(data, flags, target)
     @fitrfi_finish
 end
 
-#function fitrfi_spw04(data, flags)
-#    spw = 4
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 1
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    #lat, lon, el = source_dictionary("A")
-#    #N = 1
-#    #rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-#    #                                                      lat, lon, el, 2, N, checkpoint=false)
-#
-#    rfi = rfi1
-#    calibrations = calibrations1
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
-#    fitrfi_output(spw, meta, rfi1, calibrations)
-#end
-#
-#function fitrfi_spw06(data, flags)
-#    spw = 6
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 1
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("A")
-#    N = 1
-#    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-#                                                          lat, lon, el, 2, N, checkpoint=false)
-#
-#    rfi = [rfi1; rfi2]
-#    calibrations = [calibrations1; calibrations2]
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
-#    fitrfi_output(spw, meta, rfi1, calibrations)
-#end
-#
-#function fitrfi_spw08(data, flags)
-#    spw = 8
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("A")
-#    N = 1
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 1
-#    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-#                                                          lat, lon, el, 2, N, checkpoint=false)
-#
-#    rfi = [rfi1; rfi2]
-#    calibrations = [calibrations1; calibrations2]
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
-#    fitrfi_output(spw, meta, rfi1, calibrations)
-#end
-#
-#function fitrfi_spw10(data, flags)
-#    spw = 10
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 1
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("A")
-#    N = 2
-#    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-#                                                          lat, lon, el, 2, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("C")
-#    N = 2
-#    rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
-#                                                          lat, lon, el, 3, N, checkpoint=false)
-#
-#    rfi = [rfi1; rfi2; rfi3]
-#    calibrations = [calibrations1; calibrations2; calibrations3]
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
-#    fitrfi_output(spw, meta, rfi1, calibrations)
-#end
-#
-#function fitrfi_spw12(data, flags)
-#    spw = 12
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 3
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    rfi = rfi1
-#    calibrations = calibrations1
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
-#    fitrfi_output(spw, meta, rfi1, calibrations)
-#end
-#
-#function fitrfi_spw14(data, flags)
-#    spw = 14
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("A")
-#    N = 1
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("C")
-#    N = 1
-#    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-#                                                          lat, lon, el, 2, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 3
-#    rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
-#                                                          lat, lon, el, 3, N, checkpoint=true)
-#
-#    rfi = [rfi1; rfi2; rfi3]
-#    calibrations = [calibrations1; calibrations2; calibrations3]
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, rfi, calibrations)
-#    fitrfi_output(spw, meta, rfi1, calibrations)
-#end
-#
-#function fitrfi_spw16(data, flags)
-#    spw = 16
-#    dadas = listdadas(spw)
-#    ms, ms_path = dada2ms(dadas[1])
-#    finalize(ms)
-#
-#    meta, visibilities0 = fitrfi_start(spw, data, flags, ms_path, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("A")
-#    N = 2
-#    rfi1, visibilities1, calibrations1 = fitrfi_do_source(spw, meta, visibilities0, ms_path,
-#                                                          lat, lon, el, 1, N, checkpoint=true)
-#
-#    lat, lon, el = source_dictionary("B")
-#    N = 2
-#    rfi2, visibilities2, calibrations2 = fitrfi_do_source(spw, meta, visibilities1, ms_path,
-#                                                          lat, lon, el, 2, N, checkpoint=true)
-#
-#    #lat, lon, el = source_dictionary("D")
-#    #N = 2
-#    #rfi3, visibilities3, calibrations3 = fitrfi_do_source(spw, meta, visibilities2, ms_path,
-#    #                                                      lat, lon, el, 3, N, checkpoint=false)
-#
-#    fitrfi_image_corrupted_models(spw, ms_path, meta, [rfi1; rfi2], [calibrations1; calibrations2])
-#    fitrfi_output(spw, meta, [rfi1; rfi2], [calibrations1; calibrations2])
-#end
+"""
+    fitrfi_get_new_coordinates(spw, data, flags, lat, lon, el)
+
+Fit for the coordinates of a new RFI source in the given data.
+"""
+function fitrfi_get_new_coordinates(spw, data, flags, lat, lon, el)
+    meta, visibilities = fitrfi_sum_the_visibilities(spw, data, flags)
+
+    opt = Opt(:LN_SBPLX, 3)
+    max_objective!(opt, (x, g)->fitrfi_objective_function(visibilities, meta, x[1], x[2], x[3]))
+    lower_bounds!(opt, [lat-1, lon-1, 0])
+    upper_bounds!(opt, [lat+1, lon+1, 3000])
+    xtol_rel!(opt, 1e-15)
+    ftol_rel!(opt, 1e-10)
+    minf, x, ret = optimize(opt, [lat, lon, el])
+
+    lat = x[1]
+    lon = x[2]
+    el = x[3]
+    @show minf lat lon el ret
+end
+
+function fitrfi_objective_function(visibilities, meta, lat, lon, el)
+    position = Position(pos"WGS84", el*meters, lon*degrees, lat*degrees)
+    spectrum = RFISpectrum(meta.channels, [one(StokesVector)])
+    rfi = RFISource("RFI", position, spectrum)
+    flux = StokesVector(getspec(visibilities, meta, rfi)[1]).I
+    flux
+end
 
