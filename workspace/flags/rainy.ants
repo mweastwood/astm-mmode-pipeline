@@ -1,89 +1,54 @@
-1
-15
-16
-44
-45
-53
-54
-57
-58
-59
-60
-62
-63
-64
-68
-69
-70
-73
-74
-75
-76
-77
-78
-79
-80
-82
-83
-88
-89
-92
-105
-106
-107
-108
-109
-110
-111
-112
-121
-123
-126
-127
-128
-129
-136
-146
-149
-158
-162
-165
-167
-168
-169
-173
-178
-179
-180
-184
-186
-187
-188
-189
-190
-191
-192
-198
-202
-210
-211
-220
-221
-222
-223
-225
-226
-228
-237
-239
-243
-247
-248
-249
-250
-251
-252
-253
-254
-255
-256
+1 # spikes
+10 # time-series of B is shitty
+57 # off
+58 # off
+60 # off
+62 # A off
+73 # A off
+75 # ARX pickup
+76 # ARX pickup
+77 # ARX pickup
+78 # ARX pickup
+79 # ARX pickup
+83 # B off
+88 # B off
+105 # A shitty, B off
+106 # weird spectrum
+108 # B weird
+114 # ARX pickup
+115 # ARX pickup
+116 # ARX pickup
+117 # ARX pickup
+118 # ARX pickup
+119 # ARX pickup
+127 # B off
+128 # off
+129 # spikes
+146 # B off
+149 # B off
+158 # B off
+162 # B off
+165 # spikes
+169 # B off
+173 # A off
+179 # off
+184 # B weird
+187 # off
+198 # A off
+220 # A off
+221 # A off
+223 # off
+225 # B turns off periodically
+226 # off
+237 # B off
+239 # A off
+247 # LEDA
+248 # LEDA
+249 # LEDA
+250 # LEDA
+251 # LEDA
+252 # LEDA
+253 # LEDA
+254 # LEDA
+255 # LEDA
+256 # LEDA
