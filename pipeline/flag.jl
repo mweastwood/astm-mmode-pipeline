@@ -1,28 +1,30 @@
-function flag(spw, target="raw-visibilities")
+function flag(spw, input)
     dir = getdir(spw)
-    times, data = load(joinpath(dir, target*".jld"), "times", "data")
-    flags = flag!(spw, data, target)
-    save(joinpath(dir, "flagged-$target.jld"),
+    times, data = load(joinpath(dir, input*".jld"), "times", "data")
+    flags = flag!(spw, data, input)
+    save(joinpath(dir, "flagged-$input.jld"),
          "times", times, "data", data, "flags", flags, compress=true)
+    save(joinpath(dir, "flagged-autos-$input.jld"),
+         "data", just_the_autos(data), "flags", just_the_auto_flags(flags), compress=true)
 end
 
 """
-    flag!(spw, data, target)
+    flag!(spw, data, input)
 
 Apply a set of a priori antenna and baseline flags. Additionally look for and flag extremely
 egregious integrations.
 
 This function will modify the input `data` by zero-ing out the flagged pieces.
 """
-function flag!(spw, data, target)
+function flag!(spw, data, input)
     _, Nbase, Ntime = size(data)
     Nant = Nbase2Nant(Nbase)
     flags = zeros(Bool, Nbase, Ntime)
 
     # antenna flags
-    if target == "raw-100hr-visibilities"
+    if input == "raw-100hr-visibilities"
         file = "100hr.ants"
-    elseif target == "raw-rainy-visibilities"
+    elseif input == "raw-rainy-visibilities"
         file = "rainy.ants"
     else
         file = ""
@@ -36,16 +38,15 @@ function flag!(spw, data, target)
                 α = baseline_index(ant2, ant1)
             end
             flags[α, :] = true
-            data[:, α, :] = 0
         end
     else
         Lumberjack.warn("no antenna flags applied")
     end
 
     # baseline flags
-    if target == "raw-100hr-visibilities"
+    if input == "raw-100hr-visibilities"
         file = "100hr.bl"
-    elseif target == "raw-rainy-visibilities"
+    elseif input == "raw-rainy-visibilities"
         file = "rainy.bl"
     else
         file = ""
@@ -57,7 +58,6 @@ function flag!(spw, data, target)
             ant2 = baselines[idx, 2]
             α = baseline_index(ant1, ant2)
             flags[α, :] = true
-            data[:, α, :] = 0
         end
     else
         Lumberjack.warn("no baseline flags applied")
@@ -106,12 +106,10 @@ function do_integration_flags!(flags, data)
                 for ant1 = 1:ant
                     α = baseline_index(ant1, ant)
                     flags[α, idx] = true
-                    data[:, α, idx] = 0
                 end
                 for ant2 = ant+1:Nant
                     α = baseline_index(ant, ant2)
                     flags[α, idx] = true
-                    data[:, α, idx] = 0
                 end
             end
         end
@@ -120,7 +118,6 @@ function do_integration_flags!(flags, data)
     for idx = 1:Ntime
         if votes[idx] / total[idx] > 0.05
             flags[:, idx] = true
-            data[:, :, idx] = 0
         end
     end
 end
