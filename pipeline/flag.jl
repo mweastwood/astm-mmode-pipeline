@@ -20,22 +20,15 @@ function flag!(spw, data, target)
     flags = zeros(Bool, Nbase, Ntime)
 
     # antenna flags
-    if target == "raw-visibilities"
-        files = ["coreflags_arxpickup.ants", "coreflags_gregg.ants", "coreflags_nosignal.ants",
-                 "expansionflags.ants", "ledaants.ants", "flagsRyan.ants", "flagsMarin.ants"]
+    if target == "raw-100hr-visibilities"
+        file = "100hr.ants"
     elseif target == "raw-rainy-visibilities"
-        files = ["rainy.ants"]
+        file = "rainy.ants"
     else
-        files = String[]
+        file = ""
     end
-    if length(files) > 0
-        antennas = sort!(vcat(collect(read_antenna_flags(file) for file in files)...)) :: Vector{Int}
-        if target == "raw-visibilities"
-            antennas = [antennas; 59; 60; 61; 62; 63; 64] # see email sent 2017/02/07 12:18am
-        elseif target == "raw-rainy-visibilities"
-            antennas = [antennas; 15; 59; 63; 64; 68; 69; 70; 123; 167; 168; 184; 186; 189; 190; 191]
-        end
-        antennas = unique(antennas)
+    if file != ""
+        antennas = read_antenna_flags(file)
         for ant1 in antennas, ant2 = 1:Nant
             if ant1 ≤ ant2
                 α = baseline_index(ant1, ant2)
@@ -45,6 +38,8 @@ function flag!(spw, data, target)
             flags[α, :] = true
             data[:, α, :] = 0
         end
+    else
+        Lumberjack.warn("no antenna flags applied")
     end
 
     # baseline flags
@@ -133,7 +128,7 @@ function do_integration_flags!(flags, data)
 end
 
 function read_antenna_flags(filename)
-    flags = readcsv(joinpath(workspace, "flags", filename), Int) + 1
+    flags = readdlm(joinpath(workspace, "flags", filename), Int)
     reshape(flags, length(flags))
 end
 
