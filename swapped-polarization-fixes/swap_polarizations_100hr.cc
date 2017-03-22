@@ -1,9 +1,11 @@
-// swap_polarizations_from_delay_bug.cc
+// swap_polarizations_100hr.cc
 // author: Michael Eastwood
 //
-// This program fixes an error in the March 19, 2016 run where antennas
-// that were given an odd delay (ie. the number of samples was odd) had
-// their polarizations swapped.
+// This program fixes an error in the March 19, 2016 "100 hr run" where antennas that were given an
+// odd delay (ie. the number of samples was odd) had their polarizations swapped.
+//
+// We will also apply an additional polarization swap to a number of antennas that seem to have a
+// polarization swap unrelated to the delay firmware.
 
 #include <iostream>
 #include <string>
@@ -74,6 +76,13 @@ int main(int argc, char* argv[]) {
 
     // this list was given to me by Marin
     bool swap[256] = {1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1};
+
+    // in addition to the polarizations that were swapped due to a bug in the firmware for applying
+    // delays, there are some antennas that seem to have an additional polarization swap (presumably
+    // to some swapped cables)
+    swap[120] = !swap[120];
+    swap[185] = !swap[185];
+    swap[186] = !swap[186];
 
     IPosition shape = data.shape();
     for (int baseline = 0; baseline < shape[2]; ++baseline) {
