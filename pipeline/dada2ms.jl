@@ -27,43 +27,39 @@ function listdadas(spw, dataset)
     files
 end
 
-# Data from the 100 hour run had a bug in the FPGA firmware coarse delays that ended up swapping the
-# polarizations on some lines.
-are_pols_swapped(dataset) = dataset == "100hr"
-
 # The rainy data is offset from the 100 hour run by one spectral window.
 fix_spw_offset(spw, dataset) = dataset == "rainy"? spw - 1 : spw
 
-function dada2ms_core(dada::AbstractString, ms, swap_polarizations=true)
-    if swap_polarizations
-        run(`dada2ms-mwe $dada $ms`)
-        run(`swap_polarizations_from_delay_bug $ms`)
-    else
-        run(`dada2ms-mwe $dada $ms`)
-    end
+function dada2ms_core(dada::AbstractString, ms, dataset)
+    run(`dada2ms-mwe $dada $ms`)
+
+    # swap mixed up polarizations
+    dir = dirname(@__FILE__)
+    cmd = joinpath(dir, "../swapped-polarization-fixes/swap-polarizations-$dataset")
+    run(`$cmd $ms`)
 end
 
-function dada2ms_core(dada::Vector, ms, swap_polarizations=true)
-    if swap_polarizations
-        run(`dada2ms-mwe --onespw $dada $ms`)
-        run(`swap_polarizations_from_delay_bug $ms`)
-    else
-        run(`dada2ms-mwe --onespw $dada $ms`)
-    end
+function dada2ms_core(dada::Vector, ms, dataset)
+    run(`dada2ms-mwe --onespw $dada $ms`)
+
+    # swap mixed up polarizations
+    dir = dirname(@__FILE__)
+    cmd = joinpath(dir, "../swapped-polarization-fixes/swap-polarizations-$dataset")
+    run(`$cmd $ms`)
 end
 
-function dada2ms(dada; swap_polarizations=true)
+function dada2ms(dada, dataset)
     isdir(tempdir) || mkdir(tempdir)
     path = joinpath(tempdir, replace(basename(dada), "dada", "ms"))
-    dada2ms_core(dada, path, swap_polarizations)
+    dada2ms_core(dada, path, dataset)
     Table(ascii(path)), path
 end
 
-function dada2ms(spw::Int, dada; swap_polarizations=true)
+function dada2ms(spw::Int, dada, dataset)
     output = replace(basename(dada), "dada", "ms")
     output = @sprintf("spw%02d-%s", spw, output)
     path = joinpath(tempdir, output)
-    dada2ms_core(dada, path, swap_polarizations)
+    dada2ms_core(dada, path, dataset)
     Table(ascii(path)), path
 end
 

@@ -37,7 +37,7 @@ function getdata(spw, range, dataset)
 
     dir = getdir(spw)
     output_file = joinpath(dir, "raw-$dataset-visibilities.jld")
-    save(output_file, "times", times, "data", data, compress=true)
+    save(output_file, "times", times, "data", data, "dataset", dataset, compress=true)
 
     nothing
 end
@@ -62,7 +62,7 @@ end
 function getdata_do_the_work(dataset, dada)
     local time, output
     try
-        ms, path = dada2ms(dada, swap_polarizations=are_pols_swapped(dataset))
+        ms, path = dada2ms(dada, dataset)
         data = ms["DATA"] :: Array{Complex64, 3}
         time = ms["TIME", 1] :: Float64
 
