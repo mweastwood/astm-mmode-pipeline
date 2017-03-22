@@ -1,4 +1,4 @@
-// swap_polarizations_100hr.cc
+// swap-polarizations-100hr.cc
 // author: Michael Eastwood
 //
 // This program fixes an error in the March 19, 2016 "100 hr run" where antennas that were given an

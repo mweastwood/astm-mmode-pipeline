@@ -3,13 +3,13 @@
 CASACORE_INC_DIR := /opt/astro/casacore-1.7.0/include/casacore
 CASACORE_LIB_DIR := /opt/astro/casacore-1.7.0/lib
 
-all: swap_polarizations_100hr
+all: swap-polarizations-100hr
 
-swap_polarizations_100hr: swap_polarizations_100hr.cc
+swap-polarizations-100hr: swap-polarizations-100hr.cc
 	g++ -O3 -std=c++11 -I$(CASACORE_INC_DIR) -L$(CASACORE_LIB_DIR) \
-		-o swap_polarizations_100hr swap_polarizations_100hr.cc \
+		-o swap-polarizations-100hr swap-polarizations-100hr.cc \
 		-lcasa_casa -lcasa_tables -lcasa_ms
 
 clean:
-	rm swap_polarizations_100hr
+	rm swap-polarizations-100hr
 
