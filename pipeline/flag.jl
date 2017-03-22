@@ -43,19 +43,15 @@ function flag!(spw, data, target)
     end
 
     # baseline flags
-    if target == "raw-visibilities"
-        files = ["flagsRyan_adjacent.bl", "flagsRyan_score.bl", "flagsMarin.bl"]
+    if target == "raw-100hr-visibilities"
+        file = "100hr.bl"
     elseif target == "raw-rainy-visibilities"
-        files = ["rainy.bl"]
+        file = "rainy.bl"
     else
-        files = ["flagsRyan_adjacent.bl"]
+        file = ""
     end
-    if length(files) > 0
-        baselines = vcat(collect(read_baseline_flags(file) for file in files)...) :: Matrix{Int}
-        if target == "raw-rainy-visibilities"
-            baselines = [baselines; 61 122; 61 124; 61 240; 61 241; 61 244; 122 244; 124 185; 124 241;
-                         124 244; 185 244; 241 244]
-        end
+    if file != ""
+        baselines = read_baseline_flags(file)
         for idx = 1:size(baselines, 1)
             ant1 = baselines[idx, 1]
             ant2 = baselines[idx, 2]
@@ -63,6 +59,8 @@ function flag!(spw, data, target)
             flags[α, :] = true
             data[:, α, :] = 0
         end
+    else
+        Lumberjack.warn("no baseline flags applied")
     end
 
     # integration flags
@@ -127,20 +125,14 @@ function do_integration_flags!(flags, data)
     end
 end
 
-function read_antenna_flags(filename)
+function read_antenna_flags(filename) :: Vector{Int}
     flags = readdlm(joinpath(workspace, "flags", filename), Int)
     reshape(flags, length(flags))
 end
 
-function read_baseline_flags(filename)
-    flags = readdlm(joinpath(workspace, "flags", filename), '&', Int) + 1
+function read_baseline_flags(filename) :: Matrix{Int}
+    flags = readdlm(joinpath(workspace, "flags", filename), '&', Int)
     flags
-end
-
-function read_channel_flags(filename, spw)
-    flags = readdlm(joinpath(workspace, "flags", filename), ':', Int)
-    keep = flags[:,1] .== spw
-    flags[keep, 2] + 1
 end
 
 """
