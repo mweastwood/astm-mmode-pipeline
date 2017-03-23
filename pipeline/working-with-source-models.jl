@@ -3,18 +3,21 @@
 
 function update_source_list(data, meta, sources)
     N = length(sources)
-    updated_sources = Vector{Source}(N)
     I = zeros(N)
     Q = zeros(N)
     directions = Vector{Direction}(N)
+    update_source_list_in_place(data, meta, deepcopy(sources), I, Q, directions)
+end
+
+function update_source_list_in_place(data, meta, sources, I, Q, directions)
     for (idx, source) in enumerate(sources)
         _source, _I, _Q, _dir = update(data, meta, source)
-        updated_sources[idx] = _source
+        sources[idx] = _source
         I[idx] = _I
         Q[idx] = _Q
         directions[idx] = _dir
     end
-    updated_sources, I, Q, directions
+    sources, I, Q, directions
 end
 
 function getflux(data, meta, source)
