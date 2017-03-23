@@ -25,7 +25,7 @@ macro fitrfi_preamble(spw)
     output = quote
         spw = $spw
         dadas = listdadas(spw, "100hr")
-        ms, ms_path = dada2ms(dadas[1])
+        ms, ms_path = dada2ms(dadas[1], "100hr")
         finalize(ms)
     end
     esc(output)
