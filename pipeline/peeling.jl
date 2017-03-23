@@ -10,8 +10,8 @@ immutable PeelingData
     I :: Vector{Float64}
     Q :: Vector{Float64}
     directions :: Vector{Direction}
-    peeling_sources :: Vector{Source}
-    subtraction_sources :: Vector{Source}
+    to_peel :: Vector{Int}
+    to_sub :: Vector{Int}
     calibrations :: Vector{GainCalibration}
 end
 
@@ -80,7 +80,8 @@ function peel_worker_loop(spw, input, output, istest)
     end
 end
 
-function peel_do_the_work(time, data, flags, spw, dir, meta, sources, istest)
+function peel_do_the_work(time, data, flags, spw, dir, meta, sources,
+                          istest, dopeeling=true, dosubtraction=true)
     xx = data[1, :]
     yy = data[2, :]
 
@@ -93,7 +94,8 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, sources, istest)
         flags[α] = true
     end
 
-    xx, yy, peeling_data  = rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
+    xx, yy, peeling_data = rm_sources(time, flags, xx, yy, spw, meta, sources,
+                                      istest, dopeeling, dosubtraction)
 
     data[1, :] = xx
     data[2, :] = yy
@@ -101,7 +103,8 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, sources, istest)
     peeling_data
 end
 
-function rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
+function rm_sources(time, flags, xx, yy, spw, meta, sources,
+                    istest, dopeeling, dosubtraction)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
         visibilities.data[α, 1] = JonesMatrix(xx[α], 0, 0, yy[α])
@@ -113,13 +116,29 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
     sources = [sources; sun]
 
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
-    peeling_sources, subtraction_sources = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
-    istest && @show peeling_sources subtraction_sources
-    calibrations = peel!(visibilities, meta, ConstantBeam(), peeling_sources,
-                         peeliter=5, maxiter=100, tolerance=1e-3, quiet=!istest)
-    subsrc!(visibilities, meta, ConstantBeam(), subtraction_sources)
+    names = getfield.(sources, 1)
+    to_peel, to_sub = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
+    istest && @show sources[to_peel] sources[to_sub]
+
+    if dopeeling
+        calibrations = peel!(visibilities, meta, ConstantBeam(), sources[to_peel],
+                             peeliter=5, maxiter=100, tolerance=1e-3, quiet=!istest)
+    else
+        calibrations = GainCalibration[]
+    end
+    if dosubtraction
+        # re-fit all of the sources before subtracting
+        if "Sun" in names[to_sub]
+            idx = "Sun" .== names
+            sources[idx] = fit_sun(meta, visibilities)
+        end
+        update_source_list_in_place(visibilities, meta, @view(sources[to_sub]),
+                                    @view(I[to_sub]), @view(Q[to_sub]), @view(directions[to_sub]))
+        istest && @show sources[to_sub]
+        subsrc!(visibilities, meta, ConstantBeam(), sources[to_sub])
+    end
     data = PeelingData(time, sources, I, Q, directions,
-                       peeling_sources, subtraction_sources, calibrations)
+                       to_peel, to_sub, calibrations)
 
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
@@ -127,8 +146,8 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources, istest)
 end
 
 function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
-    peeling_sources = Source[]
-    subtraction_sources = Source[]
+    to_peel = Int[]
+    to_sub  = Int[]
     fluxes = Float64[] # keep track of peeling source fluxes to sort in order of decreasing flux
     frame = TTCal.reference_frame(meta)
     for idx = 1:length(sources)
@@ -137,25 +156,40 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
         if source.name == "Cyg A" || source.name == "Cas A"
             I[idx] ≥ 30 || continue
             if TTCal.isabovehorizon(frame, source, deg2rad(15))
-                push!(peeling_sources, source)
+                push!(to_peel, idx)
                 push!(fluxes, I[idx])
             else
-                push!(subtraction_sources, source)
+                push!(to_sub, idx)
             end
-        elseif source.name == "Vir A" || source.name == "Tau A"
+        elseif source.name == "Vir A"
             I[idx] ≥ 30 || continue
-            push!(subtraction_sources, source)
+            if TTCal.isabovehorizon(frame, source, deg2rad(30))
+                push!(to_peel, idx)
+                push!(fluxes, I[idx])
+            else
+                push!(to_sub, idx)
+            end
+        elseif source.name == "Tau A"
+            I[idx] ≥ 30 || continue
+            push!(to_sub, idx)
         elseif source.name == "Sun"
             if TTCal.isabovehorizon(frame, source, deg2rad(30))
-                push!(peeling_sources, source)
+                push!(to_peel, idx)
                 push!(fluxes, I[idx])
             else
-                push!(subtraction_sources, source)
+                push!(to_sub, idx)
             end
         end
     end
     perm = sortperm(fluxes, rev=true)
-    peeling_sources[perm], subtraction_sources
+    to_peel[perm], to_sub
+end
+
+function fit_sun(meta, visibilities)
+    xx = getfield.(visibilities.data[:, 1], 1)
+    yy = getfield.(visibilities.data[:, 1], 4)
+    flags = visibilities.flags[:, 1]
+    fit_sun(meta, xx, yy, flags)
 end
 
 function fit_sun(meta, xx, yy, flags)
@@ -163,7 +197,7 @@ function fit_sun(meta, xx, yy, flags)
     frame = TTCal.reference_frame(meta)
     output = Source[]
     if TTCal.isabovehorizon(frame, dir) && !all(flags)
-        sun = fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(0.2))
+        sun = fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(0.1))
         push!(output, sun)
     end
     output
