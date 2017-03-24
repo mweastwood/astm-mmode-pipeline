@@ -12,6 +12,20 @@ function bisect_cas(spw, target, output="/tmp")
     bisect(spw, times, data, flags, direction, "cas", output)
 end
 
+function bisect_vir(spw, target, output="/tmp")
+    dir = getdir(spw)
+    @time times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
+    direction = Direction(dir"J2000", "12h30m49.42338s", "+12d23m28.0439s")
+    bisect(spw, times, data, flags, direction, "vir", output)
+end
+
+function bisect_sun(spw, target, output="/tmp")
+    dir = getdir(spw)
+    @time times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
+    direction = Direction(dir"SUN")
+    bisect(spw, times, data, flags, direction, "sun", output)
+end
+
 function bisect(spw, times, data, flags, direction, name, output="/tmp")
     dir = getdir(spw)
     range = 1:length(times)
@@ -25,8 +39,10 @@ function bisect(spw, times, data, flags, direction, name, output="/tmp")
         @time image_with_new_phase_center(spw, times, data, flags, range2, direction,
                                           joinpath(dir, "tmp", "$name-range2"))
 
-        run(`scp $(joinpath(dir, "tmp", "$name-range1.fits")) mweastwood@smaug.caltech.edu:$output`)
-        run(`scp $(joinpath(dir, "tmp", "$name-range2.fits")) mweastwood@smaug.caltech.edu:$output`)
+        if output != ""
+            run(`scp $(joinpath(dir, "tmp", "$name-range1.fits")) mweastwood@smaug.caltech.edu:$output`)
+            run(`scp $(joinpath(dir, "tmp", "$name-range2.fits")) mweastwood@smaug.caltech.edu:$output`)
+        end
 
         while true
             print("1 or 2? ")
