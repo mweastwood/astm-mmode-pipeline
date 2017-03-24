@@ -14,8 +14,7 @@ end
 
 function smeared_image_cas_a(spw, filename="calibrated-visibilities")
     dir = getdir(spw)
-    times = load(joinpath(dir, "raw-visibilities.jld"), "times")
-    data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
+    times, data, flags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
     _, Nbase, Ntime = size(data)
     output = joinpath(dir, "smeared-cas-a-"*filename)
     image_with_new_phase_center(spw, times, data, flags, 1:Ntime,
@@ -24,8 +23,7 @@ end
 
 function smeared_image_cyg_a(spw, filename="calibrated-visibilities")
     dir = getdir(spw)
-    times = load(joinpath(dir, "raw-visibilities.jld"), "times")
-    data, flags = load(joinpath(dir, filename*".jld"), "data", "flags")
+    times, data, flags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
     _, Nbase, Ntime = size(data)
     output = joinpath(dir, "smeared-cyg-a-"*filename)
     image_with_new_phase_center(spw, times, data, flags, 1:Ntime,
@@ -51,8 +49,8 @@ function image(spw, data, flags, range, image_path; minuvw=0)
         end
     end
 
-    dadas = listdadas(spw)[range]
-    ms, ms_path = dada2ms(dadas[1])
+    dadas = listdadas(spw, "100hr")[range]
+    ms, ms_path = dada2ms(dadas[1], "100hr")
     TTCal.write(ms, "DATA", output)
     finalize(ms)
     wsclean(ms_path, image_path, j=8, minuvw=minuvw)
@@ -93,8 +91,8 @@ function image_with_new_phase_center(spw, times, data, flags, range, phase_cente
         end
     end
 
-    dadas = listdadas(spw)[range]
-    ms, ms_path = dada2ms(dadas[1])
+    dadas = listdadas(spw, "100hr")[range]
+    ms, ms_path = dada2ms(dadas[1], "100hr")
     TTCal.write(ms, "DATA", output)
     finalize(ms)
     wsclean(ms_path, image_path, j=8)
@@ -128,8 +126,8 @@ function image_mmodes(spw, target="mmodes-peeled", m=0)
         end
     end
 
-    dadas = listdadas(spw)[1]
-    ms, ms_path = dada2ms(dadas)
+    dadas = listdadas(spw, "100hr")[1]
+    ms, ms_path = dada2ms(dadas, "100hr")
     TTCal.write(ms, "DATA", output)
     finalize(ms)
     image_path = joinpath(dir, "tmp", "image-$target-m=$m")
