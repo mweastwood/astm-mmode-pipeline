@@ -14,6 +14,10 @@ using NLopt
 using Dierckx
 #using Interpolations
 
+if nworkers() == 1
+    using PyPlot
+end
+
 const tempdir = "/dev/shm/mweastwood"
 const basedir = joinpath(dirname(@__FILE__), "..")
 const workspace = joinpath(basedir, "workspace")
@@ -86,6 +90,8 @@ include("getalm.jl")
 include("makemap.jl")
 
 include("bisect.jl")
+include("interactive-baseline-flags.jl")
+include("inspect-integration.jl")
 include("experimental.jl")
 
 #include("getsun.jl")

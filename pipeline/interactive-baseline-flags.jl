@@ -1,8 +1,8 @@
-function interactive_baseline_flags_setup(filename)
+function interactive_baseline_flags_setup(spws, filename)
     xx = Dict{Int, Vector{Complex128}}()
     yy = Dict{Int, Vector{Complex128}}()
     flags = Dict{Int, Vector{Bool}}()
-    for spw = 4:2:18
+    for spw in spws
         dir = getdir(spw)
         mydata, myflags = load(joinpath(dir, filename*".jld"), "data", "flags")
         summed_mydata = squeeze(sum(mydata, 3), 3)
@@ -15,11 +15,59 @@ function interactive_baseline_flags_setup(filename)
     xx, yy, flags, b
 end
 
-function interactive_baseline_flags_plot(xx, yy, flags, b)
+function interactive_baseline_flags_setup(spws, filename, direction)
+    xx = Dict{Int, Vector{Complex128}}()
+    yy = Dict{Int, Vector{Complex128}}()
+    flags = Dict{Int, Vector{Bool}}()
+    for spw in spws
+        dir = getdir(spw)
+        meta = getmeta(spw)
+        mytimes, mydata, myflags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
+        _xx, _yy, _flags = sum_with_new_phase_center(spw, mytimes, mydata, myflags, direction)
+        xx[spw] = _xx
+        yy[spw] = _yy
+        flags[spw] = _flags
+    end
+    b = getbaselinelengths()
+    xx, yy, flags, b
+end
+
+function sum_with_new_phase_center(spw, times, data, flags, direction)
+    meta = getmeta(spw)
+    meta.channels = meta.channels[55:55]
+    meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+    center = PointSource("phase center", direction, PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
+
+    _, Nbase, Ntime = size(data)
+    output_xx = zeros(Complex128, Nbase)
+    output_yy = zeros(Complex128, Nbase)
+    output_flags = ones(Bool, Nbase)
+    for idx = 1:Ntime
+        meta.time = Epoch(epoch"UTC", times[idx]*seconds)
+        frame = TTCal.reference_frame(meta)
+        if TTCal.isabovehorizon(frame, center)
+            model = genvis(meta, [center])
+            for α = 1:Nbase
+                if !flags[α, idx]
+                    xx = data[1, α, idx]
+                    yy = data[2, α, idx]
+                    J = JonesMatrix(xx, 0, 0, yy)
+                    J /= model.data[α, 1]
+                    output_xx[α] += J.xx
+                    output_yy[α] += J.yy
+                    output_flags[α] = false
+                end
+            end
+        end
+    end
+    output_xx, output_yy, output_flags
+end
+
+function interactive_baseline_flags_plot(spws, xx, yy, flags, b)
     figure(1); clf()
     xrange = (0, 1500)
     yrange = (0, 0)
-    for spw = 4:2:18
+    for spw in spws
         f = flags[spw]
         f = f | (b.==0)
         x = abs(xx[spw][!f])
@@ -46,7 +94,7 @@ function interactive_baseline_flags_plot(xx, yy, flags, b)
         nearest_ant1 = 0
         nearest_ant2 = 0
         nearest_distance = Inf
-        for spw = 4:2:18
+        for spw in spws
             f = flags[spw]
             f = f | (b.==0)
             x = abs(xx[spw][!f])
@@ -70,7 +118,7 @@ function interactive_baseline_flags_plot(xx, yy, flags, b)
                 nearest_ant2 = ant2[!f][yidx]
             end
         end
-        @printf("+ spw%02d %s %d&%d\n", nearest_spw, nearest_pol, nearest_ant1, nearest_ant2)
+        @printf("@ spw%02d %d&%d\n", nearest_spw, nearest_ant1, nearest_ant2)
     end
 
     function process_event(event)
