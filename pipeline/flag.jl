@@ -30,34 +30,26 @@ function flag!(spw, data, input)
         file = ""
     end
     if file != ""
-        antennas = read_antenna_flags(file)
-        for ant1 in antennas, ant2 = 1:Nant
-            if ant1 ≤ ant2
-                α = baseline_index(ant1, ant2)
-            else
-                α = baseline_index(ant2, ant1)
-            end
-            flags[α, :] = true
-        end
+        apply_antenna_flags!(flags, file)
     else
         Lumberjack.warn("no antenna flags applied")
     end
 
     # baseline flags
     if input == "raw-100hr-visibilities"
-        file = "100hr.bl"
+        files = ["100hr.bl"]
     elseif input == "raw-rainy-visibilities"
-        file = "rainy.bl"
+        files = ["rainy.bl"]
+        file = @sprintf("rainy-spw%02d.bl", spw)
+        if isfile(joinpath(workspace, "flags", file))
+            push!(files, file)
+        end
     else
-        file = ""
+        files = String[]
     end
-    if file != ""
-        baselines = read_baseline_flags(file)
-        for idx = 1:size(baselines, 1)
-            ant1 = baselines[idx, 1]
-            ant2 = baselines[idx, 2]
-            α = baseline_index(ant1, ant2)
-            flags[α, :] = true
+    if length(files) != 0
+        for file in files
+            apply_baseline_flags!(flags, file)
         end
     else
         Lumberjack.warn("no baseline flags applied")
@@ -68,6 +60,31 @@ function flag!(spw, data, input)
 
     flags
 end
+
+function apply_antenna_flags!(flags, antennas::Vector{Int})
+    Nbase = size(flags, 1)
+    Nant = Nbase2Nant(Nbase)
+    for ant1 in antennas, ant2 = 1:Nant
+        if ant1 ≤ ant2
+            α = baseline_index(ant1, ant2)
+        else
+            α = baseline_index(ant2, ant1)
+        end
+        flags[α, :] = true
+    end
+end
+
+function apply_baseline_flags!(flags, baselines::Matrix{Int})
+    for idx = 1:size(baselines, 1)
+        ant1 = baselines[idx, 1]
+        ant2 = baselines[idx, 2]
+        α = baseline_index(ant1, ant2)
+        flags[α, :] = true
+    end
+end
+
+apply_antenna_flags!(flags, file::String) = apply_antenna_flags!(flags, read_antenna_flags(file))
+apply_baseline_flags!(flags, file::String) = apply_baseline_flags!(flags, read_baseline_flags(file))
 
 function do_integration_flags!(flags, data)
     _, Nbase, Ntime = size(data)
