@@ -105,6 +105,7 @@ end
 
 function rm_sources(time, flags, xx, yy, spw, meta, sources,
                     istest, dopeeling, dosubtraction)
+    #prototype_peeling_flags(spw, flags)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
         visibilities.data[α, 1] = JonesMatrix(xx[α], 0, 0, yy[α])
@@ -229,5 +230,29 @@ function fit_shapelets(name, meta, xx, yy, flags, dir, nmax, scale)
     coeff = real(matrix\vec) ./ rescaling
 
     ShapeletSource(name, dir, PowerLaw(1, 0, 0, 0, 10e6, [0.0]), scale, coeff)
+end
+
+# PROTOTYPING
+
+macro peeling_flag_bl(spw, ant1ant2)
+    temp = split(string(ant1ant2), "&")
+    ant1 = parse(Int, temp[1])
+    ant2 = parse(Int, temp[2])
+    esc(quote
+        bad[$spw] = [bad[$spw]; $ant1 $ant2]
+    end)
+end
+
+function prototype_peeling_flags(spw, flags)
+    bad = Dict(spw => zeros(Int, 0, 2) for spw = 4:2:18)
+    # eg. @peeling_flag_bl 16 44&47
+    bad_spw = bad[spw]
+    for row = 1:size(bad_spw, 1)
+        α = baseline_index(bad_spw[row, 1], bad_spw[row, 2])
+        if flags !== nothing
+            flags[α] = true
+        end
+    end
+    bad[spw]
 end
 
