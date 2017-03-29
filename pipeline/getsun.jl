@@ -9,30 +9,10 @@ end
 
 function getsun(spw, times, data, flags, peeling_data)
     integrations = 1850:2750
-    @show integrations
     times = times[integrations]
     data = data[:, :, integrations]
     flags = flags[:, integrations]
     peeling_data = peeling_data[integrations]
-
-    # Apply some new flags
-    #bad = [44, 45, 89, 92]
-    #for ant1 = 1:256, ant2 = ant1:256
-    #    if ant1 in bad || ant2 in bad
-    #        α = baseline_index(ant1, ant2)
-    #        flags[α, :] = true
-    #    end
-    #end
-
-    # Get the J2000 position of the Sun.
-    # We need to do this because CasaCore seems to discard the longitude and latitude information
-    # when the coordinate system is dir"SUN". That is, we need to convert to J2000 coordinates if we
-    # want to have any hope of adding components that are not centered on the Sun.
-    meta = getmeta(spw)
-    meta.time = Epoch(epoch"UTC", times[1]*seconds)
-    meta.channels = meta.channels[55:55]
-    frame = TTCal.reference_frame(meta)
-    j2000_sun = measure(frame, Direction(dir"SUN"), dir"J2000")
 
     Lumberjack.info("* Restoring the Sun")
     restore_the_sun!(spw, times, data, flags, peeling_data)
@@ -40,7 +20,7 @@ function getsun(spw, times, data, flags, peeling_data)
     function residual(x, g)
         println("=====")
         @show x
-        sun = getsun_construct_model(x, j2000_sun)
+        sun = getsun_construct_model(x)
         @show sun
         Lumberjack.info("* Peeling the Sun")
         summed_data, summed_flags = getsun_residual_visibilities(spw, times, data, flags, sun)
@@ -50,64 +30,47 @@ function getsun(spw, times, data, flags, peeling_data)
         output
     end
 
-    ## first component
-    #x0 = [1455.88,1976.86,-17.328]
-    #xmin = [ 900,  900, -90]
-    #xmax = [2700, 2700, +90]
-
-    ## second component
-    #x0   = [1080, 2160,     0,     0, -1e-1,   0]
-    #xmin = [  10,   10, -1800, -1800, -1e+0, -90]
-    #xmax = [2700, 2700, +1800, +1800, +1e+0, +90]
-
-    #x0   = [+1e-1,  900, 1456, 1976,   0]
-    #x0 = [0.115625,1141.41,1456.0,1976.0,0.0]
-    #xmin = [-1e+0,  600,   10,   10, -90]
-    #xmax = [+1e+0, 1200, 2700, 2700, +90]
-
-    #nmax = 4
-    #β = deg2rad((27.25/60)/sqrt(8log(2)))
-    #test = fit_shapelets("Sun", meta, data[1,:,1], data[2,:,1], flags[:,1],
-    #                     Direction(dir"SUN"), nmax, β)
-
-    #x0 = test.coeff
-    #x0 /= x0[1]
-    #x0 = x0[2:end]
-    #N = length(x0)
-    #xmin = -2ones(N)
-    #xmax = +2ones(N)
-
-    N = 3^2
+    N = 4^2
     #x0 = zeros(N)
-    #x0 = [-0.0753959,-0.00145539,0.00266602,0.0242334,-0.1,-0.1,0.0295977,-0.0173477,0.00625]
-    x0 = [-0.13409285774780416,
-          -0.004796965460003634,
-          -0.019117673589174062,
-          -0.023768901318089203,
-          -0.009905264231943971,
-          0.0011628254753725253,
-          0.0026279465322257595,
-          -0.015391347830533647,
-          0.06347919129885458]
+    x0 = [-0.1510759761698713,
+          -0.02066199368032352,
+          -0.018493304474277106,
+          -0.0012873111106452735,
+          -0.036009230301391706,
+          0.00016816926519434334,
+          0.10053548515299322,
+          -0.0012698942453968239,
+          0.009018968911481295,
+          -0.005032715278400886,
+          0.06749641456795911,
+          0.0002023066369522653,
+          0.0017188608486568857,
+          0.001160116390556377,
+          -0.02489101087535827,
+          0.00010983142769303976]
     xmin = -ones(N)
     xmax = +ones(N)
 
-    #residual(x0, [])
 
-    opt = Opt(:LN_SBPLX, length(x0))
-    min_objective!(opt, residual)
-    ftol_rel!(opt, 1e-3)
-    lower_bounds!(opt, xmin)
-    upper_bounds!(opt, xmax)
-    minf, x, ret = optimize(opt, x0)
+    #opt = Opt(:LN_SBPLX, length(x0))
+    #ftol_rel!(opt, 1e-3)
+    #min_objective!(opt, residual)
+    #lower_bounds!(opt, xmin)
+    #upper_bounds!(opt, xmax)
+    #minf, x, ret = optimize(opt, x0)
+    #println("++++")
+    #println("DONE")
+    #@show minf, x, ret
+    x = x0
 
-    println("++++")
-    println("DONE")
-    @show minf, x, ret
-
+    residual(x, [])
     for y in x
        println(y)
     end
+
+    output = joinpath(sourcelists, "sun-$(now()).json")
+    sun = getsun_construct_model(x)
+    writesources(output, [sun])
 end
 
 function restore_the_sun!(spw, times, data, flags, peeling_data)
@@ -132,8 +95,6 @@ function restore_the_sun!(spw, times, data, flags, peeling_data)
             elseif sun_idx in to_sub # was the Sun subtracted?
                 restore_the_sun_subtracted!(meta, data, sun, integration)
             end
-        else
-            @show integration
         end
     end
 end
@@ -159,41 +120,13 @@ function restore_the_sun_subtracted!(meta, data, sun, integration)
     end
 end
 
-function getsun_construct_model(x, j2000_sun)
-    ra = longitude(j2000_sun)
-    dec = latitude(j2000_sun)
+function getsun_construct_model(x)
     components = TTCal.Source[]
-    #push!(components, DiskSource("disk", Direction(dir"J2000", ra*radians, dec*radians),
-    #                             PowerLaw(x[1], 0, 0, 0, 1e6, [0.0]), deg2rad(x[2]/3600)))
-    ##push!(components, GaussianSource("1",
-    ##                                 Direction(dir"J2000", ra*radians, dec*radians),
-    ##                                 PowerLaw(1.0, 0, 0, 0, 1e6, [0.0]),
-    ##                                 deg2rad(x[1]), deg2rad(x[2]), x[3]))
-    #push!(components, GaussianSource("1",
-    #                                 Direction(dir"J2000", ra*radians, dec*radians),
-    #                                 PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
-    #                                 deg2rad(1582.8055000305176/3600),
-    #                                 deg2rad(1641.3765989031112/3600),
-    #                                 deg2rad(-10.79695783342634)))
-    push!(components, GaussianSource("1",
-                                     Direction(dir"SUN"),
-                                     PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
-                                     deg2rad(1455.88/3600),
-                                     deg2rad(1976.86/3600),
-                                     deg2rad(-17.328)))
-    ##push!(components, DiskSource("disk", Direction(dir"J2000",
-    ##                                               (ra+deg2rad(x[1]/3600))*radians,
-    ##                                               (dec+deg2rad(x[2]/3600))*radians),
-    ##                             PowerLaw(x[4], 0, 0, 0, 1e6, [0.0]), deg2rad(x[3]/3600)))
-    #push!(components, GaussianSource("2",
-    #                                 Direction(dir"J2000", ra*radians, dec*radians),
-    #                                 PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
-    #                                 deg2rad(x[3]/3600), deg2rad(x[4]/3600), deg2rad(x[5])))
-    push!(components, ShapeletSource("Sun", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
+    push!(components, GaussianSource("Gaussian", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
+                                     deg2rad(1455.88/3600), deg2rad(1976.86/3600), deg2rad(-17.328)))
+    push!(components, ShapeletSource("Shapelets", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
                                      deg2rad((10/60)/sqrt(8log(2))), x))
     MultiSource("Sun", components)
-    #ShapeletSource("Sun", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
-    #               deg2rad((x[1]/60)/sqrt(8log(2))), [1; x[2:end]])
 end
 
 function getsun_residual_visibilities(spw, times, data, flags, sun)
