@@ -81,6 +81,7 @@ include("fitrfi-mmodes.jl")
 include("subrfi.jl")
 
 include("peeling.jl")
+include("getsun.jl")
 
 # m-mode analysis
 include("folddata.jl")
