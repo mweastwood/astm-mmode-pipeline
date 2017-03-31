@@ -26,6 +26,13 @@ function bisect_sun(spw, target, output="/tmp")
     bisect(spw, times, data, flags, direction, "sun", output)
 end
 
+function bisect_zenith(spw, target, output="/tmp")
+    dir = getdir(spw)
+    @time times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
+    direction = Direction(dir"AZEL", 0degrees, 90degrees)
+    bisect(spw, times, data, flags, direction, "zenith", output)
+end
+
 function bisect(spw, times, data, flags, direction, name, output="/tmp")
     dir = getdir(spw)
     range = 1:length(times)
