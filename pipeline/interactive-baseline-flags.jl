@@ -1,35 +1,47 @@
-function interactive_baseline_flags_setup(spws, filename)
-    xx = Dict{Int, Vector{Complex128}}()
-    yy = Dict{Int, Vector{Complex128}}()
-    flags = Dict{Int, Vector{Bool}}()
-    for spw in spws
-        dir = getdir(spw)
-        mydata, myflags = load(joinpath(dir, filename*".jld"), "data", "flags")
-        summed_mydata = squeeze(sum(mydata, 3), 3)
-        summed_myflags = squeeze(all(myflags, 2), 2)
-        xx[spw] = summed_mydata[1, :]
-        yy[spw] = summed_mydata[2, :]
-        flags[spw] = summed_myflags
-    end
+function interactive_baseline_flags(spw, filename)
+    xx, yy, flags, b = interactive_baseline_flags_setup(spw, filename)
+    interactive_baseline_flags_plot(spws, xx, yy, flags, b)
+end
+
+function interactive_baseline_flags(spw, filename, direction)
+    xx, yy, flags, b = interactive_baseline_flags_setup(spw, filename, direction)
+    interactive_baseline_flags_plot(spws, xx, yy, flags, b)
+end
+
+function interactive_baseline_flags_setup(spw, filename)
+    dir = getdir(spw)
+    mydata, myflags = load(joinpath(dir, filename*".jld"), "data", "flags")
+    xx, yy, flags = sum_without_changing_phase_center(mydata, myflags)
     b = getbaselinelengths()
     xx, yy, flags, b
 end
 
 function interactive_baseline_flags_setup(spws, filename, direction)
-    xx = Dict{Int, Vector{Complex128}}()
-    yy = Dict{Int, Vector{Complex128}}()
-    flags = Dict{Int, Vector{Bool}}()
-    for spw in spws
-        dir = getdir(spw)
-        meta = getmeta(spw)
-        mytimes, mydata, myflags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
-        _xx, _yy, _flags = sum_with_new_phase_center(spw, mytimes, mydata, myflags, direction)
-        xx[spw] = _xx
-        yy[spw] = _yy
-        flags[spw] = _flags
-    end
+    dir = getdir(spw)
+    meta = getmeta(spw)
+    mytimes, mydata, myflags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
+    xx, yy, flags = sum_with_new_phase_center(spw, mytimes, mydata, myflags, direction)
     b = getbaselinelengths()
     xx, yy, flags, b
+end
+
+function sum_without_changing_phase_center(data, flags)
+    _, Nbase, Ntime = size(data)
+    output_xx = zeros(Complex128, Nbase)
+    output_yy = zeros(Complex128, Nbase)
+    output_flags = ones(Bool, Nbase)
+    for idx = 1:Ntime
+        for α = 1:Nbase
+            if !flags[α, idx]
+                xx = data[1, α, idx]
+                yy = data[2, α, idx]
+                output_xx[α] += xx
+                output_yy[α] += yy
+                output_flags[α] = false
+            end
+        end
+    end
+    output_xx, output_yy, output_flags
 end
 
 function sum_with_new_phase_center(spw, times, data, flags, direction)
@@ -63,62 +75,41 @@ function sum_with_new_phase_center(spw, times, data, flags, direction)
     output_xx, output_yy, output_flags
 end
 
-function interactive_baseline_flags_plot(spws, xx, yy, flags, b)
+function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
     figure(1); clf()
-    xrange = (0, 1500)
-    yrange = (0, 0)
-    for spw in spws
-        f = flags[spw]
-        f = f | (b.==0)
-        x = abs(xx[spw][!f])
-        y = abs(yy[spw][!f])
-        c = spw*ones(sum(!f))
-        scatter(b[!f], x, c=c, s=20, lw=1, cmap=get_cmap("gist_rainbow"), vmin=4, vmax=18)
-        scatter(b[!f], y, c=c, s=20, lw=1, cmap=get_cmap("gist_rainbow"), vmin=4, vmax=18)
-        yrange = (0, max(yrange[2], maximum(x), maximum(y)))
-    end
-    xlim(xrange[1], xrange[2])
-    ylim(yrange[1], yrange[2])
-    colorbar()
-    grid("on")
-    tight_layout()
+    xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
 
     meta = getmeta(4)
     ant1 = getfield.(meta.baselines, 1)
     ant2 = getfield.(meta.baselines, 2)
+    c = Channel{Tuple{Int, Int}}(32)
     function find_nearest(xcoord, ycoord)
         xcoord === nothing && return
         ycoord === nothing && return
-        nearest_spw = 0
         nearest_pol = ""
         nearest_ant1 = 0
         nearest_ant2 = 0
         nearest_distance = Inf
-        for spw in spws
-            f = flags[spw]
-            f = f | (b.==0)
-            x = abs(xx[spw][!f])
-            y = abs(yy[spw][!f])
-            xdistance = hypot((b[!f]-xcoord)/xrange[2], (x-ycoord)/yrange[2])
-            ydistance = hypot((b[!f]-xcoord)/xrange[2], (y-ycoord)/yrange[2])
-            xidx = indmin(xdistance)
-            yidx = indmin(ydistance)
-            if xdistance[xidx] < nearest_distance
-                nearest_distance = xdistance[xidx]
-                nearest_spw = spw
-                nearest_pol = "X"
-                nearest_ant1 = ant1[!f][xidx]
-                nearest_ant2 = ant2[!f][xidx]
-            end
-            if ydistance[yidx] < nearest_distance
-                nearest_distance = ydistance[yidx]
-                nearest_spw = spw
-                nearest_pol = "Y"
-                nearest_ant1 = ant1[!f][yidx]
-                nearest_ant2 = ant2[!f][yidx]
-            end
+        f = flags | (b.==0)
+        x = abs(xx[!f])
+        y = abs(yy[!f])
+        xdistance = hypot((b[!f]-xcoord)/xrange[2], (x-ycoord)/yrange[2])
+        ydistance = hypot((b[!f]-xcoord)/xrange[2], (y-ycoord)/yrange[2])
+        xidx = indmin(xdistance)
+        yidx = indmin(ydistance)
+        if xdistance[xidx] < nearest_distance
+            nearest_distance = xdistance[xidx]
+            nearest_pol = "X"
+            nearest_ant1 = ant1[!f][xidx]
+            nearest_ant2 = ant2[!f][xidx]
         end
-        @printf("@ spw%02d %d&%d\n", nearest_spw, nearest_ant1, nearest_ant2)
+        if ydistance[yidx] < nearest_distance
+            nearest_distance = ydistance[yidx]
+            nearest_pol = "Y"
+            nearest_ant1 = ant1[!f][yidx]
+            nearest_ant2 = ant2[!f][yidx]
+        end
+        put!(c, (nearest_ant1, nearest_ant2))
     end
 
     function process_event(event)
@@ -126,10 +117,52 @@ function interactive_baseline_flags_plot(spws, xx, yy, flags, b)
             find_nearest(event[:xdata], event[:ydata])
         end
     end
-    gcf()[:canvas][:mpl_connect]("button_press_event", process_event)
-    show()
+    cid = gcf()[:canvas][:mpl_connect]("button_press_event", process_event)
+
+    p = @async while true
+        a1, a2 = take!(c)
+        a1 == 0 && a2 == 0 && break
+        @printf("\r@ %02d %d&%d\n> ", spw, a1, a2)
+        α = baseline_index(a1, a2)
+        flags[α] = true
+    end
+
+    while true
+        print("> ")
+        inp = chomp(readline())
+        if inp == "q" # quit
+            put!(c, (0, 0))
+            gcf()[:canvas][:mpl_disconnect](cid)
+            break
+        elseif inp == "r" # re-plot
+            red[:remove]()
+            blue[:remove]()
+            xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
+        end
+    end
+
+    wait(p)
 
     nothing
+end
+
+function interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
+    xrange = (0, 1500)
+    yrange = (0, 0)
+    f = flags | (b.==0)
+    x = abs(xx[!f])
+    y = abs(yy[!f])
+    red  = scatter(b[!f], x, c="r", s=20, lw=0)
+    blue = scatter(b[!f], y, c="b", s=20, lw=0)
+    yrange = (0, max(yrange[2], maximum(x), maximum(y)))
+    #xlim(xrange[1], xrange[2])
+    #ylim(yrange[1], yrange[2])
+    title(@sprintf("spw%02d", spw))
+    xlabel("baseline length / m")
+    ylabel("amplitude / linear scale")
+    grid("on")
+    #tight_layout()
+    xrange, yrange, red, blue
 end
 
 function getbaselinelengths()
