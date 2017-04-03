@@ -90,7 +90,7 @@ end
 
 function fitrfi_unknown_source()
     direction = Direction(dir"AZEL", 0degrees, 90degrees)
-    spectrum = PowerLaw(1, 0, 0, 0, 1e6, [0.0])
+    spectrum = PowerLaw(0.1, 0, 0, 0, 1e6, [0.0])
     PointSource("RFI", direction, spectrum)
 end
 
