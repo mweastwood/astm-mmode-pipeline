@@ -105,7 +105,7 @@ end
 
 function rm_sources(time, flags, xx, yy, spw, meta, sources,
                     istest, dopeeling, dosubtraction)
-    #prototype_peeling_flags(spw, flags)
+    prototype_peeling_flags(spw, flags)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
         visibilities.data[α, 1] = JonesMatrix(xx[α], 0, 0, yy[α])
@@ -234,7 +234,7 @@ end
 
 # PROTOTYPING
 
-macro peeling_flag_bl(spw, ant1ant2)
+macro fl(spw, ant1ant2)
     temp = split(string(ant1ant2), "&")
     ant1 = parse(Int, temp[1])
     ant2 = parse(Int, temp[2])
@@ -245,7 +245,7 @@ end
 
 function prototype_peeling_flags(spw, flags)
     bad = Dict(spw => zeros(Int, 0, 2) for spw = 4:2:18)
-    # eg. @peeling_flag_bl 16 44&47
+    # eg. @fl 16 44&47
     bad_spw = bad[spw]
     for row = 1:size(bad_spw, 1)
         α = baseline_index(bad_spw[row, 1], bad_spw[row, 2])

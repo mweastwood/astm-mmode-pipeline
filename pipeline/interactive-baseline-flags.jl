@@ -140,7 +140,7 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
     p = @async while true
         a1, a2 = take!(c)
         a1 == 0 && a2 == 0 && break
-        @printf("\r@ %02d %d&%d\n> ", spw, a1, a2)
+        @printf("\r@fl %02d %d&%d\n> ", spw, a1, a2)
         α = baseline_index(a1, a2)
         push!(newflags, α)
     end
