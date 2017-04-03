@@ -58,7 +58,6 @@ function getalm_remote_processing_loop(input, output, transfermatrix, mmodes, mm
             A = transfermatrix[m, 1]
             b = mmodes[m+1]
             f = mmode_flags[m+1]
-            #prototype_additional_baseline_flags!(f, m)
             A = A[!f, :]
             b = b[!f]
             x = tikhonov(A, b, tolerance)
@@ -73,41 +72,6 @@ function getalm_remote_processing_loop(input, output, transfermatrix, mmodes, mm
                 println(exception)
                 rethrow(exception)
             end
-        end
-    end
-end
-
-macro fl(ant1, ant2)
-    quote
-        push!(list, ($ant1, $ant2))
-    end |> esc
-end
-
-function prototype_additional_baseline_flags!(f, m)
-    list = Tuple{Int, Int}[]
-    @fl 147 174
-    @fl 13 57
-    @fl 53 57
-    @fl 122 125
-    @fl 122 126
-    @fl 122 127
-    @fl 123 126
-    @fl 123 127
-    @fl 123 128
-    @fl 124 127
-    @fl 125 128
-    @fl 147 174
-    @fl 185 192
-    @fl 189 192
-    @fl 240 244
-    @fl 243 246
-    for (ant1, ant2) in list
-        α = baseline_index(ant1, ant2)
-        if m == 0
-            f[α] = true
-        else
-            f[2α - 1] = true
-            f[2α - 0] = true
         end
     end
 end
