@@ -1,11 +1,28 @@
 function interactive_baseline_flags(spw, filename)
     xx, yy, flags, b = interactive_baseline_flags_setup(spw, filename)
-    interactive_baseline_flags_plot(spws, xx, yy, flags, b)
+    interactive_baseline_flags_plot(spw, xx, yy, flags, b)
 end
 
 function interactive_baseline_flags(spw, filename, direction)
     xx, yy, flags, b = interactive_baseline_flags_setup(spw, filename, direction)
-    interactive_baseline_flags_plot(spws, xx, yy, flags, b)
+    interactive_baseline_flags_plot(spw, xx, yy, flags, b)
+end
+
+function interactive_mmode_baseline_flags(spw, filename, m)
+    dir = getdir(spw)
+    mmodes, mmode_flags = load(joinpath(dir, filename*".jld"), "blocks", "flags")
+    if m == 0
+        block = mmodes[1]
+        flags = mmode_flags[1]
+    elseif m > 0
+        block = mmodes[m+1][1:2:end]
+        flags = mmode_flags[m+1][1:2:end]
+    else # m < 0
+        block = mmodes[-m+1][2:2:end]
+        flags = mmode_flags[-m+1][2:2:end]
+    end
+    b = getbaselinelengths()
+    interactive_baseline_flags_plot(spw, block, block, flags, b)
 end
 
 function interactive_baseline_flags_setup(spw, filename)
@@ -16,7 +33,7 @@ function interactive_baseline_flags_setup(spw, filename)
     xx, yy, flags, b
 end
 
-function interactive_baseline_flags_setup(spws, filename, direction)
+function interactive_baseline_flags_setup(spw, filename, direction)
     dir = getdir(spw)
     meta = getmeta(spw)
     mytimes, mydata, myflags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
@@ -113,20 +130,23 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
     end
 
     function process_event(event)
-        if event[:key] == "i"
+        if event[:button] == 3 # right click
             find_nearest(event[:xdata], event[:ydata])
         end
     end
     cid = gcf()[:canvas][:mpl_connect]("button_press_event", process_event)
 
+    newflags = Int[]
     p = @async while true
         a1, a2 = take!(c)
         a1 == 0 && a2 == 0 && break
         @printf("\r@ %02d %d&%d\n> ", spw, a1, a2)
         α = baseline_index(a1, a2)
-        flags[α] = true
+        push!(newflags, α)
     end
 
+    println("q - quit")
+    println("r - re-plot with new flags applied")
     while true
         print("> ")
         inp = chomp(readline())
@@ -137,6 +157,9 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
         elseif inp == "r" # re-plot
             red[:remove]()
             blue[:remove]()
+            for α in newflags
+                flags[α] = true
+            end
             xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
         end
     end
