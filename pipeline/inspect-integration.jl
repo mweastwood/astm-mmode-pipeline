@@ -1,26 +1,32 @@
-function inspect_integration(spw, times, data, flags, integration)
+function inspect_integration(spw, target, integration)
+    dir = getdir(spw)
+    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags");
+    inspect_integration(spw, times, data, flags, target, integration)
+end
+
+function inspect_integration(spw, times, data, flags, target, integration)
     mytime = times[integration]
     mydata = data[:, :, integration]
     myflags = flags[:, integration]
 
     # Get the original
     println("\n=== original ===")
-    title = @sprintf("%05d-original", integration)
+    title = @sprintf("%05d-original", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, true, true)
 
     # Turn off all source removal
     println("\n=== no source removal ===")
-    title = @sprintf("%05d-no-source-removal", integration)
+    title = @sprintf("%05d-no-source-removal", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, false, false)
 
     # No subtraction
     println("\n=== no subtraction ===")
-    title = @sprintf("%05d-no-subtraction", integration)
+    title = @sprintf("%05d-no-subtraction", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, true, false)
 
     # No peeling
     println("\n=== no peeling ===")
-    title = @sprintf("%05d-no-peeling", integration)
+    title = @sprintf("%05d-no-peeling", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, false, true)
 end
 
