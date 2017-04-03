@@ -60,6 +60,10 @@ function bisect(spw, times, data, flags, direction, name, output="/tmp")
             elseif input == "2"
                 range = range2
                 break
+            elseif contains(input, ":")
+                parts = split(input, ":", limit=2)
+                range = parse(Int, parts[1]):parse(Int, parts[2])
+                break
             elseif input == "q"
                 @goto quit
             else
