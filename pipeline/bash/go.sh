@@ -35,8 +35,9 @@ do
 
         [ $1 -le 20 ] && [ $2 -ge 20 ] && title fold && ./20-fold.sh $spw $data
         [ $1 -le 21 ] && [ $2 -ge 21 ] && title getmmodes && ./21-getmmodes.sh $spw $data
-        [ $1 -le 22 ] && [ $2 -ge 22 ] && title getalm && ./22-getalm.sh $spw $data
-        [ $1 -le 23 ] && [ $2 -ge 23 ] && title makemap && ./23-makemap.sh $spw $data
+        [ $1 -le 22 ] && [ $2 -ge 22 ] && title fitrfi-mmodes && ./22-fitrfi-mmodes.sh $spw $data
+        [ $1 -le 23 ] && [ $2 -ge 23 ] && title getalm && ./23-getalm.sh $spw $data
+        [ $1 -le 24 ] && [ $2 -ge 24 ] && title makemap && ./24-makemap.sh $spw $data
     done
 done
 
