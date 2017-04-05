@@ -11,23 +11,18 @@ function inspect_integration(spw, times, data, flags, target, integration)
 
     # Get the original
     println("\n=== original ===")
-    title = @sprintf("%05d-original", integration)*"-$target"
+    title = @sprintf("%05d-step02", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, true, true)
 
     # Turn off all source removal
     println("\n=== no source removal ===")
-    title = @sprintf("%05d-no-source-removal", integration)*"-$target"
+    title = @sprintf("%05d-step00", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, false, false)
 
     # No subtraction
     println("\n=== no subtraction ===")
-    title = @sprintf("%05d-no-subtraction", integration)*"-$target"
+    title = @sprintf("%05d-step01", integration)*"-$target"
     inspect_do_the_work(spw, mytime, mydata, myflags, title, true, false)
-
-    # No peeling
-    println("\n=== no peeling ===")
-    title = @sprintf("%05d-no-peeling", integration)*"-$target"
-    inspect_do_the_work(spw, mytime, mydata, myflags, title, false, true)
 end
 
 function inspect_do_the_work(spw, time, data, flags, title, dopeeling, dosubtraction)
