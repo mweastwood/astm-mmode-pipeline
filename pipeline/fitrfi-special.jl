@@ -49,6 +49,13 @@ function fitrfi_pick_an_integration(spw, times, data, flags, idx)
     meta, visibilities
 end
 
+function fitrfi_special_getdata_source(name, visibilities, meta)
+    getdata_sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
+    source = filter(source -> source.name == name, getdata_sources)[1]
+    source, I, Q, dir = update(visibilities, meta, source)
+    source
+end
+
 function fitrfi_special_spw04(times, data, flags, target)
     @fitrfi_preamble 4
     output_sources = Source[]
@@ -58,9 +65,19 @@ function fitrfi_special_spw04(times, data, flags, target)
         # this piece of RFI shows up and dominates over Cyg A
         idx = 6646
         meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, idx)
-        getdata_sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
-        cyg = filter(source -> source.name == "Cyg A", getdata_sources)[1]
-        cyg, I, Q, dir = update(visibilities, meta, cyg)
+        cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
+        @fitrfi_construct_sources A3
+        sources = [sources; cyg]
+        @fitrfi_peel_sources
+        push!(output_sources, sources[1])
+        push!(output_calibrations, calibrations[1])
+
+        # this piece of RFI is the same as the previous one, but the subtraction doesn't seem to be
+        # working very well, so we're going to add another component to try and improve the
+        # situation
+        idx = 7119
+        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, idx)
+        cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
         @fitrfi_construct_sources A3
         sources = [sources; cyg]
         @fitrfi_peel_sources
@@ -98,6 +115,7 @@ function fitrfi_special_spw08(times, data, flags, target)
         @fitrfi_peel_sources
         push!(output_sources, sources[1])
         push!(output_calibrations, calibrations[1])
+
     end
     fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations, target)
     fitrfi_output(spw, meta, output_sources, output_calibrations, target)
