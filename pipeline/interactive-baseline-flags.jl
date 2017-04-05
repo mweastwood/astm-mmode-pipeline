@@ -1,11 +1,11 @@
 function interactive_baseline_flags(spw, filename)
     xx, yy, flags, b = interactive_baseline_flags_setup(spw, filename)
-    interactive_baseline_flags_plot(spw, xx, yy, flags, b)
+    interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
 end
 
 function interactive_baseline_flags(spw, filename, direction)
     xx, yy, flags, b = interactive_baseline_flags_setup(spw, filename, direction)
-    interactive_baseline_flags_plot(spw, xx, yy, flags, b)
+    interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
 end
 
 function interactive_baseline_flags_tau(spw, filename)
@@ -27,7 +27,7 @@ function interactive_mmode_baseline_flags(spw, filename, m)
         flags = mmode_flags[-m+1][2:2:end]
     end
     b = getbaselinelengths()
-    interactive_baseline_flags_plot(spw, block, block, flags, b)
+    interactive_baseline_flags_plot(spw, block, block, flags, b, filename)
 end
 
 function interactive_baseline_flags_setup(spw, filename)
@@ -97,7 +97,7 @@ function sum_with_new_phase_center(spw, times, data, flags, direction)
     output_xx, output_yy, output_flags
 end
 
-function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
+function interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
     figure(1); clf()
     xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
 
@@ -105,6 +105,7 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
     ant1 = getfield.(meta.baselines, 1)
     ant2 = getfield.(meta.baselines, 2)
     c = Channel{Tuple{Int, Int}}(32)
+
     function find_nearest(xcoord, ycoord)
         xcoord === nothing && return
         ycoord === nothing && return
@@ -134,24 +135,57 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
         put!(c, (nearest_ant1, nearest_ant2))
     end
 
+    x1 = y1 = -1
+    function find_in_box(x2, y2)
+        f = flags | (b.==0)
+        x = abs(xx[!f])
+        y = abs(yy[!f])
+        if x1 > x2
+            x1, x2 = x2, x1
+        end
+        if y1 > y2
+            y1, y2 = y2, y1
+        end
+        inside = (x1 .< b[!f] .< x2) & ((y1 .< x .< y2) | (y1 .< y .< y2))
+        inside_ant1 = ant1[!f][inside]
+        inside_ant2 = ant2[!f][inside]
+        for (myant1, myant2) in zip(inside_ant1, inside_ant2)
+            put!(c, (myant1, myant2))
+        end
+    end
+
     function process_event(event)
         if event[:button] == 3 # right click
-            find_nearest(event[:xdata], event[:ydata])
+            if event[:key] == "b"
+                if x1 != -1 && y1 != -1
+                    @printf("\rbox(%f, %f, %e, %e)\n> ", x1, event[:xdata], y1, event[:ydata])
+                    find_in_box(event[:xdata], event[:ydata])
+                    x1 = y1 = -1
+                else
+                    x1 = event[:xdata]
+                    y1 = event[:ydata]
+                end
+            else
+                find_nearest(event[:xdata], event[:ydata])
+            end
         end
     end
     cid = gcf()[:canvas][:mpl_connect]("button_press_event", process_event)
 
     newflags = Int[]
+    newbaselines = zeros(Int, 0, 2)
     p = @async while true
         a1, a2 = take!(c)
         a1 == 0 && a2 == 0 && break
         @printf("\r@fl %02d %d&%d\n> ", spw, a1, a2)
         α = baseline_index(a1, a2)
         push!(newflags, α)
+        newbaselines = vcat(newbaselines, [a1 a2])
     end
 
     println("q - quit")
     println("r - re-plot with new flags applied")
+    println("w - write the baseline flags to disk")
     while true
         print("> ")
         inp = chomp(readline())
@@ -166,6 +200,14 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b)
                 flags[α] = true
             end
             xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
+        elseif inp == "w" # write
+            if contains(filename, "rainy")
+                path = joinpath(workspace, "flags", @sprintf("rainy-spw%02d.bl", spw))
+                baselines = read_baseline_flags(path)
+                baselines = [baselines; newbaselines]
+                baselines = unique(sortrows(baselines), 1)
+                writedlm(path, baselines, '&')
+            end
         end
     end
 
