@@ -24,5 +24,9 @@ function elevation_plot(dataset, direction)
     plot(1:N, rad2deg(el), "k-")
     xlim(1, N)
     ylim(0, 90)
+    axhline(15)
+    axhline(30)
+    axhline(45)
+    grid("on")
 end
 
