@@ -90,6 +90,7 @@ include("getalm.jl")
 #include("getmodel.jl")
 include("makemap.jl")
 
+include("elevation-plot.jl")
 include("bisect.jl")
 include("interactive-baseline-flags.jl")
 include("inspect-integration.jl")
