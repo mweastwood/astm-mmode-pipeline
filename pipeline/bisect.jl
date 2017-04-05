@@ -19,6 +19,13 @@ function bisect_vir(spw, target, output="/tmp")
     bisect(spw, times, data, flags, direction, "vir", output)
 end
 
+function bisect_tau(spw, target, output="/tmp")
+    dir = getdir(spw)
+    @time times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
+    direction = Direction(dir"J2000", "05h34m31.94s", "+22d00m52.2s")
+    bisect(spw, times, data, flags, direction, "tau", output)
+end
+
 function bisect_sun(spw, target, output="/tmp")
     dir = getdir(spw)
     @time times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
