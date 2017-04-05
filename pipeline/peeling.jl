@@ -113,8 +113,8 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     end
     TTCal.flag_short_baselines!(visibilities, meta, 15.0)
 
-    sun = fit_sun(meta, xx, yy, flags)
-    sources = [sources; sun]
+    #sun = fit_sun(meta, xx, yy, flags)
+    #sources = [sources; sun]
 
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     names = getfield.(sources, 1)
@@ -129,10 +129,10 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     end
     if dosubtraction
         # re-fit all of the sources before subtracting
-        if "Sun" in names[to_sub]
-            idx = "Sun" .== names
-            sources[idx] = fit_sun(meta, visibilities)
-        end
+        #if "Sun" in names[to_sub]
+            #idx = "Sun" .== names
+            #sources[idx] = fit_sun(meta, visibilities)
+        #end
         update_source_list_in_place(visibilities, meta, @view(sources[to_sub]),
                                     @view(I[to_sub]), @view(Q[to_sub]), @view(directions[to_sub]))
         istest && @show sources[to_sub]
@@ -140,6 +140,10 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     end
     data = PeelingData(time, sources, I, Q, directions,
                        to_peel, to_sub, calibrations)
+
+    # uncomment for testing purposes
+    #visibilities = genvis(meta, sources[to_peel][2])
+    #corrupt!(visibilities, meta, calibrations[2])
 
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
@@ -174,11 +178,20 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             I[idx] ≥ 30 || continue
             push!(to_sub, idx)
         elseif source.name == "Sun"
-            if TTCal.isabovehorizon(frame, source, deg2rad(30))
-                push!(to_peel, idx)
-                push!(fluxes, I[idx])
+            if spw > 4
+                if TTCal.isabovehorizon(frame, source, deg2rad(15))
+                    push!(to_peel, idx)
+                    push!(fluxes, I[idx])
+                else
+                    push!(to_sub, idx)
+                end
             else
-                push!(to_sub, idx)
+                if TTCal.isabovehorizon(frame, source, deg2rad(30))
+                    push!(to_peel, idx)
+                    push!(fluxes, I[idx])
+                else
+                    push!(to_sub, idx)
+                end
             end
         end
     end
@@ -198,7 +211,7 @@ function fit_sun(meta, xx, yy, flags)
     frame = TTCal.reference_frame(meta)
     output = Source[]
     if TTCal.isabovehorizon(frame, dir) && !all(flags)
-        sun = fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(0.1))
+        sun = fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(27.25/60)/sqrt(8log(2)))
         push!(output, sun)
     end
     output
