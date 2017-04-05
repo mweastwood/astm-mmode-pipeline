@@ -1,3 +1,8 @@
+function elevation_plot_cas(dataset)
+    direction = Direction(dir"J2000", "23h23m24s", "58d48m54s")
+    elevation_plot(dataset, direction)
+end
+
 function elevation_plot_vir(dataset)
     direction = Direction(dir"J2000", "12h30m49.42338s", "+12d23m28.0439s")
     elevation_plot(dataset, direction)
