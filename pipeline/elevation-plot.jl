@@ -13,6 +13,11 @@ function elevation_plot_tau(dataset)
     elevation_plot(dataset, direction)
 end
 
+function elevation_plot_her(dataset)
+    direction = Direction(dir"J2000", "16h51m11.4s", "+04d59m20s")
+    elevation_plot(dataset, direction)
+end
+
 function elevation_plot(dataset, direction)
     meta = getmeta(18)
     dir = getdir(18)
@@ -29,9 +34,9 @@ function elevation_plot(dataset, direction)
     plot(1:N, rad2deg(el), "k-")
     xlim(1, N)
     ylim(0, 90)
-    axhline(15)
-    axhline(30)
-    axhline(45)
+    for thresh in (5, 10, 15, 30, 45, 60)
+        axhline(thresh)
+    end
     grid("on")
 end
 
