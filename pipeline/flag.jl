@@ -23,14 +23,20 @@ function flag!(spw, data, input)
 
     # antenna flags
     if input == "raw-100hr-visibilities"
-        file = "100hr.ants"
+        files = ["100hr.ants"]
     elseif input == "raw-rainy-visibilities"
-        file = "rainy.ants"
+        files = ["rainy.ants"]
+        file = @sprintf("rainy-spw%02d.ants", spw)
+        if isfile(joinpath(workspace, "flags", file))
+            push!(files, file)
+        end
     else
-        file = ""
+        files = String[]
     end
-    if file != ""
-        apply_antenna_flags!(flags, file)
+    if length(files) != 0
+        for file in files
+            apply_antenna_flags!(flags, file)
+        end
     else
         Lumberjack.warn("no antenna flags applied")
     end
