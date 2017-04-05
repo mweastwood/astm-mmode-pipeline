@@ -8,6 +8,21 @@ function interactive_baseline_flags(spw, filename, direction)
     interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
 end
 
+function interactive_baseline_flags_cyg(spw, filename)
+    direction = Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s")
+    interactive_baseline_flags(spw, filename, direction)
+end
+
+function interactive_baseline_flags_cas(spw, filename)
+    direction = Direction(dir"J2000", "23h23m24s", "58d48m54s")
+    interactive_baseline_flags(spw, filename, direction)
+end
+
+function interactive_baseline_flags_vir(spw, filename)
+    direction = Direction(dir"J2000", "12h30m49.42338s", "+12d23m28.0439s")
+    interactive_baseline_flags(spw, filename, direction)
+end
+
 function interactive_baseline_flags_tau(spw, filename)
     direction = Direction(dir"J2000", "05h34m31.94s", "+22d00m52.2s")
     interactive_baseline_flags(spw, filename, direction)
