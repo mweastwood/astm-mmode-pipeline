@@ -8,6 +8,11 @@ function interactive_baseline_flags(spw, filename, direction)
     interactive_baseline_flags_plot(spw, xx, yy, flags, b)
 end
 
+function interactive_baseline_flags_tau(spw, filename)
+    direction = Direction(dir"J2000", "05h34m31.94s", "+22d00m52.2s")
+    interactive_baseline_flags(spw, filename, direction)
+end
+
 function interactive_mmode_baseline_flags(spw, filename, m)
     dir = getdir(spw)
     mmodes, mmode_flags = load(joinpath(dir, filename*".jld"), "blocks", "flags")
