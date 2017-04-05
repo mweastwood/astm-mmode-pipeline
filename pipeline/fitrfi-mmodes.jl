@@ -64,7 +64,7 @@ end
 
 macro fitrfi_mmodes_finish()
     output = quote
-        fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, target)
+        fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, _target)
         fitrfi_image_visibilities(spw, ms_path, "fitrfi-finish-"*_target, meta, visibilities)
         if m > 0
             mmodes[abs(m)+1][1:2:end] = getfield.(visibilities.data[:, 1], 1)
@@ -116,34 +116,53 @@ function subtract_from_other_mmodes!(mmodes, mmode_flags, components)
 end
 
 function fitrfi_mmodes_spw04(mmodes, mmode_flags, target)
+    spw = 4
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw06(mmodes, mmode_flags, target)
+    spw = 6
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw08(mmodes, mmode_flags, target)
+    spw = 8
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw10(mmodes, mmode_flags, target)
+    spw = 10
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw12(mmodes, mmode_flags, target)
+    spw = 12
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw14(mmodes, mmode_flags, target)
+    spw = 14
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw16(mmodes, mmode_flags, target)
+    spw = 16
+    if target == "mmodes-peeled-rainy"
+        @fitrfi_mmodes_start 16 1
+        @fitrfi_construct_sources 2
+        @fitrfi_peel_sources
+        @fitrfi_mmodes_finish
+
+        @fitrfi_mmodes_start 16 -1
+        @fitrfi_construct_sources 2
+        @fitrfi_peel_sources
+        @fitrfi_mmodes_finish
+    end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw18(mmodes, mmode_flags, target)
+    spw = 18
     if target == "mmodes-peeled-rainy"
         @fitrfi_mmodes_start 18 1
         @fitrfi_construct_sources 2
