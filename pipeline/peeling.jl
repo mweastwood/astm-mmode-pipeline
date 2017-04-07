@@ -201,6 +201,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "Vir A"
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
+            @pick_for_subtraction "Hya A"
             @special_case_the_sun 30
         elseif spw == 6
             @pick_for_peeling "Cyg A" 15
@@ -208,6 +209,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "Vir A"
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
+            @pick_for_subtraction "Hya A"
             @special_case_the_sun 30
         elseif spw == 8
             @pick_for_peeling "Cyg A" 15
@@ -215,6 +217,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "Vir A"
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
+            @pick_for_subtraction "Hya A"
             @special_case_the_sun 30
         elseif spw == 10
             @pick_for_peeling "Cyg A" 15
@@ -222,6 +225,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "Vir A"
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
+            @pick_for_subtraction "Hya A"
             @special_case_the_sun 30
         elseif spw == 12
             @pick_for_peeling "Cyg A" 15
