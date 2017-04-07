@@ -15,7 +15,8 @@ immutable PeelingData
     calibrations :: Vector{GainCalibration}
 end
 
-function peel(spw, target, times, data, flags; istest=false)
+function peel(spw, target, times, data, flags;
+              istest=false, dopeeling=true, dosubtraction=true)
     Ntime = length(times)
     idx = 1
     nextidx() = (myidx = idx; idx += 1; myidx)
@@ -29,7 +30,8 @@ function peel(spw, target, times, data, flags; istest=false)
         @async begin
             input  = RemoteChannel()
             output = RemoteChannel()
-            remotecall(peel_worker_loop, worker, spw, input, output, istest)
+            remotecall(peel_worker_loop, worker, spw, input, output,
+                       istest, dopeeling, dosubtraction)
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
@@ -56,7 +58,7 @@ function peel(spw, target, times, data, flags; istest=false)
     peeling_data
 end
 
-function peel_worker_loop(spw, input, output, istest)
+function peel_worker_loop(spw, input, output, istest, dopeeling, dosubtraction)
     dir = getdir(spw)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
@@ -64,7 +66,8 @@ function peel_worker_loop(spw, input, output, istest)
     while true
         try
             time, data, flags = take!(input)
-            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, sources, istest)
+            peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, sources,
+                                            istest, dopeeling, dosubtraction)
             put!(output, (data, flags, peeling_data))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -142,59 +145,129 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
                        to_peel, to_sub, calibrations)
 
     # uncomment for testing purposes
-    #visibilities = genvis(meta, sources[to_peel][2])
-    #corrupt!(visibilities, meta, calibrations[2])
+    #visibilities = genvis(meta, sources[to_peel][1])
+    #visibilities = genvis(meta, mysources[3])
+    #corrupt!(visibilities, meta, calibrations[3])
 
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
     xx, yy, data
 end
 
+macro pick_for_peeling(name, elevation_cutoff)
+    quote
+        if source.name == $name
+            I[idx] ≥ 30 || continue
+            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
+                push!(to_peel, idx)
+            else
+                push!(to_sub, idx)
+            end
+        end
+    end |> esc
+end
+
+macro pick_for_subtraction(name)
+    quote
+        if source.name == $name
+            I[idx] ≥ 30 || continue
+            push!(to_sub, idx)
+        end
+    end |> esc
+end
+
+macro special_case_the_sun(elevation_cutoff)
+    quote
+        if source.name == "Sun"
+            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
+                push!(to_peel, idx)
+            else
+                push!(to_sub, idx)
+            end
+        end
+    end |> esc
+end
+
 function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
     to_peel = Int[]
     to_sub  = Int[]
-    fluxes = Float64[] # keep track of peeling source fluxes to sort in order of decreasing flux
     frame = TTCal.reference_frame(meta)
     for idx = 1:length(sources)
         source = sources[idx]
         TTCal.isabovehorizon(frame, source) || continue
-        if source.name == "Cyg A" || source.name == "Cas A"
-            I[idx] ≥ 30 || continue
-            if TTCal.isabovehorizon(frame, source, deg2rad(15))
-                push!(to_peel, idx)
-                push!(fluxes, I[idx])
-            else
-                push!(to_sub, idx)
-            end
-        elseif source.name == "Vir A"
-            I[idx] ≥ 30 || continue
-            if TTCal.isabovehorizon(frame, source, deg2rad(30))
-                push!(to_peel, idx)
-                push!(fluxes, I[idx])
-            else
-                push!(to_sub, idx)
-            end
-        elseif source.name == "Tau A"
-            I[idx] ≥ 30 || continue
-            push!(to_sub, idx)
-        elseif source.name == "Sun"
-            if spw > 4
-                if TTCal.isabovehorizon(frame, source, deg2rad(15))
-                    push!(to_peel, idx)
-                    push!(fluxes, I[idx])
-                else
-                    push!(to_sub, idx)
-                end
-            else
-                if TTCal.isabovehorizon(frame, source, deg2rad(30))
-                    push!(to_peel, idx)
-                    push!(fluxes, I[idx])
-                else
-                    push!(to_sub, idx)
-                end
+        if spw == 4
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_subtraction "Vir A"
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 30
+        elseif spw == 6
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_subtraction "Vir A"
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 30
+        elseif spw == 8
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_subtraction "Vir A"
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 30
+        elseif spw == 10
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_subtraction "Vir A"
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 30
+        elseif spw == 12
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 15
+            @pick_for_peeling "Vir A" 30
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 15
+        elseif spw == 14
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 15
+            @pick_for_peeling "Vir A" 30
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 15
+        elseif spw == 16
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 15
+            @pick_for_peeling "Vir A" 30
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 15
+        elseif spw == 18
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 15
+            @pick_for_peeling "Vir A" 30
+            @pick_for_subtraction "Tau A"
+            @pick_for_subtraction "Her A"
+            @special_case_the_sun 15
+        end
+    end
+
+    # If a source we are trying to subtract has higher flux than a source we are trying to peel, we
+    # should probably be peeling that source.
+    move = zeros(Bool, length(to_sub))
+    for idx in to_sub
+        for jdx in to_peel
+            if I[idx] > I[jdx]
+                move[to_sub .== idx] = true
             end
         end
     end
+    to_peel = [to_peel; to_sub[move]]
+    to_sub  = to_sub[!move]
+
+    fluxes = I[to_peel]
     perm = sortperm(fluxes, rev=true)
     to_peel[perm], to_sub
 end
