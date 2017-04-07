@@ -127,11 +127,23 @@ end
 
 function fitrfi_mmodes_spw08(mmodes, mmode_flags, target)
     spw = 8
+    if target == "mmodes-peeled-rainy"
+        @fitrfi_mmodes_start 8 0
+        @fitrfi_construct_sources 2
+        @fitrfi_peel_sources
+        @fitrfi_mmodes_finish
+    end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw10(mmodes, mmode_flags, target)
     spw = 10
+    if target == "mmodes-peeled-rainy"
+        @fitrfi_mmodes_start 10 0
+        @fitrfi_construct_sources 1
+        @fitrfi_peel_sources
+        @fitrfi_mmodes_finish
+    end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
