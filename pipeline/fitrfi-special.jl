@@ -171,13 +171,25 @@ function fitrfi_special_spw18(times, data, flags, target)
         idx = 925
         meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, idx)
         getdata_sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
-        cyg = filter(source -> source.name == "Cyg A", getdata_sources)[1]
-        cyg, I, Q, dir = update(visibilities, meta, cyg)
-        cas = filter(source -> source.name == "Cas A", getdata_sources)[1]
-        cas, I, Q, dir = update(visibilities, meta, cas)
+        cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
+        cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
         @fitrfi_construct_sources 1
         sources = [cyg; sources; cas]
         @fitrfi_peel_sources
+        push!(output_sources, sources[2])
+        push!(output_calibrations, calibrations[2])
+
+        # this component causes peeling to choke on Vir A
+        idx = 6450
+        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, idx)
+        cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
+        vir = fitrfi_special_getdata_source("Vir A", visibilities, meta)
+        cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
+        @fitrfi_construct_sources 1
+        sources = [cyg; sources; vir; cas]
+        @fitrfi_peel_sources
+        output_sources = sources
+        output_calibrations = calibrations
         push!(output_sources, sources[2])
         push!(output_calibrations, calibrations[2])
     end
