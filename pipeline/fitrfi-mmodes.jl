@@ -177,12 +177,12 @@ function fitrfi_mmodes_spw18(mmodes, mmode_flags, target)
     spw = 18
     if target == "mmodes-peeled-rainy"
         @fitrfi_mmodes_start 18 1
-        @fitrfi_construct_sources 2
+        @fitrfi_construct_sources 1
         @fitrfi_peel_sources
         @fitrfi_mmodes_finish
 
         @fitrfi_mmodes_start 18 -1
-        @fitrfi_construct_sources 2
+        @fitrfi_construct_sources 1
         @fitrfi_peel_sources
         @fitrfi_mmodes_finish
     end
