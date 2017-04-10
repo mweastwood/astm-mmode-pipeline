@@ -30,6 +30,25 @@ function smeared_image_cyg_a(spw, filename="calibrated-visibilities")
                                 Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"), output)
 end
 
+const source_dictionary = Dict("Cyg A" => Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"),
+                               "Cas A" => Direction(dir"J2000", "23h23m24s", "58d48m54s"),
+                               "Vir A" => Direction(dir"J2000", "12h30m49.42338s", "+12d23m28.0439s"),
+                               "Tau A" => Direction(dir"J2000", "05h34m31.94s", "+22d00m52.2s"),
+                               "Sun"   => Direction(dir"SUN"))
+
+function smeared_image_everything(spw, filename)
+    dir = getdir(spw)
+    times, data, flags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
+    _, Nbase, Ntime = size(data)
+    output = joinpath(dir, "smeared-"*filename)
+    image(spw, data, flags, 1:Ntime, output)
+    for name in keys(source_dictionary)
+        direction = source_dictionary[name]
+        output = joinpath(dir, "smeared-"*lowercase(replace(name, " ", "-"))*"-"filename)
+        image_with_new_phase_center(spw, times, data, flags, 1:Ntime, direction, output)
+    end
+end
+
 """
     image(spw, data, flags, range, image_path)
 

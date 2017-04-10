@@ -32,6 +32,7 @@ do
         [ $1 -le 12 ] && [ $2 -ge 12 ] && title fitrfi-special && ./12-fitrfi-special.sh $spw $data
         [ $1 -le 13 ] && [ $2 -ge 13 ] && title subrfi-special && ./13-subrfi-special.sh $spw $data
         [ $1 -le 14 ] && [ $2 -ge 14 ] && title peel && ./14-peel.sh $spw $data
+        [ $1 -le 15 ] && [ $2 -ge 15 ] && title smeared-imaging && ./15-smeared-imaging.sh $spw $data
 
         [ $1 -le 20 ] && [ $2 -ge 20 ] && title fold && ./20-fold.sh $spw $data
         [ $1 -le 21 ] && [ $2 -ge 21 ] && title getmmodes && ./21-getmmodes.sh $spw $data
