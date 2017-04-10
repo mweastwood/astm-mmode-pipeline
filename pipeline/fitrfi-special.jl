@@ -188,8 +188,6 @@ function fitrfi_special_spw18(times, data, flags, target)
         @fitrfi_construct_sources 1
         sources = [cyg; sources; vir; cas]
         @fitrfi_peel_sources
-        output_sources = sources
-        output_calibrations = calibrations
         push!(output_sources, sources[2])
         push!(output_calibrations, calibrations[2])
     end
