@@ -184,7 +184,7 @@ function fitrfi_image_models(spw, ms_path, meta, sources, target)
     end
 end
 
-function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, target)
+function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, target, prefix="fitrfi")
     beam = ConstantBeam()
     dir = getdir(spw)
     output_visibilities = Visibilities(Nbase(meta), 109)
@@ -197,7 +197,7 @@ function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations
         ms = Table(ms_path)
         TTCal.write(ms, "DATA", output_visibilities)
         finalize(ms)
-        wsclean(ms_path, joinpath(dir, "tmp", "fitrfi-corrupted-model-"*target*"-$idx"), j=8)
+        wsclean(ms_path, joinpath(dir, "tmp", prefix*"-corrupted-model-"*target*"-$idx"), j=8)
     end
 end
 

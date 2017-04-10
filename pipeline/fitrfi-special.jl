@@ -30,6 +30,12 @@ function fitrfi_special(spw, target="rfi-subtracted-calibrated-visibilities")
     nothing
 end
 
+macro fitrfi_pick_an_integration(idx)
+    quote
+        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, $idx)
+    end |> esc
+end
+
 function fitrfi_pick_an_integration(spw, times, data, flags, idx)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw)
@@ -49,11 +55,87 @@ function fitrfi_pick_an_integration(spw, times, data, flags, idx)
     meta, visibilities
 end
 
+function fitrfi_sum_over_integrations(spw, times, data, flags, range)
+    _, Nbase, Ntime = size(data)
+    meta = getmeta(spw)
+    meta.channels = meta.channels[55:55]
+    meta.time = Epoch(epoch"UTC", times[range[1]]*seconds)
+    meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+    beam = ConstantBeam()
+    visibilities = Visibilities(Nbase, 1)
+    visibilities.flags[:] = true
+    for idx in range, α = 1:Nbase
+        if !flags[α, idx]
+            xx = data[1, α, idx]
+            yy = data[2, α, idx]
+            visibilities.data[α, 1] += JonesMatrix(xx, 0, 0, yy)
+            visibilities.flags[α, 1] = false
+        end
+    end
+    TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    meta, visibilities
+end
+
+macro fitrfi_sum_over_integrations_with_subtraction(range, sources...)
+    quote
+        meta, visibilities = fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags,
+                                                                           $range, $sources)
+    end |> esc
+end
+
+function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, range, sources)
+    _, Nbase, Ntime = size(data)
+    meta = getmeta(spw)
+    meta.channels = meta.channels[55:55]
+    meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+    beam = ConstantBeam()
+    visibilities = Visibilities(Nbase, 1)
+    visibilities.flags[:] = true
+    for idx in range
+        all(flags[:, idx]) && continue
+        meta.time = Epoch(epoch"UTC", times[idx]*seconds)
+        temp = Visibilities(Nbase, 1)
+        temp.flags[:] = true
+        for α = 1:Nbase
+            xx = data[1, α, idx]
+            yy = data[2, α, idx]
+            temp.data[α, 1] = JonesMatrix(xx, 0, 0, yy)
+            temp.flags[α, 1] = flags[α, idx]
+        end
+        for name in sources
+            source = fitrfi_special_getdata_source(name, temp, meta)
+            subsrc!(temp, meta, ConstantBeam(), source)
+        end
+        for α = 1:Nbase
+            if !flags[α, idx]
+                visibilities.data[α, 1] += temp.data[α, 1]
+                visibilities.flags[α, 1] = false
+            end
+        end
+    end
+    #TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    meta, visibilities
+end
+
 function fitrfi_special_getdata_source(name, visibilities, meta)
     getdata_sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
     source = filter(source -> source.name == name, getdata_sources)[1]
     source, I, Q, dir = update(visibilities, meta, source)
     source
+end
+
+macro fitrfi_special_start_image()
+    quote
+        fitrfi_image_visibilities(spw, ms_path, "fitrfi-special-start-"*target, meta, visibilities)
+    end |> esc
+end
+
+macro fitrfi_special_finish_image()
+    quote
+        fitrfi_image_visibilities(spw, ms_path, "fitrfi-special-finish-"*target, meta, visibilities)
+        fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations,
+                                      target, "fitrfi-special-testing")
+    end |> esc
 end
 
 function fitrfi_special_spw04(times, data, flags, target)
@@ -168,30 +250,29 @@ function fitrfi_special_spw18(times, data, flags, target)
     meta = getmeta(spw)
     if target == "rfi-subtracted-calibrated-rainy-visibilities"
         # this component causes peeling to choke on Cas A
-        idx = 925
-        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, idx)
-        getdata_sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
-        cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
-        cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
+        @fitrfi_sum_over_integrations_with_subtraction 625:925 "Cyg A" "Cas A"
+        #@fitrfi_special_start_image
         @fitrfi_construct_sources 1
-        sources = [cyg; sources; cas]
         @fitrfi_peel_sources
-        push!(output_sources, sources[2])
-        push!(output_calibrations, calibrations[2])
+        #@fitrfi_special_finish_image
+        push!(output_sources, sources[1])
+        push!(output_calibrations, calibrations[1])
 
         # this component causes peeling to choke on Vir A
-        idx = 6450
-        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, idx)
+        @fitrfi_pick_an_integration 6450
+        #@fitrfi_special_start_image
         cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
         vir = fitrfi_special_getdata_source("Vir A", visibilities, meta)
         cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
         @fitrfi_construct_sources 1
         sources = [cyg; sources; vir; cas]
         @fitrfi_peel_sources
+        #@fitrfi_special_finish_image
         push!(output_sources, sources[2])
         push!(output_calibrations, calibrations[2])
     end
-    fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations, target)
+    fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations,
+                                  target, "fitrfi-special")
     fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
 
