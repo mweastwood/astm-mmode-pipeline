@@ -93,7 +93,7 @@
     ]
 },
 {
-    "ref": "Harish",
+    "ref": "Harish (2016-04-06)",
     "name": "Tau A",
     "components": [
         {
@@ -118,13 +118,54 @@
     ]
 },
 {
-    "ref": "Baars et al. 1977",
+    "ref": "Harish (2016-04-06)",
     "name": "Vir A",
-    "ra": "12h30m49.42338s",
-    "dec": "+12d23m28.0439s",
-    "I": 105438.69,
-    "freq": 1.0e6,
-    "index": [-0.856]
+    "components": [
+        {
+            "name": "1",
+            "ra": "12h30m39.52s",
+            "dec": "+12d18m24.70s",
+            "I": 306.60,
+            "freq": 74e6,
+            "index": [-0.79],
+            "major-fwhm": 279.2,
+            "minor-fwhm": 189.3,
+            "position-angle": -58.8
+        },
+        {
+            "name": "2",
+            "ra": "12h30m42.10s",
+            "dec": "+12d22m27.20s",
+            "I": 216.31,
+            "freq": 74e6,
+            "index": [-0.79],
+            "major-fwhm": 161.4,
+            "minor-fwhm": 124.9,
+            "position-angle": -9.2
+        },
+        {
+            "name": "3",
+            "ra": "+12h30m48.57s",
+            "dec": "+12d23m15.70s",
+            "I": 728.01,
+            "freq": 74e6,
+            "index": [-0.79],
+            "major-fwhm": 53.6,
+            "minor-fwhm": 35.4,
+            "position-angle": -73.8
+        },
+        {
+            "name": "4",
+            "ra": "12h30m59.92s",
+            "dec": "12d23m55.70s",
+            "I": 300.12,
+            "freq": 74e6,
+            "index": [-0.79],
+            "major-fwhm": 208.8,
+            "minor-fwhm": 139.6,
+            "position-angle": -1.4
+        }
+    ]
 },
 {
     "name": "Her A",
