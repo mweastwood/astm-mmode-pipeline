@@ -6,7 +6,11 @@ end
 
 function makemap(spw, alm::Alm, target)
     dir = getdir(spw)
-    meta = getmeta(spw)
+    if contains(target, "rainy")
+        meta = getmeta(spw, "rainy")
+    else
+        meta = getmeta(spw, "100hr")
+    end
     map = alm2map(alm, 512)
 
     ## TODO: does this need a factor of the beam solid angle?

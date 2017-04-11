@@ -1,12 +1,12 @@
-function getmeta(spw)
+function getmeta(spw, dataset="100hr")
     dir = getdir(spw)
-    file = joinpath(dir, "metadata.jld")
+    file = joinpath(dir, "metadata-$dataset.jld")
     if isfile(file)
         meta = load(file, "metadata")
         return meta::Metadata
     else
-        dadas = listdadas(spw)
-        ms, path = dada2ms(dadas[1])
+        dadas = listdadas(spw, dataset)
+        ms, path = dada2ms(dadas[1], dataset)
         meta = Metadata(ms)
         finalize(ms)
         rm(path, recursive=true)
