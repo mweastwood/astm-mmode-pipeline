@@ -134,7 +134,7 @@ macro fitrfi_special_finish_image()
     quote
         fitrfi_image_visibilities(spw, ms_path, "fitrfi-special-finish-"*target, meta, visibilities)
         fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations,
-                                      target, "fitrfi-special-testing")
+                                      target, "fitrfi-special")
     end |> esc
 end
 
@@ -251,28 +251,37 @@ function fitrfi_special_spw18(times, data, flags, target)
     if target == "rfi-subtracted-calibrated-rainy-visibilities"
         # this component causes peeling to choke on Cas A
         @fitrfi_sum_over_integrations_with_subtraction 625:925 "Cyg A" "Cas A"
-        #@fitrfi_special_start_image
         @fitrfi_construct_sources 1
         @fitrfi_peel_sources
-        #@fitrfi_special_finish_image
         push!(output_sources, sources[1])
         push!(output_calibrations, calibrations[1])
 
         # this component causes peeling to choke on Vir A
-        @fitrfi_pick_an_integration 6450
-        #@fitrfi_special_start_image
+        @fitrfi_pick_an_integration 6419
         cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
         vir = fitrfi_special_getdata_source("Vir A", visibilities, meta)
         cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
         @fitrfi_construct_sources 1
         sources = [cyg; sources; vir; cas]
         @fitrfi_peel_sources
-        #@fitrfi_special_finish_image
         push!(output_sources, sources[2])
         push!(output_calibrations, calibrations[2])
+
+    elseif target == "test"
+        # Example
+        # =======
+        #@fitrfi_pick_an_integration 1
+        #@fitrfi_special_start_image
+        #cyg = fitrfi_special_getdata_source("Cyg A", visibilities, meta)
+        #@fitrfi_construct_sources 1
+        #sources = [cyg; sources]
+        #@fitrfi_peel_sources
+        #@fitrfi_special_finish_image
     end
-    fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations,
-                                  target, "fitrfi-special")
-    fitrfi_output(spw, meta, output_sources, output_calibrations, target)
+    if target != "test"
+        fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations,
+                                      target, "fitrfi-special")
+        fitrfi_output(spw, meta, output_sources, output_calibrations, target)
+    end
 end
 
