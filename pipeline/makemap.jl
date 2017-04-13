@@ -34,10 +34,30 @@ function makemap(spw, alm::Alm, target)
         ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
     end
     pixels = LibHealpix.interpolate(map, θ, ϕ)
-    newmap = HealpixMap(pixels)
+    galactic = HealpixMap(pixels)
+
+    # rotate the map to Galactic coordinates
+    frame = TTCal.reference_frame(meta)
+    z = Direction(dir"ITRF", 0.0degrees, 90degrees)
+    z_ = measure(frame, z, dir"J2000")
+    x = Direction(dir"ITRF", 0.0degrees, 0.0degrees)
+    x_ = measure(frame, x, dir"J2000")
+    zvec = [z_.x, z_.y, z_.z]
+    xvec = [x_.x, x_.y, x_.z]
+    yvec = cross(zvec, xvec)
+    θ = zeros(length(map))
+    ϕ = zeros(length(map))
+    for idx = 1:length(map)
+        vec = LibHealpix.pix2vec_ring(nside(map), idx)
+        θ[idx] = acos(dot(vec, zvec))
+        ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
+    end
+    pixels = LibHealpix.interpolate(map, θ, ϕ)
+    j2000 = HealpixMap(pixels)
 
     output = replace(target, "alm", "map")
-    writehealpix(joinpath(dir, output*".fits"), newmap, coordsys="G", replace=true)
+    writehealpix(joinpath(dir, output*"-galactic.fits"), galactic, coordsys="G", replace=true)
+    writehealpix(joinpath(dir, output*"-j2000.fits"), j2000, coordsys="C", replace=true)
 
     nothing
 end
