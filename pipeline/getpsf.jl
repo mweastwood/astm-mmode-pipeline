@@ -98,3 +98,49 @@ function getpsf_remote_processing_loop(input, output, transfermatrix, alm, flags
     end
 end
 
+function load_psf(spw)
+    dir = joinpath(getdir(spw), "psf")
+    files = readdir(dir)
+
+    dec = zeros(length(files))
+    for (file_index, file) in enumerate(files)
+        m = match(r"psf([\+-]\d\d)-degrees\.fits", file)
+        dec[file_index] = deg2rad(parse(Int, m.captures[1]))
+    end
+
+    perm = sortperm(dec)
+    files = files[perm]
+    dec = dec[perm]
+
+    xgrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
+    ygrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
+    output = zeros(length(xgrid), length(ygrid), length(files))
+
+    for (file_index, file) in enumerate(files)
+        psf = readhealpix(joinpath(dir, file))
+        image = extract_image(psf, xgrid, ygrid, 0, dec[file_index])
+        output[:, :, file_index] = image
+    end
+    output
+end
+
+function extract_image(map, xgrid, ygrid, ra, dec)
+    direction = Direction(dir"ITRF", ra*radians, dec*radians)
+    up = [direction.x, direction.y, direction.z]
+    north = [0, 0, 1] - up*direction.z
+    north /= norm(north)
+    east = cross(north, up)
+    θlist = Float64[]
+    ϕlist = Float64[]
+    for y in ygrid, x in xgrid
+        vector = up + x*east + y*north
+        vector /= norm(vector)
+        θ = acos(vector[3])
+        ϕ = atan2(vector[2], vector[1])
+        push!(θlist, θ)
+        push!(ϕlist, ϕ)
+    end
+    image = LibHealpix.interpolate(psf, θlist, ϕlist)
+    reshape(image, length(xgrid), length(ygrid))
+end
+
