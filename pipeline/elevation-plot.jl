@@ -1,24 +1,19 @@
-function elevation_plot_cas(dataset)
-    direction = Direction(dir"J2000", "23h23m24s", "58d48m54s")
-    elevation_plot(dataset, direction)
+function elevation_plots(dataset)
+    elevation_plot_cyg(dataset)
+    elevation_plot_cas(dataset)
+    elevation_plot_vir(dataset)
+    elevation_plot_tau(dataset)
+    elevation_plot_her(dataset)
 end
 
-function elevation_plot_vir(dataset)
-    direction = Direction(dir"J2000", "12h30m49.42338s", "+12d23m28.0439s")
-    elevation_plot(dataset, direction)
-end
+elevation_plot_cyg(dataset) = elevation_plot(dataset, source_dictionary["Cyg A"], "Cyg A")
+elevation_plot_cas(dataset) = elevation_plot(dataset, source_dictionary["Cas A"], "Cas A")
+elevation_plot_vir(dataset) = elevation_plot(dataset, source_dictionary["Vir A"], "Vir A")
+elevation_plot_tau(dataset) = elevation_plot(dataset, source_dictionary["Tau A"], "Tau A")
+elevation_plot_her(dataset) = elevation_plot(dataset, source_dictionary["Her A"], "Her A")
+elevation_plot_sun(dataset) = elevation_plot(dataset, source_dictionary["Sun"], "Sun")
 
-function elevation_plot_tau(dataset)
-    direction = Direction(dir"J2000", "05h34m31.94s", "+22d00m52.2s")
-    elevation_plot(dataset, direction)
-end
-
-function elevation_plot_her(dataset)
-    direction = Direction(dir"J2000", "16h51m11.4s", "+04d59m20s")
-    elevation_plot(dataset, direction)
-end
-
-function elevation_plot(dataset, direction)
+function elevation_plot(dataset, direction, name)
     meta = getmeta(18)
     dir = getdir(18)
     times = load(joinpath(dir, "raw-$dataset-visibilities.jld"), "times")
@@ -30,7 +25,7 @@ function elevation_plot(dataset, direction)
         el[idx] = latitude(azel)
     end
     N = length(times)
-    figure(1); clf()
+    figure(); clf()
     plot(1:N, rad2deg(el), "k-")
     xlim(1, N)
     ylim(0, 90)
@@ -38,5 +33,6 @@ function elevation_plot(dataset, direction)
         axhline(thresh)
     end
     grid("on")
+    title(name)
 end
 
