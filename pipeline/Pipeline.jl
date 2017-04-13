@@ -96,6 +96,9 @@ include("interactive-baseline-flags.jl")
 include("inspect-integration.jl")
 include("experimental.jl")
 
+# source detection and cleaning
+include("getpsf.jl")
+
 #include("getsun.jl")
 #include("getdata_experimental.jl")
 #include("compress.jl")
