@@ -14,7 +14,7 @@ function getpsf(spw, transfermatrix, flags, tolerance)
         @show θ
         alm = _getpsf(transfermatrix, flags, deg2rad(θ), tolerance)
         psf = alm2map(alm, 512)
-        output = @sprintf("psf-%+03d-degrees", round(Int, 90-θ))
+        output = @sprintf("psf%+03d-degrees.fits", round(Int, 90-θ))
         writehealpix(joinpath(psf_dir, output), psf, replace=true)
     end
 end

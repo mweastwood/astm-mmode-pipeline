@@ -58,6 +58,7 @@ function makemap(spw, alm::Alm, target)
     output = replace(target, "alm", "map")
     writehealpix(joinpath(dir, output*"-galactic.fits"), galactic, coordsys="G", replace=true)
     writehealpix(joinpath(dir, output*"-j2000.fits"), j2000, coordsys="C", replace=true)
+    writehealpix(joinpath(dir, output*"-itrf.fits"), map, coordsys="C", replace=true)
 
     nothing
 end
