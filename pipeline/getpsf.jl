@@ -79,9 +79,8 @@ function getpsf_remote_processing_loop(input, output, transfermatrix, alm, flags
                 x[l-m+1] = alm[l, m]
             end
             f = flags[m+1]
-            b = A*x
             A = A[!f, :]
-            b = b[!f]
+            b = A*x
             x = tikhonov(A, b, tolerance)
             put!(output, x)
         catch exception
