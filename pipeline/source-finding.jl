@@ -2,23 +2,17 @@ function find_sources(spw, target)
     dir = getdir(spw)
     map = readhealpix(joinpath(dir, target*".fits"))
     psf_dec, psf = load_psf(spw)
-
-    #meta = getmeta(spw, "rainy")
-    #frame = TTCal.reference_frame(meta)
-    #dir = Direction(dir"J2000", "01h37m41.2971s", "+33d09m35.118s") # 3C 48
-    #dir = measure(frame, dir, dir"ITRF")
-    #θ = π/2 - latitude(dir)
-    #ϕ = longitude(dir)
-    #pixel = LibHealpix.ang2pix_ring(nside(map), θ, ϕ)
-    #measure_flux(map, psf_dec, psf, pixel)
-
-    flux, background = _find_sources(map, psf_dec, psf)
+    flux, background, residual = _find_sources(map, psf_dec, psf)
+    writehealpix(joinpath(dir, "tmp", "flux.fits"), HealpixMap(flux), replace=true)
+    writehealpix(joinpath(dir, "tmp", "background.fits"), HealpixMap(background), replace=true)
+    writehealpix(joinpath(dir, "tmp", "residual.fits"), HealpixMap(residual), replace=true)
 end
 
 function _find_sources(map, psf_dec, psf)
     N = length(map)
     flux = zeros(N)
     background = zeros(N)
+    residual = zeros(N)
 
     pixel = 1
     next_pixel() = (pixel′ = pixel; pixel += 1; pixel′)
@@ -38,7 +32,7 @@ function _find_sources(map, psf_dec, psf)
                     mypixel ≤ N || break
                     Lumberjack.debug("Worker $worker is processing pixel=$mypixel")
                     put!(input_channel, mypixel)
-                    flux[mypixel], background[mypixel] = take!(output_channel)
+                    flux[mypixel], background[mypixel], residual[mypixel] = take!(output_channel)
                     increment_progress()
                 end
             finally
@@ -47,15 +41,15 @@ function _find_sources(map, psf_dec, psf)
             end
         end
     end
-    flux, background
+    flux, background, residual
 end
 
 function find_sources_remote_processing_loop(input, output, map, psf_dec, psf)
     while true
         try
             pixel = take!(input)
-            flux, background = measure_flux(map, psf_dec, psf, pixel)
-            put!(output, (flux, background))
+            flux, background, residual = measure_flux(map, psf_dec, psf, pixel)
+            put!(output, (flux, background, residual))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
                 # If this is a remote worker, we will see a RemoteException when the channel is
@@ -83,8 +77,10 @@ function measure_flux(map, psf_dec, psf, pixel)
     scale = 1-(dec-psf_dec[idx])
     mypsf = scale*psf[:, :, idx] + (1-scale)*psf[:, :, idx+1]
 
-    flux, background = measure_flux_do_the_work(image[76:126, 76:126], mypsf[76:126, 76:126])
-    flux, background
+    image = image[76:126, 76:126]
+    mypsf = mypsf[76:126, 76:126]
+
+    measure_flux_do_the_work(image, mypsf)
 end
 
 function measure_flux_do_the_work(image, psf)
@@ -92,8 +88,18 @@ function measure_flux_do_the_work(image, psf)
     b = vec(image)
     x = A\b
 
+    # discard high residual pixels (these likely contain another bright source)
+    δ = b - A*x
+    mad  = median(abs(δ))
+    keep = δ .< 5mad
+
+    A = A[keep, :]
+    b = b[keep]
+    x = A\b
+
     flux = x[1]
     background = x[2]
-    flux, background
+    residual = vecnorm(b - A*x)/vecnorm(b)
+    flux, background, residual
 end
 
