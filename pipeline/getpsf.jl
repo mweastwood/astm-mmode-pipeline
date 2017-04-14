@@ -121,7 +121,7 @@ function load_psf(spw)
         image = extract_image(psf, xgrid, ygrid, 0, dec[file_index])
         output[:, :, file_index] = image
     end
-    output
+    dec, output
 end
 
 function extract_image(map, xgrid, ygrid, ra, dec)
@@ -140,7 +140,7 @@ function extract_image(map, xgrid, ygrid, ra, dec)
         push!(θlist, θ)
         push!(ϕlist, ϕ)
     end
-    image = LibHealpix.interpolate(psf, θlist, ϕlist)
+    image = LibHealpix.interpolate(map, θlist, ϕlist)
     reshape(image, length(xgrid), length(ygrid))
 end
 
