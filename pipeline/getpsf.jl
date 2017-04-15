@@ -1,20 +1,22 @@
-function getpsf(spw, target; tolerance=0.01)
+function getpsf(spw, target, range=0:5:130; tolerance=0.01)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
     flags = load(joinpath(dir, target*".jld"), "flags")
-    getpsf(spw, transfermatrix, flags, tolerance)
+    getpsf(spw, transfermatrix, flags, range, tolerance)
 end
 
-function getpsf(spw, transfermatrix, flags, tolerance)
+function getpsf(spw, transfermatrix, flags, range, tolerance)
     dir = getdir(spw)
     psf_dir = joinpath(dir, "psf")
     isdir(psf_dir) || mkdir(psf_dir)
 
-    for θ in reverse(linspace(0, 130, 27)) # every 5 degrees
-        @show θ
+    for θ in range
+        output = @sprintf("psf%+03d-degrees.fits", round(Int, 90-θ))
+        println(output)
+        isfile(joinpath(psf_dir, output)) && continue
+
         alm = _getpsf(transfermatrix, flags, deg2rad(θ), tolerance)
         psf = alm2map(alm, 512)
-        output = @sprintf("psf%+03d-degrees.fits", round(Int, 90-θ))
         writehealpix(joinpath(psf_dir, output), psf, replace=true)
     end
 end
