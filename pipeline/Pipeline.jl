@@ -98,6 +98,7 @@ include("experimental.jl")
 
 # source detection and cleaning
 include("getpsf.jl")
+include("source-finding.jl")
 
 #include("getsun.jl")
 #include("getdata_experimental.jl")

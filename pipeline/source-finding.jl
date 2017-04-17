@@ -67,12 +67,12 @@ end
 function measure_flux(map, psf_dec, psf, pixel)
     θ, ϕ = LibHealpix.pix2ang_ring(nside(map), pixel)
     ra, dec = ϕ, π/2-θ
+    dec < minimum(psf_dec) && return 0.0, 0.0, 0.0
 
     xgrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
     ygrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
     image = extract_image(map, xgrid, ygrid, ra, dec)
 
-    dec < minimum(psf_dec) && return 0.0, 0.0
     idx = searchsortedlast(psf_dec, dec)
     scale = 1-(dec-psf_dec[idx])
     mypsf = scale*psf[:, :, idx] + (1-scale)*psf[:, :, idx+1]
@@ -84,11 +84,24 @@ function measure_flux(map, psf_dec, psf, pixel)
 end
 
 function measure_flux_do_the_work(image, psf)
-    A = [vec(psf) ones(length(psf))]
+    N, M = size(image)
+
+    # The goal is to fit the PSF to the given image and measure the flux of a point source (if there
+    # is one) at the given location. However, there is a diffuse background that we'd like to
+    # account for so we'll add some additional large-scale terms to prevent the diffuse emission
+    # from contaminating the flux measurement.
+    constant = ones(N*M)
+    linear_x = vec([idx for idx = 1:N, jdx = 1:M])
+    linear_y = vec([jdx for idx = 1:N, jdx = 1:M])
+    quadratic_xx = vec([idx^2 for idx = 1:N, jdx = 1:M])
+    quadratic_xy = vec([idx*jdx for idx = 1:N, jdx = 1:M])
+    quadratic_yy = vec([jdx^2 for idx = 1:N, jdx = 1:M])
+
+    A = [vec(psf) constant linear_x linear_y quadratic_xx quadratic_xy quadratic_yy]
     b = vec(image)
     x = A\b
 
-    # discard high residual pixels (these likely contain another bright source)
+    # Discard high residual pixels (these likely contain another bright source).
     δ = b - A*x
     mad  = median(abs(δ))
     keep = δ .< 5mad
