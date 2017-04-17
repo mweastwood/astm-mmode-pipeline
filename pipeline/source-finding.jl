@@ -74,7 +74,7 @@ function measure_flux(map, psf_dec, psf, pixel)
     image = extract_image(map, xgrid, ygrid, ra, dec)
 
     idx = searchsortedlast(psf_dec, dec)
-    scale = 1-(dec-psf_dec[idx])
+    scale = 1-(dec-psf_dec[idx])/(psf_dec[idx+1]-psf_dec[idx])
     mypsf = scale*psf[:, :, idx] + (1-scale)*psf[:, :, idx+1]
 
     image = image[76:126, 76:126]
