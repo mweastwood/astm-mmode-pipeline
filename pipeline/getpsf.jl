@@ -127,6 +127,16 @@ end
 
 function extract_image(map, xgrid, ygrid, ra, dec)
     direction = Direction(dir"ITRF", ra*radians, dec*radians)
+    extract_image(map, xgrid, ygrid, direction)
+end
+
+function extract_image(map, direction)
+    xgrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
+    ygrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
+    extract_image(map, xgrid, ygrid, direction)
+end
+
+function extract_image(map, xgrid, ygrid, direction)
     up = [direction.x, direction.y, direction.z]
     north = [0, 0, 1] - up*direction.z
     north /= norm(north)
