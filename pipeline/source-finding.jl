@@ -72,10 +72,7 @@ function measure_flux(map, psf_dec, psf, pixel)
     xgrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
     ygrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
     image = extract_image(map, xgrid, ygrid, ra, dec)
-
-    idx = searchsortedlast(psf_dec, dec)
-    scale = 1-(dec-psf_dec[idx])/(psf_dec[idx+1]-psf_dec[idx])
-    mypsf = scale*psf[:, :, idx] + (1-scale)*psf[:, :, idx+1]
+    mypsf = interpolate_psf(psf_dec, psf, dec)
 
     image = image[76:126, 76:126]
     mypsf = mypsf[76:126, 76:126]
@@ -124,24 +121,24 @@ function find_sources_in_the_map(spw, target)
     frame = TTCal.reference_frame(meta)
 
     regions = select_regions(flux, 64)
-    for region in regions
-        vec = LibHealpix.pix2vec_ring(nside(flux), first(region))
-        itrf = Direction(dir"ITRF", vec[1], vec[2], vec[3])
-        j2000 = measure(frame, itrf, dir"J2000")
-        image = extract_image(map, itrf)
+    #for region in regions
+    #    vec = LibHealpix.pix2vec_ring(nside(flux), first(region))
+    #    itrf = Direction(dir"ITRF", vec[1], vec[2], vec[3])
+    #    j2000 = measure(frame, itrf, dir"J2000")
+    #    image = extract_image(map, itrf)
 
-        @show region
-        @show j2000
+    #    @show region
+    #    @show j2000
 
-        figure(1); clf()
-        imshow(image, interpolation="nearest")
-        gca()[:set_aspect]("equal")
-        colorbar()
+    #    figure(1); clf()
+    #    imshow(image, interpolation="nearest")
+    #    gca()[:set_aspect]("equal")
+    #    colorbar()
 
-        print("Continue? ")
-        inp = chomp(readline())
-        inp == "q" && break
-    end
+    #    print("Continue? ")
+    #    inp = chomp(readline())
+    #    inp == "q" && break
+    #end
 
     output = HealpixMap(Float64, 512)
     for idx = 1:length(regions)
@@ -150,6 +147,8 @@ function find_sources_in_the_map(spw, target)
         end
     end
     writehealpix(joinpath(dir, "tmp", "sources.fits"), output, replace=true)
+
+    regions
 end
 
 function select_pixels(map, cutoff)

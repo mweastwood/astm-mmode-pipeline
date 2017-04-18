@@ -125,6 +125,12 @@ function load_psf(spw)
     dec, output
 end
 
+function interpolate_psf(psf_dec, psf, dec)
+    idx = searchsortedlast(psf_dec, dec)
+    scale = 1-(dec-psf_dec[idx])/(psf_dec[idx+1]-psf_dec[idx])
+    scale*psf[:, :, idx] + (1-scale)*psf[:, :, idx+1]
+end
+
 function extract_image(map, xgrid, ygrid, ra, dec)
     direction = Direction(dir"ITRF", ra*radians, dec*radians)
     extract_image(map, xgrid, ygrid, direction)
