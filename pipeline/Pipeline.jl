@@ -97,6 +97,7 @@ include("inspect-integration.jl")
 include("experimental.jl")
 
 # source detection and cleaning
+include("observation-matrix.jl")
 include("getpsf.jl")
 include("source-finding.jl")
 

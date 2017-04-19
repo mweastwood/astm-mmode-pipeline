@@ -1,11 +1,11 @@
-function getpsf(spw, target, range=0:5:130; tolerance=0.01)
+function getpsf(spw, dataset, range=0:5:130)
     dir = getdir(spw)
-    transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
-    flags = load(joinpath(dir, target*".jld"), "flags")
-    getpsf(spw, transfermatrix, flags, range, tolerance)
+    observation, lmax, mmax = load(joinpath(dir, "observation-matrix-$dataset.jld"),
+                                   "blocks", "lmax", "mmax")
+    _getpsf(spw, observation, lmax, mmax, range)
 end
 
-function getpsf(spw, transfermatrix, flags, range, tolerance)
+function _getpsf(spw, observation, lmax, mmax, range)
     dir = getdir(spw)
     psf_dir = joinpath(dir, "psf")
     isdir(psf_dir) || mkdir(psf_dir)
@@ -15,7 +15,7 @@ function getpsf(spw, transfermatrix, flags, range, tolerance)
         println(output)
         isfile(joinpath(psf_dir, output)) && continue
 
-        alm = _getpsf(transfermatrix, flags, deg2rad(θ), tolerance)
+        alm = _getpsf(observation, deg2rad(θ), lmax, mmax)
         psf = alm2map(alm, 512)
         writehealpix(joinpath(psf_dir, output), psf, replace=true)
     end
@@ -29,74 +29,18 @@ function pointsource_alm(θ, ϕ, lmax, mmax)
     alm
 end
 
-function _getpsf(transfermatrix, flags, θ, tolerance)
-    lmax = transfermatrix.lmax
-    mmax = transfermatrix.mmax
-    input_alm = pointsource_alm(θ, 0.0, lmax, mmax)
+function _getpsf(observation, θ, lmax, mmax)
+    input_alm = pointsource_alm(θ, 0, lmax, mmax)
     output_alm = Alm(Complex128, lmax, mmax)
-
-    m = 0
-    nextm() = (m′ = m; m += 1; m′)
-    prg = Progress(mmax+1, "Progress: ")
-    lck = ReentrantLock()
-    increment_progress() = (lock(lck); next!(prg); unlock(lck))
-    @sync for worker in workers()
-        @async begin
-            input_channel  = RemoteChannel()
-            output_channel = RemoteChannel()
-            try
-                remotecall(getpsf_remote_processing_loop, worker, input_channel, output_channel,
-                           transfermatrix, input_alm, flags, tolerance)
-                Lumberjack.debug("Worker $worker has been started")
-                while true
-                    m′ = nextm()
-                    m′ ≤ mmax || break
-                    Lumberjack.debug("Worker $worker is processing m=$(m′)")
-                    put!(input_channel, m′)
-                    block = take!(output_channel)
-                    for l = m′:lmax
-                        output_alm[l, m′] = block[l-m′+1]
-                    end
-                    increment_progress()
-                end
-            finally
-                close(input_channel)
-                close(output_channel)
-            end
+    for m = 0:mmax
+        A = observation[m+1]
+        x = [input_alm[l, m] for l = m:lmax]
+        y = A*x
+        for l = m:lmax
+            output_alm[l, m] = y[l-m+1]
         end
     end
     output_alm
-end
-
-function getpsf_remote_processing_loop(input, output, transfermatrix, alm, flags, tolerance)
-    BLAS.set_num_threads(16) # compensate for a bug in `addprocs`
-    lmax = transfermatrix.lmax
-    mmax = transfermatrix.mmax
-    while true
-        try
-            m = take!(input)
-            A = transfermatrix[m, 1]
-            x = zeros(Complex128, lmax-m+1)
-            for l = m:lmax
-                x[l-m+1] = alm[l, m]
-            end
-            f = flags[m+1]
-            A = A[!f, :]
-            b = A*x
-            x = tikhonov(A, b, tolerance)
-            put!(output, x)
-        catch exception
-            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
-                # If this is a remote worker, we will see a RemoteException when the channel is
-                # closed. However, if this is the master process (ie. we're running without any
-                # workers) then this will be an InvalidStateException. This is kind of messy...
-                break
-            else
-                println(exception)
-                rethrow(exception)
-            end
-        end
-    end
 end
 
 function load_psf(spw)
