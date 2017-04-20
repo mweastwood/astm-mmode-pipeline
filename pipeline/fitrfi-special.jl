@@ -55,7 +55,14 @@ function fitrfi_pick_an_integration(spw, times, data, flags, idx)
     meta, visibilities
 end
 
+macro fitrfi_sum_over_integrations(range)
+    quote
+        meta, visibilities = fitrfi_sum_over_integrations(spw, times, data, flags, $range)
+    end |> esc
+end
+
 function fitrfi_sum_over_integrations(spw, times, data, flags, range)
+    @show range
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
@@ -84,6 +91,7 @@ macro fitrfi_sum_over_integrations_with_subtraction(range, sources...)
 end
 
 function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, range, sources)
+    @show range
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
@@ -219,6 +227,13 @@ function fitrfi_special_spw12(times, data, flags, target)
     output_calibrations = GainCalibration[]
     meta = getmeta(spw)
     if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    elseif target == "peeled-rainy-visibilities"
+        @fitrfi_sum_over_integrations 1:7756
+        @fitrfi_special_start_image
+        @fitrfi_construct_sources 1
+        @fitrfi_peel_sources
+        @fitrfi_special_finish_image
+    elseif target == "test"
     end
     fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
@@ -266,6 +281,32 @@ function fitrfi_special_spw18(times, data, flags, target)
         @fitrfi_peel_sources
         push!(output_sources, sources[2])
         push!(output_calibrations, calibrations[2])
+
+        @fitrfi_sum_over_integrations_with_subtraction 5876:6250 "Cyg A" "Cas A" "Vir A"
+        @fitrfi_construct_sources 1
+        @fitrfi_peel_sources
+        push!(output_sources, sources[1])
+        push!(output_calibrations, calibrations[1])
+
+    elseif target == "peeled-rainy-visibilities"
+        #@fitrfi_sum_over_integrations 1:1500
+        #@fitrfi_construct_sources 3
+        #@fitrfi_peel_sources
+        #push!(output_sources, sources[1])
+        #push!(output_calibrations, calibrations[1])
+
+        #@fitrfi_sum_over_integrations 4000:5000
+        #@fitrfi_construct_sources 3
+        #@fitrfi_peel_sources
+        #push!(output_sources, sources[1])
+        #push!(output_calibrations, calibrations[1])
+        for idx = 1:500:4501
+            @fitrfi_sum_over_integrations idx:idx+500
+            @fitrfi_construct_sources 1
+            @fitrfi_peel_sources
+            push!(output_sources, sources[1])
+            push!(output_calibrations, calibrations[1])
+        end
 
     elseif target == "test"
         # Example
