@@ -5,33 +5,37 @@ function clean(spw, dataset="rainy")
     observation = load(joinpath(dir, "observation-matrix-$dataset.jld"), "blocks")
     regions = find_sources_in_the_map(spw, "map-rfi-subtracted-peeled-$dataset-itrf")
     cleaning_regions = construct_cleaning_regions(map, regions)
+    map, alm = _clean(map, alm, observation, cleaning_regions)
+    writehealpix(joinpath(dir, "tmp", "cleaned.fits"), map, replace=true)
+    map, alm
+end
 
-    for region in cleaning_regions
-        @show region.center
+function _clean(map, alm, observation, cleaning_regions)
+    N = length(cleaning_regions)
+    done = fill(false, N)
+    for iteration = 1:10N
+        idx, residual, region = pick_region(map, cleaning_regions[!done])
+        @show region.center, residual
+        @time map, alm, flux = clean_do_a_major_iteration(map, alm, observation, region)
+        @show flux
 
-        #figure(1); clf()
-        #image = extract_image(map, region.center)
-        #imshow(image, interpolation="nearest")
-        #gca()[:set_aspect]("equal")
-        #colorbar()
-        #grid("on")
-
-        for idx = 1:10
-            @time map, alm = clean_do_a_major_iteration(map, alm, observation, region)
+        # Stop cleaning a region when the measured flux drops below 0.1 Jy
+        if abs(flux) < 0.1
+            @view(done[!done])[idx] = true
         end
-
-        #figure(2); clf()
-        #image = extract_image(map, region.center)
-        #imshow(image, interpolation="nearest")
-        #gca()[:set_aspect]("equal")
-        #colorbar()
-        #grid("on")
-
-        #print("Continue? ")
-        #inp = chomp(readline())
-        #inp == "q" && break
+        @show sum(done)
     end
     map, alm
+end
+
+function pick_region(map, cleaning_regions)
+    residuals = zeros(length(cleaning_regions))
+    for (idx, region) in enumerate(cleaning_regions)
+        background = get_region_median(map, region.annulus)
+        residuals[idx] = maximum(map[pixel] for pixel in region.aperture)
+    end
+    jdx = indmax(residuals)
+    jdx, residuals[jdx], cleaning_regions[jdx]
 end
 
 immutable CleaningRegion
@@ -110,85 +114,15 @@ end
 function clean_do_a_major_iteration(map, alm, observation, region)
     background = get_region_median(map, region.annulus)
     centroid = get_region_centroid(map, region.aperture, background)
-    @show centroid
     psf_alm  = getpsf_alm(observation, π/2-latitude(centroid), longitude(centroid),
                           lmax(alm), mmax(alm))
     psf  = alm2map(psf_alm, nside(map))
     flux = get_region_flux(map, psf, background, region.aperture)
-    @show flux
+    @show centroid, flux
 
     λ = 0.5
     map -= λ*flux*psf
     alm -= λ*flux*psf_alm
-    map, alm
-end
-
-
-
-
-function find_the_brightest_region(map, cleaning_regions)
-    idx = indmax(maximum(map[pixel] for pixel in region.pixels) for region in cleaning_regions)
-    cleaning_regions[idx]
-end
-
-function clean_do_a_minor_iteration(map, psf_dec, psf, region)
-    image = extract_image(map, region.centroid)
-    mypsf = interpolate_psf(psf_dec, psf, latitude(region.centroid))
-    mypsf_interp = interpolate(mypsf, BSpline(Quadratic(Flat())), OnGrid())
-
-    function fitted_psf(x, range)
-        xrange = (range[1]+x[2]):(range[end]+x[2])
-        yrange = (range[1]+x[3]):(range[end]+x[3])
-        x[1]*mypsf_interp[xrange, yrange]
-    end
-
-    function residual_image(x, range)
-        cut_mypsf = fitted_psf(x, range)
-        cut_image = image[range, range]
-        cut_image - cut_mypsf - x[4]
-    end
-
-    function residual(x, g)
-        vecnorm(residual_image(x, 76:126))
-    end
-
-    function subtract(x, scale=0.15)
-        image[2:199, 2:199] -= scale*fitted_psf(x, 2:199)
-    end
-
-    @show region
-
-    figure(1); clf()
-    imshow(image, interpolation="nearest")
-    gca()[:set_aspect]("equal")
-    colorbar()
-    grid("on")
-
-    figure(2); clf()
-    imshow(mypsf, interpolation="nearest")
-    gca()[:set_aspect]("equal")
-    colorbar()
-    grid("on")
-
-    x0   = [+1e1,  0,  0,  1e6]
-    xmin = [-1e5, -1, -1, -1e7]
-    xmax = [+1e5, +1, +1, +1e7]
-
-    for iter = 1:100
-        opt = Opt(:LN_COBYLA, length(x0))
-        ftol_rel!(opt, 1e-3)
-        min_objective!(opt, residual)
-        lower_bounds!(opt, xmin)
-        upper_bounds!(opt, xmax)
-        minf, x, ret = optimize(opt, x0)
-        @show minf, x, ret
-        subtract(x, 0.15)
-    end
-
-    figure(3); clf()
-    imshow(image, interpolation="nearest")
-    gca()[:set_aspect]("equal")
-    colorbar()
-    grid("on")
+    map, alm, flux
 end
 
