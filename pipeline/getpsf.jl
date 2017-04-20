@@ -15,7 +15,7 @@ function _getpsf(spw, observation, lmax, mmax, range)
         println(output)
         isfile(joinpath(psf_dir, output)) && continue
 
-        alm = _getpsf(observation, deg2rad(θ), lmax, mmax)
+        alm = getpsf_alm(observation, deg2rad(θ), lmax, mmax)
         psf = alm2map(alm, 512)
         writehealpix(joinpath(psf_dir, output), psf, replace=true)
     end
@@ -29,8 +29,8 @@ function pointsource_alm(θ, ϕ, lmax, mmax)
     alm
 end
 
-function _getpsf(observation, θ, lmax, mmax)
-    input_alm = pointsource_alm(θ, 0, lmax, mmax)
+function getpsf_alm(observation, θ, ϕ, lmax, mmax)
+    input_alm = pointsource_alm(θ, ϕ, lmax, mmax)
     output_alm = Alm(Complex128, lmax, mmax)
     for m = 0:mmax
         A = observation[m+1]
@@ -41,6 +41,10 @@ function _getpsf(observation, θ, lmax, mmax)
         end
     end
     output_alm
+end
+
+function getpsf_alm(observation, θ, lmax, mmax)
+    getpsf_alm(observation, θ, 0, lmax, mmax)
 end
 
 function load_psf(spw)
