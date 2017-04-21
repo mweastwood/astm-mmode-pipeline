@@ -1,5 +1,6 @@
 global color=red edit=0 move=0 delete=1
 fk5
+circle(0h0m0s, +90d0m0s,1000") # text = {NCP}
 circle(23h23m24.0000s,+58d48m54.0000s,1000") # text = {Cas A}
 circle(19h59m28.3566s,+40d44m02.0970s,1000") # text = {Cyg A}
 circle(5h34m31.9400s,+22d00m52.2000s,1000") # text = {Tau A}
@@ -23,6 +24,7 @@ circle(0h06m36.0000s,+72d46m60.0000s,1000") # text = {SNR G119.5+10.2}
 circle(5h00m42.0000s,+46d40m24.0000s,1000") # text = {SNR G160.4+02.8}
 circle(20h50m60.0000s,+30d40m00.0000s,1000") # text = {Cygnus Loop}
 circle(0h25m26.0000s,+64d09m10.0000s,1000") # text = {Tycho's SN}
+circle(00h42m44.330s,+41d16m07.50s,1000") # text = {Andromeda Galaxy}
 circle(0h43m09.6000s,+52d03m35.0000s,1000") # text = {3C 20}
 circle(0h55m50.5830s,+26d24m36.6800s,1000") # text = {3C 28}
 circle(1h08m52.8540s,+13d20m13.7500s,1000") # text = {3C 33}
@@ -134,3 +136,5 @@ circle(19h24m56.1400s,+34d24m00.6000s,1000") # text = {4C 34.51}
 circle(20h29m35.6000s,+36d43m23.0000s,1000") # text = {4C 36.40}
 circle(22h31m19.0390s,+54d09m35.9100s,1000") # text = {4C 53.50}
 circle(23h16m32.7400s,+53d57m07.9000s,1000") # text = {4C 53.52}
+circle(21h07m25.7s,-25d25m46s,1000") # text = {NGC 7018}
+circle(04h44m37.707s,-28d09m54.41s,1000") # text = {2MASS J04443770-2809544}
