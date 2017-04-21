@@ -95,6 +95,7 @@ include("getmmodes.jl")
 include("getalm.jl")
 #include("getmodel.jl")
 include("makemap.jl")
+include("glamour-image.jl")
 
 include("elevation-plot.jl")
 include("bisect.jl")
