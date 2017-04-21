@@ -31,11 +31,17 @@ if myid() == 1
     isdir(logs) || mkdir(logs)
 end
 
-function getdir(spw)
-    dir = joinpath(workspace, @sprintf("spw%02d", spw))
-    isdir(dir) || mkdir(dir)
-    dir
+module Common
+    export getdir
+    const basedir = joinpath(dirname(@__FILE__), "..")
+    const workspace = joinpath(basedir, "workspace")
+    function getdir(spw)
+        dir = joinpath(workspace, @sprintf("spw%02d", spw))
+        isdir(dir) || mkdir(dir)
+        dir
+    end
 end
+using .Common
 
 baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
@@ -100,6 +106,7 @@ include("experimental.jl")
 include("observation-matrix.jl")
 include("getpsf.jl")
 include("source-finding.jl")
+include("cleaning.jl")
 
 #include("getsun.jl")
 #include("getdata_experimental.jl")

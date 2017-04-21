@@ -1,3 +1,12 @@
+module GetPSF
+
+using BPJSpec
+using CasaCore.Measures
+using JLD
+using LibHealpix
+
+using ..Common
+
 function getpsf(spw, dataset, range=0:5:130)
     dir = getdir(spw)
     observation, lmax, mmax = load(joinpath(dir, "observation-matrix-$dataset.jld"),
@@ -107,5 +116,7 @@ function extract_image(map, xgrid, ygrid, direction)
     end
     image = LibHealpix.interpolate(map, θlist, ϕlist)
     reshape(image, length(xgrid), length(ygrid))
+end
+
 end
 
