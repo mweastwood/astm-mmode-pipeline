@@ -60,17 +60,21 @@ function plot_image(source, center)
             myvec = (xgrid[idx]-x0)*east + (ygrid[jdx]-y0)*north
             major_distance = dot(myvec, major_axis)
             minor_distance = dot(myvec, minor_axis)
-            image[idx, jdx] += flux*exp(-major_distance^2/(2*major_σ)^2
-                                        -minor_distance^2/(2*minor_σ)^2)
+            image[idx, jdx] += flux*exp(-0.5*major_distance^2/major_σ^2
+                                        -0.5*minor_distance^2/minor_σ^2)
         end
     end
     figure(1); clf()
-    imshow(flipdim(image.', 2), cmap=get_cmap("afmhot"), interpolation="nearest")
+    imshow(flipdim(image.', 2), cmap=get_cmap("afmhot"), interpolation="nearest",
+           extent=(-10, 10, -10, 10))
+    ϕ = linspace(0, 2π, 501)
+    plot(5cos(ϕ), 5sin(ϕ), "w--", lw=2)
     axis("off")
     grid("off")
     gca()[:get_xaxis]()[:set_visible](false)
     gca()[:get_yaxis]()[:set_visible](false)
     gca()[:set_aspect]("equal")
+    colorbar()
 end
 
 end
