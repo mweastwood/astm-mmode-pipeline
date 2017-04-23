@@ -74,7 +74,6 @@ function plot_image(source, center)
     gca()[:get_xaxis]()[:set_visible](false)
     gca()[:get_yaxis]()[:set_visible](false)
     gca()[:set_aspect]("equal")
-    colorbar()
 end
 
 end
