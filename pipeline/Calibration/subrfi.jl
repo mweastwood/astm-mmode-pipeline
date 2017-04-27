@@ -27,7 +27,7 @@ function subrfi(spw, times, data, flags, target)
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
-                put!(input, (data[:, :, myidx], flags[:, myidx]))
+                put!(input, (times[myidx], data[:, :, myidx], flags[:, myidx]))
                 data[:, :, myidx], xx_rfi_flux[:, myidx], yy_rfi_flux[:, myidx] = take!(output)
                 increment_progress()
             end
@@ -52,10 +52,11 @@ function subrfi_worker_loop(spw, input, output, xx_rfi, yy_rfi)
     dir = getdir(spw)
     meta = getmeta(spw)
     meta.channels = meta.channels[55:55]
+    meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
     while true
         try
-            data, flags = take!(input)
-            data, xx_rfi_flux, yy_rfi_flux = subrfi_do_the_work(meta, data, flags, xx_rfi, yy_rfi)
+            time, data, flags = take!(input)
+            data, xx_rfi_flux, yy_rfi_flux = subrfi_do_the_work(meta, time, data, flags, xx_rfi, yy_rfi)
             put!(output, (data, xx_rfi_flux, yy_rfi_flux))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -68,9 +69,23 @@ function subrfi_worker_loop(spw, input, output, xx_rfi, yy_rfi)
     end
 end
 
-function subrfi_do_the_work(meta, data, flags, xx_rfi, yy_rfi)
-    xx = data[1, :]
-    yy = data[2, :]
+function subrfi_do_the_work(meta, time, data, flags, xx_rfi, yy_rfi)
+    Nbase = length(flags)
+    meta.time = Epoch(epoch"UTC", time*seconds)
+    frame = TTCal.reference_frame(meta)
+    visibilities = Visibilities(Nbase, 1)
+    visibilities.flags[:] = true
+    for α = 1:Nbase
+        visibilities.data[α, 1] = JonesMatrix(data[1, α], 0, 0, data[2, α])
+        visibilities.flags[α, 1] = flags[α]
+    end
+
+    # apply some additional flags
+    TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+
+    xx = getfield.(visibilities.data[:, 1], 1)
+    yy = getfield.(visibilities.data[:, 1], 4)
+    flags = visibilities.flags[:, 1]
     for ant = 1:Nant(meta)
         α = baseline_index(ant, ant)
         flags[α] = true

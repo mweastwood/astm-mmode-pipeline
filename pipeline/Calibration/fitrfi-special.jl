@@ -184,6 +184,13 @@ function fitrfi_special_spw06(times, data, flags, target)
     output_calibrations = GainCalibration[]
     meta = getmeta(spw)
     if target == "rfi-subtracted-calibrated-rainy-visibilities"
+    elseif target == "peeled-rainy-visibilities"
+        @fitrfi_sum_over_integrations 1:7756
+        @fitrfi_construct_sources 1
+        @fitrfi_peel_sources
+        push!(output_sources, sources[1])
+        push!(output_calibrations, calibrations[1])
+    elseif target == "test"
     end
     fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
@@ -227,13 +234,26 @@ function fitrfi_special_spw12(times, data, flags, target)
     output_calibrations = GainCalibration[]
     meta = getmeta(spw)
     if target == "rfi-subtracted-calibrated-rainy-visibilities"
-    elseif target == "peeled-rainy-visibilities"
-        @fitrfi_sum_over_integrations 1:7756
-        @fitrfi_special_start_image
+        @fitrfi_pick_an_integration 6327
+        cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
+        vir = fitrfi_special_getdata_source("Vir A", visibilities, meta)
         @fitrfi_construct_sources 1
+        sources = [sources; vir; cas]
+        @fitrfi_peel_sources
+        push!(output_sources, sources[1])
+        push!(output_calibrations, calibrations[1])
+
+    elseif target == "peeled-rainy-visibilities"
+
+    elseif target == "test"
+        @fitrfi_pick_an_integration 6327
+        @fitrfi_special_start_image
+        cas = fitrfi_special_getdata_source("Cas A", visibilities, meta)
+        vir = fitrfi_special_getdata_source("Vir A", visibilities, meta)
+        @fitrfi_construct_sources 2
+        sources = [sources[1]; vir; cas]
         @fitrfi_peel_sources
         @fitrfi_special_finish_image
-    elseif target == "test"
     end
     fitrfi_output(spw, meta, output_sources, output_calibrations, target)
 end
