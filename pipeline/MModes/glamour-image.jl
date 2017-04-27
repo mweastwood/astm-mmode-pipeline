@@ -1,12 +1,20 @@
-function glamour(spw)
+function glamour(spw, filename="map-rfi-subtracted-peeled-rainy-galactic.fits";
+                 min=0, max=0)
     dir = getdir(spw)
-    map = readhealpix(joinpath(dir, "map-rfi-subtracted-peeled-rainy-galactic.fits"))
+    map = readhealpix(joinpath(dir, filename))
     mask_the_map!(spw, map)
 
-    output = joinpath(dir, "glamour-shot.png")
+    output = joinpath(dir, "glamour-shot-$(replace(filename, ".fits", "")).png")
     image = mollweide(map)
-    image -= minimum(image)
-    image /= maximum(image)
+    @show maximum(image) minimum(image)
+    if min == max == 0
+        image -= minimum(image)
+        image /= maximum(image)
+    else
+        image -= min
+        image /= (max-min)
+        image = clamp(image, 0, 1)
+    end
     image = flipdim(image, 1)
     save(output, image)
 end
