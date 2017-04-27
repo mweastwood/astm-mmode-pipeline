@@ -69,6 +69,14 @@ function cleanup()
     end
 end
 
+function test_spawn_workers()
+    for astm = 4:13
+        @show astm
+        str = @sprintf("astm%02d", astm)
+        @time addprocs([(str,1)])
+    end
+end
+
 include("dada2ms.jl")
 include("wsclean.jl")
 
