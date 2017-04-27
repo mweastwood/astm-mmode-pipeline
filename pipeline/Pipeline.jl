@@ -77,8 +77,7 @@ function test_spawn_workers()
     end
 end
 
-include("dada2ms.jl")
-include("wsclean.jl")
+include("Utility/Utility.jl")
 
 include("working-with-source-models.jl")
 
