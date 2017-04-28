@@ -9,5 +9,5 @@ cd `dirname $0`/../..
 cd pipeline
 input="twice-rfi-subtracted-calibrated-$2-visibilities"
 $JULIA --machinefile $MACHINEFILE_MAX -e \
-    "reload(\"Pipeline\"); @time Pipeline.peel($1, \"$input\")"
+    "reload(\"Pipeline\"); @time Pipeline.Calibration.peel($1, \"$2\", \"rfi-subtracted-calibrated\")"
 

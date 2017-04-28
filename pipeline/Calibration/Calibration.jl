@@ -15,6 +15,7 @@ include("sawtooth.jl")
 include("calibrate.jl")
 include("fitrfi.jl")
 include("subrfi.jl")
+include("addrfi.jl")
 include("peeling.jl")
 
 end

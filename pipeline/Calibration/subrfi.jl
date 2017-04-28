@@ -15,7 +15,7 @@ function subrfi(spw, times, data, flags, dataset, target)
     increment_progress() = (lock(l); next!(p); unlock(l))
 
     dir = getdir(spw)
-    xx_rfi, yy_rfi = load(joinpath(dir, "fitrfi-$dataset-$target.jld"), "xx", "yy")
+    xx_rfi, yy_rfi = load(joinpath(dir, "fitrfi-$target-$dataset.jld"), "xx", "yy")
     Nrfi = size(xx_rfi, 2)
     Ntime = size(data, 3)
     xx_rfi_flux = zeros(Nrfi, Ntime)
@@ -24,7 +24,7 @@ function subrfi(spw, times, data, flags, dataset, target)
         @async begin
             input  = RemoteChannel()
             output = RemoteChannel()
-            remotecall(subrfi_worker_loop, worker, spw, input, output, xx_rfi, yy_rfi)
+            remotecall(subrfi_worker_loop, worker, spw, dataset, input, output, xx_rfi, yy_rfi)
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
@@ -40,14 +40,15 @@ function subrfi(spw, times, data, flags, dataset, target)
     output_file = joinpath(dir, "rfi-subtracted-$target-$dataset-visibilities.jld")
     isfile(output_file) && rm(output_file)
     save(output_file, "times", times, "data", data, "flags", flags,
+         "xx-rfi", xx_rfi, "yy-rfi", yy_rfi,
          "xx-rfi-flux", xx_rfi_flux, "yy-rfi-flux", yy_rfi_flux, compress=true)
 
     data, flags
 end
 
-function subrfi_worker_loop(spw, input, output, xx_rfi, yy_rfi)
+function subrfi_worker_loop(spw, dataset, input, output, xx_rfi, yy_rfi)
     dir = getdir(spw)
-    meta = getmeta(spw)
+    meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
     meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
     while true

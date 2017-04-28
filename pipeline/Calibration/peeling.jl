@@ -1,7 +1,8 @@
-function peel(spw, target="rfi-subtracted-calibrated-visiblities")
+function peel(spw, dataset, target)
     dir = getdir(spw)
-    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
-    peel(spw, target, times, data, flags)
+    times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"),
+                              "times", "data", "flags")
+    peel(spw, dataset, target, times, data, flags)
 end
 
 immutable PeelingData
@@ -15,7 +16,7 @@ immutable PeelingData
     calibrations :: Vector{GainCalibration}
 end
 
-function peel(spw, target, times, data, flags;
+function peel(spw, dataset, target, times, data, flags;
               istest=false, dopeeling=true, dosubtraction=true)
     Ntime = length(times)
     idx = 1
@@ -30,7 +31,7 @@ function peel(spw, target, times, data, flags;
         @async begin
             input  = RemoteChannel()
             output = RemoteChannel()
-            remotecall(peel_worker_loop, worker, spw, input, output,
+            remotecall(peel_worker_loop, worker, spw, input, output, dataset,
                        istest, dopeeling, dosubtraction)
             while true
                 myidx = nextidx()
@@ -46,10 +47,10 @@ function peel(spw, target, times, data, flags;
 
     if !istest
         dir = getdir(spw)
-        output_file = replace(replace(target, "calibrated", "peeled"), "rfi-subtracted-", "")
-        output_file = replace(output_file, "rfi-subtracted-", "")
-        output_file = replace(output_file, "twice-", "")
-        output_file = joinpath(dir, output_file*".jld")
+        target = replace(target, "calibrated", "peeled")
+        target = replace(target, "rfi-subtracted-", "")
+        target = replace(target, "twice-", "")
+        output_file = joinpath(dir, "$target-$dataset-visibilities.jld")
         isfile(output_file) && rm(output_file)
         save(output_file, "times", times, "data", data, "flags", flags,
              "peeling-data", peeling_data, compress=true)
@@ -58,11 +59,12 @@ function peel(spw, target, times, data, flags;
     peeling_data
 end
 
-function peel_worker_loop(spw, input, output, istest, dopeeling, dosubtraction)
+function peel_worker_loop(spw, input, output, dataset, istest, dopeeling, dosubtraction)
     dir = getdir(spw)
-    meta = getmeta(spw)
+    meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
-    sources = readsources(joinpath(sourcelists, "getdata-sources.json"))
+    sources = readsources(joinpath(dirname(@__FILE__), "..", "..", "workspace", "source-lists",
+                                   "getdata-sources.json"))
     while true
         try
             time, data, flags = take!(input)
