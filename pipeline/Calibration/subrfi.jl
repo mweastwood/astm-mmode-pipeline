@@ -1,10 +1,11 @@
-function subrfi(spw, target="calibrated-visibilities")
+function subrfi(spw, dataset, target)
     dir = getdir(spw)
-    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
-    subrfi(spw, times, data, flags, target)
+    times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"),
+                              "times", "data", "flags")
+    subrfi(spw, times, data, flags, dataset, target)
 end
 
-function subrfi(spw, times, data, flags, target)
+function subrfi(spw, times, data, flags, dataset, target)
     Ntime = size(data, 3)
     idx = 1
     nextidx() = (myidx = idx; idx += 1; myidx)
@@ -14,7 +15,7 @@ function subrfi(spw, times, data, flags, target)
     increment_progress() = (lock(l); next!(p); unlock(l))
 
     dir = getdir(spw)
-    xx_rfi, yy_rfi = load(joinpath(dir, "$target-rfi-components.jld"), "xx", "yy")
+    xx_rfi, yy_rfi = load(joinpath(dir, "fitrfi-$dataset-$target.jld"), "xx", "yy")
     Nrfi = size(xx_rfi, 2)
     Ntime = size(data, 3)
     xx_rfi_flux = zeros(Nrfi, Ntime)
@@ -36,11 +37,7 @@ function subrfi(spw, times, data, flags, target)
         end
     end
 
-    if startswith(target, "rfi-subtracted-")
-        output_file = joinpath(dir, "twice-$target.jld")
-    else
-        output_file = joinpath(dir, "rfi-subtracted-$target.jld")
-    end
+    output_file = joinpath(dir, "rfi-subtracted-$target-$dataset-visibilities.jld")
     isfile(output_file) && rm(output_file)
     save(output_file, "times", times, "data", data, "flags", flags,
          "xx-rfi-flux", xx_rfi_flux, "yy-rfi-flux", yy_rfi_flux, compress=true)
@@ -56,7 +53,7 @@ function subrfi_worker_loop(spw, input, output, xx_rfi, yy_rfi)
     while true
         try
             time, data, flags = take!(input)
-            data, xx_rfi_flux, yy_rfi_flux = subrfi_do_the_work(meta, time, data, flags, xx_rfi, yy_rfi)
+            data, xx_rfi_flux, yy_rfi_flux = subrfi_do_the_work(meta, data, flags, xx_rfi, yy_rfi)
             put!(output, (data, xx_rfi_flux, yy_rfi_flux))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -69,9 +66,8 @@ function subrfi_worker_loop(spw, input, output, xx_rfi, yy_rfi)
     end
 end
 
-function subrfi_do_the_work(meta, time, data, flags, xx_rfi, yy_rfi)
+function subrfi_do_the_work(meta, data, flags, xx_rfi, yy_rfi)
     Nbase = length(flags)
-    meta.time = Epoch(epoch"UTC", time*seconds)
     frame = TTCal.reference_frame(meta)
     visibilities = Visibilities(Nbase, 1)
     visibilities.flags[:] = true
@@ -119,5 +115,35 @@ function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
         yy_rfi_flux = zeros(N)
     end
     xx, yy, xx_rfi_flux, yy_rfi_flux
+end
+
+function rm_rfi(meta::Metadata, visibilities::Visibilities, sources, calibrations)
+    # this method is used by fitrfi to subtract RFI from a preliminary integration
+    xx = getfield.(visibilities.data[:, 1], 1)
+    yy = getfield.(visibilities.data[:, 1], 4)
+    data = zeros(Complex128, 2, length(xx))
+    data[1, :] = xx
+    data[2, :] = yy
+    flags = visibilities.flags[:, 1]
+
+    N = length(sources)
+    xx_rfi = zeros(Complex128, Nbase(meta), N)
+    yy_rfi = zeros(Complex128, Nbase(meta), N)
+    beam = ConstantBeam()
+    for idx = 1:N
+        model = genvis(meta, beam, sources[idx])
+        corrupt!(model, meta, calibrations[idx])
+        for α = 1:Nbase(meta)
+            xx_rfi[α, idx] = model.data[α, 1].xx
+            yy_rfi[α, idx] = model.data[α, 1].yy
+        end
+    end
+
+    data, xx_rfi_flux, yy_rfi_flux = subrfi_do_the_work(meta, data, flags, xx_rfi, yy_rfi)
+
+    for α = 1:Nbase(meta)
+        visibilities.data[α, 1] = JonesMatrix(data[1, α], 0, 0, data[2, α])
+    end
+    visibilities
 end
 

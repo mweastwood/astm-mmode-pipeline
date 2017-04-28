@@ -6,8 +6,13 @@ This module includes functions for working with certain OVRO LWA datasets on the
 module Common
 
 export getdir, getmeta
+export listdadas
+export baseline_index
 
-const workspace = joinpath(dirname(@__FILE__), "..", "workspace")
+using JLD
+using TTCal
+
+const workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
 
 function getdir(spw)
     dir = joinpath(workspace, @sprintf("spw%02d", spw))
