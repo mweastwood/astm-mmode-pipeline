@@ -11,6 +11,7 @@ export baseline_index
 
 using JLD
 using TTCal
+using ..Utility
 
 const workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
 

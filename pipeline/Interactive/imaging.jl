@@ -84,7 +84,7 @@ Create an image of the data integrated over the specified range of times. Howeve
 the phase center is rotated to the specified direction.
 """
 function image_with_new_phase_center(spw, times, data, flags, range, phase_center, image_path)
-    meta = getmeta(spw)
+    meta = getmeta(spw, "rainy")
     meta.channels = meta.channels[55:55]
     meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
     center = PointSource("phase center", phase_center, PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
@@ -121,7 +121,7 @@ end
 
 function image_mmodes(spw, target="mmodes-peeled", m=0)
     dir = getdir(spw)
-    meta = getmeta(spw)
+    meta = getmeta(spw, "rainy")
     mmodes, flags = load(joinpath(dir, target*".jld"), "blocks", "flags")
     block = mmodes[abs(m)+1]
     block_flags = flags[abs(m)+1]
