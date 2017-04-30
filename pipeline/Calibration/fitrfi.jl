@@ -319,10 +319,17 @@ function fitrfi_spw04(times, data, flags, dataset, target)
             # though, so a single integration is sufficient to take it out.
             @fitrfi_pick_an_integration 6646
             @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # This is the same RFI source as above, but the subtraction doesn't do a particularly
+            # good job. So we'll fit for it again.
+            @fitrfi_pick_an_integration 6205
+            @fitrfi_construct_sources "Vir A" A3 "Cas A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            @fitrfi_select_components 2
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -342,10 +349,18 @@ function fitrfi_spw06(times, data, flags, dataset, target)
             # bright.
             @fitrfi_pick_an_integration 6637
             @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # Cas A fails to peel on this integration and it's unclear why. My hypothesis is that
+            # the bright RFI wasn't subtracted very well, but it seems to be fine. We'll fit for it
+            # again anyway, but it's not obvious why I should have to.
+            @fitrfi_pick_an_integration 6205
+            @fitrfi_construct_sources "Vir A" A3 "Cas A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            @fitrfi_select_components 2
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -363,10 +378,18 @@ function fitrfi_spw08(times, data, flags, dataset, target)
         if target == "calibrated"
             @fitrfi_sum_over_integrations 1:7756
             @fitrfi_construct_sources 1
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # There is a correlated noise component that gets in the way of peeling Cas A on this
+            # integration. There is also an RFI source on the horizon, but it gets mixed up with Cen
+            # A if I try to pick that out on this integration.
+            @fitrfi_pick_an_integration 6195
+            @fitrfi_construct_sources "Vir A" 1 "Cas A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            @fitrfi_select_components 2
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
