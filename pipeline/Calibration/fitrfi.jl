@@ -326,9 +326,7 @@ function fitrfi_spw04(times, data, flags, dataset, target)
             # good job. So we'll fit for it again.
             @fitrfi_pick_an_integration 6205
             @fitrfi_construct_sources "Vir A" A3 "Cas A"
-            @fitrfi_test_start_image
             @fitrfi_peel_sources
-            @fitrfi_test_finish_image
             @fitrfi_select_components 2
         elseif target == "rfi-restored-peeled"
         else
@@ -381,15 +379,18 @@ function fitrfi_spw08(times, data, flags, dataset, target)
             @fitrfi_peel_sources
             @fitrfi_select_components 1
 
-            # There is a correlated noise component that gets in the way of peeling Cas A on this
-            # integration. There is also an RFI source on the horizon, but it gets mixed up with Cen
-            # A if I try to pick that out on this integration.
-            @fitrfi_pick_an_integration 6195
-            @fitrfi_construct_sources "Vir A" 1 "Cas A"
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 2
+            # TODO: recheck this integration, I forgot to @fitrfi_rm_rfi_so_far
+            # it's possible that this component I got is the one above
+
+            ## There is a correlated noise component that gets in the way of peeling Cas A on this
+            ## integration. There is also an RFI source on the horizon, but it gets mixed up with Cen
+            ## A if I try to pick that out on this integration.
+            #@fitrfi_pick_an_integration 6195
+            #@fitrfi_construct_sources "Vir A" 1 "Cas A"
+            #@fitrfi_test_start_image
+            #@fitrfi_peel_sources
+            #@fitrfi_test_finish_image
+            #@fitrfi_select_components 2
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -470,10 +471,20 @@ function fitrfi_spw16(times, data, flags, dataset, target)
         if target == "calibrated"
             @fitrfi_sum_over_integrations 1:7756
             @fitrfi_construct_sources 2
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1:2
+
+            # This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
+            # peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, and the
+            # solution doesn't actually converge, but the solution looks ok so I'm leaving it for
+            # now.
+            @fitrfi_pick_an_integration 5169
+            @fitrfi_rm_rfi_so_far
+            @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
-            @fitrfi_select_components 1:2
+            @fitrfi_select_components 1
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
