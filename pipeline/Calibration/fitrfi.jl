@@ -240,7 +240,11 @@ end
 
 macro fitrfi_finish()
     output = quote
-        meta = getmeta(spw, dataset)
+        if length(output_sources) == 0
+            meta = getmeta(spw, dataset)
+            meta.channels = meta.channels[55:55]
+            meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+        end
         fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations,
                                       "fitrfi-$target-$dataset")
         xx, yy = fitrfi_output(spw, meta, output_sources, output_calibrations,
