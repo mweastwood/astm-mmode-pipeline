@@ -37,15 +37,16 @@ const source_dictionary = Dict("Cyg A" => Direction(dir"J2000", "19h59m28.35663s
                                "Her A" => Direction(dir"J2000", "16h51m11.4s", "+04d59m20s"),
                                "Sun"   => Direction(dir"SUN"))
 
-function smeared_image_everything(spw, filename)
+function smeared_image_everything(spw, dataset, target)
     dir = getdir(spw)
-    times, data, flags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
+    times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"),
+                              "times", "data", "flags")
     _, Nbase, Ntime = size(data)
-    output = joinpath(dir, "smeared-"*filename)
+    output = joinpath(dir, "smeared-$target-$dataset-visibilities")
     image(spw, data, flags, 1:Ntime, output)
     for name in keys(source_dictionary)
         direction = source_dictionary[name]
-        output = joinpath(dir, "smeared-"*lowercase(replace(name, " ", "-"))*"-"filename)
+        output = joinpath(dir, "smeared-"*lowercase(replace(name, " ", "-"))*"-$target-$dataset-visibilities")
         image_with_new_phase_center(spw, times, data, flags, 1:Ntime, direction, output)
     end
 end

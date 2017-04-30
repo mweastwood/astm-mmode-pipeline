@@ -14,7 +14,7 @@ elevation_plot_her(dataset) = elevation_plot(dataset, source_dictionary["Her A"]
 elevation_plot_sun(dataset) = elevation_plot(dataset, source_dictionary["Sun"], "Sun")
 
 function elevation_plot(dataset, direction, name)
-    meta = getmeta(18)
+    meta = getmeta(18, dataset)
     dir = getdir(18)
     times = load(joinpath(dir, "raw-$dataset-visibilities.jld"), "times")
     el = zeros(length(times))
