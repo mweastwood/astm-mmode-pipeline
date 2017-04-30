@@ -35,6 +35,7 @@ const source_dictionary = Dict("Cyg A" => Direction(dir"J2000", "19h59m28.35663s
                                "Vir A" => Direction(dir"J2000", "12h30m49.42338s", "+12d23m28.0439s"),
                                "Tau A" => Direction(dir"J2000", "05h34m31.94s", "+22d00m52.2s"),
                                "Her A" => Direction(dir"J2000", "16h51m11.4s", "+04d59m20s"),
+                               "Cen A" => Direction(dir"J2000", "13h25m27.61507s", "-43d01m08.8053s"),
                                "Sun"   => Direction(dir"SUN"))
 
 function smeared_image_everything(spw, dataset, target)

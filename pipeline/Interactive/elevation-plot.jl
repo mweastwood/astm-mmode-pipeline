@@ -11,6 +11,7 @@ elevation_plot_cas(dataset) = elevation_plot(dataset, source_dictionary["Cas A"]
 elevation_plot_vir(dataset) = elevation_plot(dataset, source_dictionary["Vir A"], "Vir A")
 elevation_plot_tau(dataset) = elevation_plot(dataset, source_dictionary["Tau A"], "Tau A")
 elevation_plot_her(dataset) = elevation_plot(dataset, source_dictionary["Her A"], "Her A")
+elevation_plot_cen(dataset) = elevation_plot(dataset, source_dictionary["Cen A"], "Cen A")
 elevation_plot_sun(dataset) = elevation_plot(dataset, source_dictionary["Sun"], "Sun")
 
 function elevation_plot(dataset, direction, name)

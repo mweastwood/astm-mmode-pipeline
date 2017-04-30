@@ -5,13 +5,13 @@ using PyPlot
 using CasaCore.Measures
 using CasaCore.Tables
 using TTCal
-using ..Utility
-using ..Common
-using ..Calibration
 
 include("Utility/Utility.jl")
 include("Common/Common.jl")
 include("Calibration/Calibration.jl")
+using .Utility
+using .Common
+using .Calibration
 
 include("Interactive/elevation-plot.jl")
 include("Interactive/interactive-baseline-flags.jl")
