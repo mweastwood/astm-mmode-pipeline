@@ -199,8 +199,8 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
         TTCal.isabovehorizon(frame, source) || continue
         if spw == 4
             @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 60
+            @pick_for_peeling "Cas A" 0
+            @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
@@ -209,8 +209,8 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 30
         elseif spw == 6
             @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_subtraction "Vir A"
+            @pick_for_peeling "Cas A" 0
+            @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
@@ -219,8 +219,8 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 30
         elseif spw == 8
             @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_subtraction "Vir A"
+            @pick_for_peeling "Cas A" 0
+            @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
@@ -229,8 +229,8 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 30
         elseif spw == 10
             @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_subtraction "Vir A"
+            @pick_for_peeling "Cas A" 0
+            @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
@@ -239,7 +239,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 30
         elseif spw == 12
             @pick_for_peeling "Cyg A" 10
-            @pick_for_peeling "Cas A" 5
+            @pick_for_peeling "Cas A" 0
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
@@ -249,7 +249,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 15
         elseif spw == 14
             @pick_for_peeling "Cyg A" 10
-            @pick_for_peeling "Cas A" 5
+            @pick_for_peeling "Cas A" 0
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
@@ -259,7 +259,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 15
         elseif spw == 16
             @pick_for_peeling "Cyg A" 10
-            @pick_for_peeling "Cas A" 5
+            @pick_for_peeling "Cas A" 0
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"
@@ -269,7 +269,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @special_case_the_sun 15
         elseif spw == 18
             @pick_for_peeling "Cyg A" 10
-            @pick_for_peeling "Cas A" 5 # note that Cas A never drops below 5 degrees elevation
+            @pick_for_peeling "Cas A" 0 # note that Cas A never drops below 5 degrees elevation
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
             @pick_for_subtraction "Her A"

@@ -87,14 +87,16 @@ function fitrfi_sum_over_integrations(spw, times, data, flags, dataset, range)
     meta, visibilities
 end
 
-macro fitrfi_sum_over_integrations_with_subtraction(range, sources...)
+macro fitrfi_sum_over_integrations_with_subtraction(range, flag_short, sources...)
     quote
         meta, visibilities = fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags,
+                                                                           $flag_short,
                                                                            dataset, $range, $sources)
     end |> esc
 end
 
-function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, dataset, range, sources)
+function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, flag_short,
+                                                       dataset, range, sources)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -113,6 +115,7 @@ function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, 
             temp.data[α, 1] = JonesMatrix(xx, 0, 0, yy)
             temp.flags[α, 1] = flags[α, idx]
         end
+        TTCal.flag_short_baselines!(temp, meta, 15.0)
         for name in sources
             source = fitrfi_getdata_source(name, temp, meta)
             subsrc!(temp, meta, ConstantBeam(), source)
@@ -124,7 +127,9 @@ function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, 
             end
         end
     end
-    TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    if flag_short
+        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    end
     meta, visibilities
 end
 
@@ -226,7 +231,7 @@ macro fitrfi_select_components(range)
     esc(output)
 end
 
-macro rm_rfi_so_far()
+macro fitrfi_rm_rfi_so_far()
     output = quote
         rm_rfi(meta, visibilities, output_sources, output_calibrations)
     end
@@ -235,9 +240,11 @@ end
 
 macro fitrfi_finish()
     output = quote
+        meta = getmeta(spw, dataset)
         fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations,
                                       "fitrfi-$target-$dataset")
-        xx, yy = fitrfi_output(spw, meta, sources, calibrations, "fitrfi-$target-$dataset")
+        xx, yy = fitrfi_output(spw, meta, output_sources, output_calibrations,
+                               "fitrfi-$target-$dataset")
     end
     esc(output)
 end
@@ -276,6 +283,15 @@ end
 function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, image_name)
     beam = ConstantBeam()
     dir = getdir(spw)
+
+    # delete existing images
+    files = readdir(joinpath(dir, "tmp"))
+    filter!(file->startswith(file, image_name), files)
+    filter!(file->endswith(file, ".fits"), files)
+    for file in files
+        rm(joinpath(dir, "tmp", file))
+    end
+
     output_visibilities = Visibilities(Nbase(meta), 109)
     output_visibilities.flags[:] = true
     output_visibilities.flags[:, 55] = false
@@ -290,106 +306,160 @@ function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations
     end
 end
 
-#function fitrfi_spw04(data, flags, target)
-#    @fitrfi_start 4
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources B
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 0
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
-#
-#function fitrfi_spw06(data, flags, target)
-#    @fitrfi_start 6
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources B A
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 0
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
-#
-#function fitrfi_spw08(data, flags, target)
-#    @fitrfi_start 8
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources A B
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 1
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
-#
-#function fitrfi_spw10(data, flags, target)
-#    @fitrfi_start 10
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources B 1 A 1 C
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 2
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
-#
-#function fitrfi_spw12(data, flags, target)
-#    @fitrfi_start 12
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources 2 B
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 3
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
-#
-#function fitrfi_spw14(data, flags, target)
-#    @fitrfi_start 14
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources A C 2 B
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 2 E
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
-#
-#function fitrfi_spw16(data, flags, target)
-#    @fitrfi_start 16
-#    if target == "calibrated-100hr-visibilities"
-#        @fitrfi_construct_sources 1 A 1 B
-#    elseif target == "calibrated-rainy-visibilities"
-#        @fitrfi_construct_sources 2
-#    else
-#        Lumberjack.error("unknown target")
-#    end
-#    @fitrfi_peel_sources
-#    @fitrfi_finish
-#end
+function fitrfi_spw04(times, data, flags, dataset, target)
+    @fitrfi_preamble 4
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            # This is a piece of horizon RFI that shows up from Big Pine. It's extremely bright
+            # though, so a single integration is sufficient to take it out.
+            @fitrfi_pick_an_integration 6646
+            @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
+
+function fitrfi_spw06(times, data, flags, dataset, target)
+    @fitrfi_preamble 6
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            # Similar to spw04 above, this is the same piece of horizon RFI. Once again it is very
+            # bright.
+            @fitrfi_pick_an_integration 6637
+            @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
+
+function fitrfi_spw08(times, data, flags, dataset, target)
+    @fitrfi_preamble 8
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            @fitrfi_sum_over_integrations 1:7756
+            @fitrfi_construct_sources 1
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
+
+function fitrfi_spw10(times, data, flags, dataset, target)
+    @fitrfi_preamble 10
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            @fitrfi_sum_over_integrations 1:7756
+            @fitrfi_construct_sources 1
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
+
+function fitrfi_spw12(times, data, flags, dataset, target)
+    @fitrfi_preamble 12
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            @fitrfi_sum_over_integrations 1:7756
+            @fitrfi_construct_sources 3
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1:3
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
+
+function fitrfi_spw14(times, data, flags, dataset, target)
+    @fitrfi_preamble 14
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            @fitrfi_sum_over_integrations 1:7756
+            @fitrfi_construct_sources 3
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1:3
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
+
+function fitrfi_spw16(times, data, flags, dataset, target)
+    @fitrfi_preamble 16
+    if dataset == "100hr"
+    elseif dataset == "rainy"
+        if target == "calibrated"
+            @fitrfi_sum_over_integrations 1:7756
+            @fitrfi_construct_sources 2
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1:2
+        elseif target == "rfi-restored-peeled"
+        else
+            error("unknown target")
+        end
+    else
+        error("unknown dataset")
+    end
+    @fitrfi_finish
+end
 
 function fitrfi_spw18(times, data, flags, dataset, target)
     @fitrfi_preamble 18
     if dataset == "100hr"
-        if target == "calibrated"
-            #@fitrfi_construct_sources C A B 2
-        elseif target == "peeled"
-        else
-            error("unknown target")
-        end
     elseif dataset == "rainy"
         if target == "calibrated"
             @fitrfi_sum_over_integrations 1:7756
@@ -397,20 +467,18 @@ function fitrfi_spw18(times, data, flags, dataset, target)
             @fitrfi_peel_sources
             @fitrfi_select_components 1:3
 
-            # this component causes peeling to choke on Cas A
-            @fitrfi_sum_over_integrations_with_subtraction 745:785 "Cyg A" "Cas A"
-            @rm_rfi_so_far
+            # This component causes Cas A to fail to peel in integration 911 (and nearby). However
+            # it seems impossible to separate this component from Cas by considering a single
+            # integration, and if you use multiple integrations it is difficult to get peeling to
+            # converge. However, if you use multiple integrations and do not flag short baselines
+            # things seem to work out.
+            @fitrfi_sum_over_integrations_with_subtraction 811:911 false "Cyg A" "Cas A"
+            @fitrfi_rm_rfi_so_far
             @fitrfi_construct_sources 1
             @fitrfi_peel_sources
             @fitrfi_select_components 1
 
-            # this component causes peeling to choke on Vir A
-            @fitrfi_pick_an_integration 6419
-            @rm_rfi_so_far
-            @fitrfi_construct_sources "Cyg A" 1 "Vir A" "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 2
-        elseif target == "peeled"
+        elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
         end

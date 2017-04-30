@@ -37,6 +37,7 @@ function subrfi(spw, times, data, flags, dataset, target)
         end
     end
 
+    target = replace(target, "rfi-restored-", "")
     output_file = joinpath(dir, "rfi-subtracted-$target-$dataset-visibilities.jld")
     isfile(output_file) && rm(output_file)
     save(output_file, "times", times, "data", data, "flags", flags,
