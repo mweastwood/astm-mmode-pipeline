@@ -12,7 +12,8 @@ immutable PeelingData
     Q :: Vector{Float64}
     directions :: Vector{Direction}
     to_peel :: Vector{Int}
-    to_sub :: Vector{Int}
+    to_sub_bright :: Vector{Int}
+    to_sub_faint :: Vector{Int}
     calibrations :: Vector{GainCalibration}
 end
 
@@ -132,7 +133,7 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
 
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     names = getfield.(sources, 1)
-    to_peel, to_sub = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
+    to_peel, to_sub_bright, to_sub_faint = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
 
     if istest
         println("to_peel")
@@ -141,17 +142,25 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
             @show source
         end
         println("")
-        println("to_sub")
-        println("------")
-        for source in sources[to_sub]
+        println("to_sub_bright")
+        println("-------------")
+        for source in sources[to_sub_bright]
+            @show source
+        end
+        println("")
+        println("to_sub_faint")
+        println("-------------")
+        for source in sources[to_sub_faint]
             @show source
         end
         println("")
     end
 
     if dopeeling
+        subsrc!(visibilities, meta, ConstantBeam(), sources[to_sub_bright])
         calibrations = peel!(visibilities, meta, ConstantBeam(), sources[to_peel],
                              peeliter=5, maxiter=100, tolerance=1e-3, quiet=!istest)
+        putsrc!(visibilities, meta, ConstantBeam(), sources[to_sub_bright])
     else
         calibrations = GainCalibration[]
     end
@@ -161,13 +170,14 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
             #idx = "Sun" .== names
             #sources[idx] = fit_sun(meta, visibilities)
         #end
+        to_sub = [to_sub_bright; to_sub_faint]
         update_source_list_in_place(visibilities, meta, @view(sources[to_sub]),
                                     @view(I[to_sub]), @view(Q[to_sub]), @view(directions[to_sub]))
         istest && @show sources[to_sub]
         subsrc!(visibilities, meta, ConstantBeam(), sources[to_sub])
     end
     data = PeelingData(time, sources, I, Q, directions,
-                       to_peel, to_sub, calibrations)
+                       to_peel, to_sub_bright, to_sub_faint, calibrations)
 
     # uncomment for testing purposes
     #visibilities = genvis(meta, sources[to_peel][1])
@@ -179,14 +189,27 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     xx, yy, data
 end
 
-macro pick_for_peeling(name, elevation_cutoff)
+macro pick_for_peeling_bright(name, elevation_cutoff)
     quote
         if source.name == $name
             I[idx] ≥ 30 || continue
             if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
                 push!(to_peel, idx)
             else
-                push!(to_sub, idx)
+                push!(to_sub_bright, idx)
+            end
+        end
+    end |> esc
+end
+
+macro pick_for_peeling_faint(name, elevation_cutoff)
+    quote
+        if source.name == $name
+            I[idx] ≥ 30 || continue
+            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
+                push!(to_peel, idx)
+            else
+                push!(to_sub_faint, idx)
             end
         end
     end |> esc
@@ -196,7 +219,7 @@ macro pick_for_subtraction(name)
     quote
         if source.name == $name
             I[idx] ≥ 30 || continue
-            push!(to_sub, idx)
+            push!(to_sub_faint, idx)
         end
     end |> esc
 end
@@ -207,94 +230,102 @@ macro special_case_the_sun(elevation_cutoff)
             if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
                 push!(to_peel, idx)
             else
-                push!(to_sub, idx)
+                push!(to_sub_faint, idx)
             end
         end
     end |> esc
 end
 
 function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
+    # We have three categories for how sources are removed:
+    #  1) peel them (for very bright sources)
+    #  2) subtract them after peeling (for faint sources)
+    #  3) subtract them before peeling (for sources in the middle)
+    # The third category is important because reasonably bright sources can interfere with the
+    # peeling process if the flux of the two sources is comparable. For example, Cas A near the
+    # horizon can create problems for trying to peel Vir A.
     to_peel = Int[]
-    to_sub  = Int[]
+    to_sub_faint  = Int[]
+    to_sub_bright = Int[]
     frame = TTCal.reference_frame(meta)
     for idx = 1:length(sources)
         source = sources[idx]
         TTCal.isabovehorizon(frame, source) || continue
         if spw == 4
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 6
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 8
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 10
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 12
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 14
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 16
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 18
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_subtraction "Tau A"
+            @pick_for_peeling_bright "Cyg A" 15
+            @pick_for_peeling_bright "Cas A" 10
+            @pick_for_peeling_faint "Vir A" 45
+            @pick_for_peeling_faint "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
@@ -306,22 +337,9 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
     # TODO we'd probably like to be able to specify a range of sidereal times a
     # source should be peeled, rather than just a cut in elevation
 
-    # If a source we are trying to subtract has higher flux than a source we are trying to peel, we
-    # should probably be peeling that source.
-    move = zeros(Bool, length(to_sub))
-    for idx in to_sub
-        for jdx in to_peel
-            if I[idx] > I[jdx]
-                move[to_sub .== idx] = true
-            end
-        end
-    end
-    to_peel = [to_peel; to_sub[move]]
-    to_sub  = to_sub[!move]
-
     fluxes = I[to_peel]
     perm = sortperm(fluxes, rev=true)
-    to_peel[perm], to_sub
+    to_peel[perm], to_sub_bright, to_sub_faint
 end
 
 function fit_sun(meta, visibilities)
