@@ -2,6 +2,7 @@ module Interactive
 
 using JLD
 using PyPlot
+using ProgressMeter
 using CasaCore.Measures
 using CasaCore.Tables
 using TTCal
@@ -18,6 +19,7 @@ include("Interactive/interactive-baseline-flags.jl")
 include("Interactive/inspect-integration.jl")
 include("Interactive/imaging.jl")
 include("Interactive/bisect.jl")
+include("Interactive/find-subtraction-errors.jl")
 
 end
 
