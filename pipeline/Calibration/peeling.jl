@@ -121,10 +121,33 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     #sun = fit_sun(meta, xx, yy, flags)
     #sources = [sources; sun]
 
+    if istest
+        println("sources")
+        println("-------")
+        for source in sources
+            @show source
+        end
+        println("")
+    end
+
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     names = getfield.(sources, 1)
     to_peel, to_sub = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
-    istest && @show sources[to_peel] sources[to_sub]
+
+    if istest
+        println("to_peel")
+        println("-------")
+        for source in sources[to_peel]
+            @show source
+        end
+        println("")
+        println("to_sub")
+        println("------")
+        for source in sources[to_sub]
+            @show source
+        end
+        println("")
+    end
 
     if dopeeling
         calibrations = peel!(visibilities, meta, ConstantBeam(), sources[to_peel],
@@ -198,7 +221,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
         source = sources[idx]
         TTCal.isabovehorizon(frame, source) || continue
         if spw == 4
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -208,7 +231,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 6
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -218,7 +241,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 8
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -228,7 +251,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 10
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -238,7 +261,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 12
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -248,7 +271,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 14
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -258,7 +281,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 16
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"
@@ -268,7 +291,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 18
-            @pick_for_peeling "Cyg A" 10
+            @pick_for_peeling "Cyg A" 15
             @pick_for_peeling "Cas A" 10
             @pick_for_peeling "Vir A" 45
             @pick_for_subtraction "Tau A"

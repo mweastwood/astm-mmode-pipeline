@@ -429,10 +429,18 @@ function fitrfi_spw12(times, data, flags, dataset, target)
         if target == "calibrated"
             @fitrfi_sum_over_integrations 1:7756
             @fitrfi_construct_sources 3
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1:3
+
+            # This is a correlated noise component that dominates over Vir A and interferes with it
+            # being peeled.
+            @fitrfi_pick_an_integration 5857
+            @fitrfi_rm_rfi_so_far
+            @fitrfi_construct_sources 1 "Vir A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
-            @fitrfi_select_components 1:3
+            @fitrfi_select_components 1
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -481,9 +489,7 @@ function fitrfi_spw16(times, data, flags, dataset, target)
             @fitrfi_pick_an_integration 5169
             @fitrfi_rm_rfi_so_far
             @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
-            @fitrfi_test_start_image
             @fitrfi_peel_sources
-            @fitrfi_test_finish_image
             @fitrfi_select_components 1
         elseif target == "rfi-restored-peeled"
         else
