@@ -24,6 +24,8 @@ function inspect_integration(spw, times, data, flags, dataset, target, integrati
     println("\n=== no subtraction ===")
     title = @sprintf("%05d-step01", integration)*"-$target-$dataset"
     inspect_do_the_work(spw, dataset, mytime, mydata, myflags, title, true, false)
+
+    println("This has been a message from integration #$integration")
 end
 
 function inspect_do_the_work(spw, dataset, time, data, flags, title, dopeeling, dosubtraction)

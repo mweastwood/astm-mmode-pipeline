@@ -1,17 +1,5 @@
 function source_from_name(name)
-    if name == "Cyg A"
-        return PointSource("Cyg A", source_dictionary["Cyg A"],
-                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
-    elseif name == "Cas A"
-        return PointSource("Cas A", source_dictionary["Cas A"],
-                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
-    elseif name == "Vir A"
-        return PointSource("Vir A", source_dictionary["Vir A"],
-                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
-    elseif name == "Tau A"
-        return PointSource("Tau A", source_dictionary["Tau A"],
-                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
-    end
+    PointSource(name, source_dictionary[name], PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
 end
 
 function find_subtraction_errors(spw, dataset, target, name)
