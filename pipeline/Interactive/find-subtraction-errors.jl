@@ -1,21 +1,36 @@
-function find_subtraction_errors_vir_a(spw, dataset, target)
+function source_from_name(name)
+    if name == "Cyg A"
+        return PointSource("Cyg A", source_dictionary["Cyg A"],
+                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
+    elseif name == "Cas A"
+        return PointSource("Cas A", source_dictionary["Cas A"],
+                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
+    elseif name == "Vir A"
+        return PointSource("Vir A", source_dictionary["Vir A"],
+                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
+    elseif name == "Tau A"
+        return PointSource("Tau A", source_dictionary["Tau A"],
+                           PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
+    end
+end
+
+function find_subtraction_errors(spw, dataset, target, name)
     dir = getdir(spw)
     times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"),
                               "times", "data", "flags")
-    find_subtraction_errors_vir_a(spw, times, data, flags)
+    find_subtraction_errors_vir_a(spw, times, data, flags, name)
 end
 
-function find_subtraction_errors_vir_a(spw, dataset, times, data, flags)
-    source = PointSource("Vir A", source_dictionary["Vir A"],
-                         PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
-    flux = find_subtraction_errors(spw, dataset, times, data, flags, source)
+function find_subtraction_errors(spw, dataset, times, data, flags, name)
+    source = source_from_name(name)
+    flux = _find_subtraction_errors(spw, dataset, times, data, flags, source)
 
-    figure(1); clf()
+    figure(); clf()
     plot(1:length(times), flux, "ko")
+    title(source.name)
 end
 
-
-function find_subtraction_errors(spw, dataset, times, data, flags, source)
+function _find_subtraction_errors(spw, dataset, times, data, flags, source)
     N = length(times)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -30,7 +45,7 @@ function find_subtraction_errors(spw, dataset, times, data, flags, source)
     flux
 end
 
-function _find_subtraction_errors(meta, time, data, flags, source)
+function _find_subtraction_errors(meta::Metadata, time, data, flags, source)
     meta.time = Epoch(epoch"UTC", time*seconds)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
