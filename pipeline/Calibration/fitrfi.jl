@@ -231,9 +231,9 @@ macro fitrfi_select_components(range)
     esc(output)
 end
 
-macro fitrfi_rm_rfi_so_far()
+macro fitrfi_rm_rfi_so_far(range)
     output = quote
-        rm_rfi(meta, visibilities, output_sources, output_calibrations)
+        rm_rfi(meta, visibilities, output_sources[range], output_calibrations[range])
     end
     esc(output)
 end
@@ -328,6 +328,18 @@ function fitrfi_spw04(times, data, flags, dataset, target)
             @fitrfi_construct_sources "Vir A" A3 "Cas A"
             @fitrfi_peel_sources
             @fitrfi_select_components 2
+
+            # Same RFI source, same problem.
+            @fitrfi_pick_an_integration 7118
+            @fitrfi_construct_sources A3 "Cyg A" "Cas A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # Same RFI source, same problem.
+            @fitrfi_pick_an_integration 5157
+            @fitrfi_construct_sources A3 "Cas A" "Vir A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -435,7 +447,7 @@ function fitrfi_spw12(times, data, flags, dataset, target)
             # This is a correlated noise component that dominates over Vir A and interferes with it
             # being peeled.
             @fitrfi_pick_an_integration 5857
-            @fitrfi_rm_rfi_so_far
+            @fitrfi_rm_rfi_so_far 1:3
             @fitrfi_construct_sources 1 "Vir A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
@@ -487,10 +499,12 @@ function fitrfi_spw16(times, data, flags, dataset, target)
             # solution doesn't actually converge, but the solution looks ok so I'm leaving it for
             # now.
             @fitrfi_pick_an_integration 5169
-            @fitrfi_rm_rfi_so_far
+            @fitrfi_rm_rfi_so_far 1:2
             @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
             @fitrfi_peel_sources
             @fitrfi_select_components 1
+
+
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -517,7 +531,7 @@ function fitrfi_spw18(times, data, flags, dataset, target)
             # converge. However, if you use multiple integrations and do not flag short baselines
             # things seem to work out.
             @fitrfi_sum_over_integrations_with_subtraction 811:911 false "Cyg A" "Cas A"
-            @fitrfi_rm_rfi_so_far
+            @fitrfi_rm_rfi_so_far 1:3
             @fitrfi_construct_sources 1
             @fitrfi_peel_sources
             @fitrfi_select_components 1
