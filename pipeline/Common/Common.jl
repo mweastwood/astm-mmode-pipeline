@@ -7,7 +7,7 @@ module Common
 
 export getdir, getmeta
 export listdadas
-export baseline_index
+export baseline_index, Nbase2Nant, Nant2Nbase
 
 using JLD
 using TTCal

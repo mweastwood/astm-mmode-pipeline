@@ -27,7 +27,7 @@ function flag!(spw, data, input)
     elseif input == "raw-rainy-visibilities"
         files = ["rainy.ants"]
         file = @sprintf("rainy-spw%02d.ants", spw)
-        if isfile(joinpath(workspace, "flags", file))
+        if isfile(joinpath(Common.workspace, "flags", file))
             push!(files, file)
         end
     else
@@ -47,7 +47,7 @@ function flag!(spw, data, input)
     elseif input == "raw-rainy-visibilities"
         files = ["rainy.bl"]
         file = @sprintf("rainy-spw%02d.bl", spw)
-        if isfile(joinpath(workspace, "flags", file))
+        if isfile(joinpath(Common.workspace, "flags", file))
             push!(files, file)
         end
     else
@@ -63,6 +63,9 @@ function flag!(spw, data, input)
 
     # integration flags
     do_integration_flags!(flags, data)
+
+    # special case flags
+    do_special_case_flags!(spw, input, flags)
 
     flags
 end
@@ -145,13 +148,20 @@ function do_integration_flags!(flags, data)
     end
 end
 
+function do_special_case_flags!(spw, input, flags)
+    if contains(input, "rainy")
+        #flags[:, 6036] = true # fireball?
+    end
+end
+
+
 function read_antenna_flags(filename) :: Vector{Int}
-    flags = readdlm(joinpath(workspace, "flags", filename), Int)
+    flags = readdlm(joinpath(Common.workspace, "flags", filename), Int)
     reshape(flags, length(flags))
 end
 
 function read_baseline_flags(filename) :: Matrix{Int}
-    flags = readdlm(joinpath(workspace, "flags", filename), '&', Int)
+    flags = readdlm(joinpath(Common.workspace, "flags", filename), '&', Int)
     flags
 end
 

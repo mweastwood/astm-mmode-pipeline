@@ -74,10 +74,10 @@ function solve_for_gain_calibration(spw, times, data, flags, range)
         measured.flags[α, t] = flags[α, range[t]]
     end
 
-    sources = readsources(joinpath(sourcelists, "getdata-sources.json"))[1:2]
+    sources = readsources(joinpath(Common.workspace, "source-lists", "getdata-sources.json"))[1:2]
     beam = SineBeam()
     model = Visibilities(Nbase, Ntime)
-    meta = getmeta(spw)
+    meta = getmeta(spw, "rainy")
 
     # We need to generate the model visibilities one-by-one because TTCal will only do one
     # integration at a time. At this point we need to make sure TTCal knows that we only want a

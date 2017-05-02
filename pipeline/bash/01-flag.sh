@@ -7,5 +7,5 @@ JULIA=julia-0.5.0
 cd `dirname $0`/../..
 input="raw-$2-visibilities"
 $JULIA -e \
-    "include(\"pipeline/Pipeline.jl\"); @time Pipeline.flag($1, \"$input\")"
+    "include(\"pipeline/Pipeline.jl\"); @time Pipeline.Calibration.flag($1, \"$input\")"
 
