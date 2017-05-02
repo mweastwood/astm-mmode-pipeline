@@ -217,8 +217,8 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
             xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
         elseif inp == "w" # write
             if contains(filename, "rainy")
-                path = joinpath(workspace, "flags", @sprintf("rainy-spw%02d.bl", spw))
-                baselines = read_baseline_flags(path)
+                path = joinpath(Common.workspace, "flags", @sprintf("rainy-spw%02d.bl", spw))
+                baselines = Calibration.read_baseline_flags(path)
                 baselines = [baselines; newbaselines]
                 baselines = unique(sortrows(baselines), 1)
                 writedlm(path, baselines, '&')
