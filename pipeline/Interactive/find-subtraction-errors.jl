@@ -2,19 +2,32 @@ function source_from_name(name)
     PointSource(name, source_dictionary[name], PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
 end
 
+function rfi_from_name(spw, dataset, name)
+    meta = getmeta(spw, dataset)
+    meta.channels = meta.channels[55:55]
+    lat, lon, el = Calibration.fitrfi_source_dictionary[Symbol(name)]
+    position = Position(pos"WGS84", el*meters, lon*degrees, lat*degrees)
+    spectrum = RFISpectrum(meta.channels, ones(StokesVector, 1))
+    RFISource("RFI", position, spectrum)
+end
+
 function find_subtraction_errors(spw, dataset, target, name)
     dir = getdir(spw)
     times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"),
                               "times", "data", "flags")
-    find_subtraction_errors_vir_a(spw, times, data, flags, name)
+    find_subtraction_errors(spw, times, data, flags, name)
 end
 
 function find_subtraction_errors(spw, dataset, times, data, flags, name)
-    source = source_from_name(name)
+    if haskey(source_dictionary, name)
+        source = source_from_name(name)
+    else
+        source = rfi_from_name(spw, dataset, name)
+    end
     flux = _find_subtraction_errors(spw, dataset, times, data, flags, source)
 
     figure(); clf()
-    plot(1:length(times), flux, "ko")
+    plot(1:length(times), flux, "k-")
     title(source.name)
 end
 
