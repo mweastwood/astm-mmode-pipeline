@@ -11,10 +11,11 @@ immutable PeelingData
     I :: Vector{Float64}
     Q :: Vector{Float64}
     directions :: Vector{Direction}
+    calibrations :: Vector{GainCalibration}
     to_peel :: Vector{Int}
     to_sub_bright :: Vector{Int}
     to_sub_faint :: Vector{Int}
-    calibrations :: Vector{GainCalibration}
+    to_fit_with_shapelets :: Vector{Int}
 end
 
 function peel(spw, dataset, target, times, data, flags;
@@ -119,21 +120,16 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     end
     TTCal.flag_short_baselines!(visibilities, meta, 15.0)
 
-    #sun = fit_sun(meta, xx, yy, flags)
-    #sources = [sources; sun]
-
-    if istest
-        println("sources")
-        println("-------")
-        for source in sources
-            @show source
-        end
-        println("")
-    end
-
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     names = getfield.(sources, 1)
-    to_peel, to_sub_bright, to_sub_faint = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
+    decisions = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions, istest)
+    to_peel, to_sub_bright, to_sub_faint, to_fit_with_shapelets = decisions
+    if all(flags)
+        empty!(to_peel)
+        empty!(to_sub_bright)
+        empty!(to_sub_faint)
+        empty!(to_fit_with_shapelets)
+    end
 
     if istest
         println("to_peel")
@@ -154,6 +150,12 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
             @show source
         end
         println("")
+        println("to_fit_with_shapelets")
+        println("-------------")
+        for source in sources[to_fit_with_shapelets]
+            @show source
+        end
+        println("")
     end
 
     if dopeeling
@@ -165,63 +167,64 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
         calibrations = GainCalibration[]
     end
     if dosubtraction
-        # re-fit all of the sources before subtracting
-        #if "Sun" in names[to_sub]
-            #idx = "Sun" .== names
-            #sources[idx] = fit_sun(meta, visibilities)
-        #end
-        to_sub = [to_sub_bright; to_sub_faint]
+        fit_sources_with_shapelets!(meta, visibilities, @view(sources[to_fit_with_shapelets]))
+        to_sub = [to_sub_bright; to_sub_faint; to_fit_with_shapelets]
         update_source_list_in_place(visibilities, meta, @view(sources[to_sub]),
                                     @view(I[to_sub]), @view(Q[to_sub]), @view(directions[to_sub]))
         istest && @show sources[to_sub]
         subsrc!(visibilities, meta, ConstantBeam(), sources[to_sub])
     end
-    data = PeelingData(time, sources, I, Q, directions,
-                       to_peel, to_sub_bright, to_sub_faint, calibrations)
+    data = PeelingData(time, sources, I, Q, directions, calibrations,
+                       to_peel, to_sub_bright, to_sub_faint, to_fit_with_shapelets)
 
     # uncomment for testing purposes
     #visibilities = genvis(meta, sources[to_peel][1])
-    #visibilities = genvis(meta, mysources[3])
-    #corrupt!(visibilities, meta, calibrations[3])
+    #corrupt!(visibilities, meta, calibrations[1])
 
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
     xx, yy, data
 end
 
-macro pick_for_peeling_bright(name, elevation_cutoff)
-    quote
+macro pick_for_peeling(name, elevation_cutoff, flux_cutoff_high=0, flux_cutoff_low=30)
+    output = quote
         if source.name == $name
-            I[idx] ≥ 30 || continue
-            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
+            θ = deg2rad($elevation_cutoff)
+            is_above_elevation_cutoff = TTCal.isabovehorizon(frame, source, θ)
+            if I[idx] ≥ $flux_cutoff_high && is_above_elevation_cutoff
                 push!(to_peel, idx)
-            else
+            elseif I[idx] ≥ $flux_cutoff_low
                 push!(to_sub_bright, idx)
             end
         end
-    end |> esc
+    end
+    esc(output)
 end
 
-macro pick_for_peeling_faint(name, elevation_cutoff)
-    quote
+macro pick_for_subtraction(name, elevation_cutoff=0, flux_cutoff_high=0, flux_cutoff_low=30)
+    output = quote
         if source.name == $name
-            I[idx] ≥ 30 || continue
-            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
-                push!(to_peel, idx)
-            else
+            θ = deg2rad($elevation_cutoff)
+            is_above_elevation_cutoff = TTCal.isabovehorizon(frame, source, θ)
+            if I[idx] ≥ $flux_cutoff_high && is_above_elevation_cutoff
+                push!(to_sub_bright, idx)
+            elseif I[idx] ≥ $flux_cutoff_low
                 push!(to_sub_faint, idx)
             end
         end
-    end |> esc
+    end
+    esc(output)
 end
 
-macro pick_for_subtraction(name)
-    quote
+macro pick_for_shapelets(name, elevation_cutoff)
+    output = quote
         if source.name == $name
-            I[idx] ≥ 30 || continue
-            push!(to_sub_faint, idx)
+            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
+                push!(to_fit_with_shapelets, idx)
+            end
         end
-    end |> esc
+    end
+    esc(output)
 end
 
 macro special_case_the_sun(elevation_cutoff)
@@ -236,7 +239,7 @@ macro special_case_the_sun(elevation_cutoff)
     end |> esc
 end
 
-function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions)
+function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions, istest=false)
     # We have three categories for how sources are removed:
     #  1) peel them (for very bright sources)
     #  2) subtract them after peeling (for faint sources)
@@ -247,85 +250,90 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
     to_peel = Int[]
     to_sub_faint  = Int[]
     to_sub_bright = Int[]
+    to_fit_with_shapelets = Int[]
     frame = TTCal.reference_frame(meta)
     for idx = 1:length(sources)
         source = sources[idx]
         TTCal.isabovehorizon(frame, source) || continue
         if spw == 4
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 30
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2500        30
+            @pick_for_peeling          "Tau A"     30     2500        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 6
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 30
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 8
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_peeling "Vir A" 45
+            @pick_for_peeling "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 10
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_peeling "Vir A" 45
+            @pick_for_peeling "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 30
         elseif spw == 12
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_peeling "Vir A" 45
+            @pick_for_peeling "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 14
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_peeling "Vir A" 45
+            @pick_for_peeling "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 16
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_peeling "Vir A" 45
+            @pick_for_peeling "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
             @pick_for_subtraction "3C 353"
             @special_case_the_sun 15
         elseif spw == 18
-            @pick_for_peeling_bright "Cyg A" 15
-            @pick_for_peeling_bright "Cas A" 10
-            @pick_for_peeling_faint "Vir A" 45
-            @pick_for_peeling_faint "Tau A" 45
+            @pick_for_peeling "Cyg A" 15
+            @pick_for_peeling "Cas A" 10
+            @pick_for_peeling "Vir A" 45
+            @pick_for_peeling "Tau A" 45
             @pick_for_subtraction "Her A"
             @pick_for_subtraction "Hya A"
             @pick_for_subtraction "Per B"
@@ -337,54 +345,75 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
     # TODO we'd probably like to be able to specify a range of sidereal times a
     # source should be peeled, rather than just a cut in elevation
 
+    # If a source we are trying to subtract has higher flux than a source we are trying to peel, we
+    # should probably be peeling that source.
+    move = zeros(Bool, length(to_sub_bright))
+    for idx in to_sub_bright
+        for jdx in to_peel
+            if I[idx] > I[jdx]
+                move[to_sub_bright .== idx] = true
+            end
+        end
+    end
+    to_peel = [to_peel; to_sub_bright[move]]
+    to_sub_bright = to_sub_bright[!move]
+
     fluxes = I[to_peel]
     perm = sortperm(fluxes, rev=true)
-    to_peel[perm], to_sub_bright, to_sub_faint
+    istest && @show I
+    istest && @show fluxes[perm]
+    to_peel[perm], to_sub_bright, to_sub_faint, to_fit_with_shapelets
 end
 
-function fit_sun(meta, visibilities)
+function fit_sources_with_shapelets!(meta, visibilities, sources)
+    for idx = 1:length(sources)
+        sources[idx] = fit_source_with_shapelets(meta, visibilities, sources[idx])
+    end
+end
+
+function fit_source_with_shapelets(meta, visibilities, source)
     xx = getfield.(visibilities.data[:, 1], 1)
     yy = getfield.(visibilities.data[:, 1], 4)
     flags = visibilities.flags[:, 1]
-    fit_sun(meta, xx, yy, flags)
+    if source.name == "Sun"
+        return fit_sun(meta, xx, yy, flags)
+    else
+        error("unknown shapelet source $(source.name)")
+    end
 end
 
 function fit_sun(meta, xx, yy, flags)
     dir = Direction(dir"SUN")
     frame = TTCal.reference_frame(meta)
-    output = Source[]
-    if TTCal.isabovehorizon(frame, dir) && !all(flags)
-        sun = fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(27.25/60)/sqrt(8log(2)))
-        push!(output, sun)
-    end
-    output
+    fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(27.25/60)/sqrt(8log(2)))
 end
 
 function fit_shapelets(name, meta, xx, yy, flags, dir, nmax, scale)
     coeff = zeros((nmax+1)^2)
-    rescaling = zeros((nmax+1)^2)
-    matrix = zeros(Complex128, Nbase(meta), (nmax+1)^2)
-    model = zeros(JonesMatrix, Nbase(meta), 1)
-    for idx = 1:(nmax+1)^2
-        coeff[:] = 0
-        coeff[idx] = 1
-        model[:] = zero(JonesMatrix)
-        source = ShapeletSource("test", dir, PowerLaw(1, 0, 0, 0, 10e6, [0.0]), scale, coeff)
-        TTCal.genvis_onesource!(model, meta, ConstantBeam(), source)
-        for α = 1:Nbase(meta)
-            # The model is unpolarized so the xx and yy components should be equal.
-            matrix[α, idx] = model[α, 1].xx
+    if !all(flags)
+        rescaling = zeros((nmax+1)^2)
+        matrix = zeros(Complex128, Nbase(meta), (nmax+1)^2)
+        model = zeros(JonesMatrix, Nbase(meta), 1)
+        for idx = 1:(nmax+1)^2
+            coeff[:] = 0
+            coeff[idx] = 1
+            model[:] = zero(JonesMatrix)
+            source = ShapeletSource("test", dir, PowerLaw(1, 0, 0, 0, 10e6, [0.0]), scale, coeff)
+            TTCal.genvis_onesource!(model, meta, ConstantBeam(), source)
+            for α = 1:Nbase(meta)
+                # The model is unpolarized so the xx and yy components should be equal.
+                matrix[α, idx] = model[α, 1].xx
+            end
+            rescaling[idx] = vecnorm(matrix[:, idx])
+            matrix[:, idx] /= rescaling[idx]
         end
-        rescaling[idx] = vecnorm(matrix[:, idx])
-        matrix[:, idx] /= rescaling[idx]
+
+        vec = 0.5*(xx[!flags] + yy[!flags])
+        matrix = matrix[!flags, :]
+        vec = [vec; conj(vec)]
+        matrix = [matrix; conj(matrix)]
+        coeff = real(matrix\vec) ./ rescaling
     end
-
-    vec = 0.5*(xx[!flags] + yy[!flags])
-    matrix = matrix[!flags, :]
-    vec = [vec; conj(vec)]
-    matrix = [matrix; conj(matrix)]
-    coeff = real(matrix\vec) ./ rescaling
-
     ShapeletSource(name, dir, PowerLaw(1, 0, 0, 0, 10e6, [0.0]), scale, coeff)
 end
 
