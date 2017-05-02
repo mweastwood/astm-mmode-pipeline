@@ -55,7 +55,7 @@ end
 
 function interactive_baseline_flags_setup(spw, filename, direction)
     dir = getdir(spw)
-    meta = getmeta(spw)
+    meta = getmeta(spw, "rainy")
     mytimes, mydata, myflags = load(joinpath(dir, filename*".jld"), "times", "data", "flags")
     xx, yy, flags = sum_with_new_phase_center(spw, mytimes, mydata, myflags, direction)
     b = getbaselinelengths()
@@ -82,7 +82,7 @@ function sum_without_changing_phase_center(data, flags)
 end
 
 function sum_with_new_phase_center(spw, times, data, flags, direction)
-    meta = getmeta(spw)
+    meta = getmeta(spw, "rainy")
     meta.channels = meta.channels[55:55]
     meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
     center = PointSource("phase center", direction, PowerLaw(1, 0, 0, 0, 1e6, [0.0]))
@@ -116,7 +116,7 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
     figure(1); clf()
     xrange, yrange, red, blue = interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
 
-    meta = getmeta(4)
+    meta = getmeta(4, "rainy")
     ant1 = getfield.(meta.baselines, 1)
     ant2 = getfield.(meta.baselines, 2)
     c = Channel{Tuple{Int, Int}}(32)
@@ -251,7 +251,7 @@ function interactive_baseline_flags_do_the_plot(spw, xx, yy, flags, b)
 end
 
 function getbaselinelengths()
-    meta = getmeta(4)
+    meta = getmeta(4, "rainy")
     b = zeros(Nbase(meta))
     for ant1 = 1:256, ant2 = ant1:256
         u = meta.antennas[ant1].position.x - meta.antennas[ant2].position.x
