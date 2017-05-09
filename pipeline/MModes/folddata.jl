@@ -1,10 +1,10 @@
-function fold(spw, target="peeled-visibilities")
+function fold(spw, dataset, target)
     dir = getdir(spw)
-    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
-    fold(spw, data, flags, target)
+    data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
+    fold(spw, data, flags, dataset, target)
 end
 
-function fold(spw, data, flags, target)
+function fold(spw, data, flags, dataset, target)
     _, Nbase, Ntime = size(data)
     sidereal_day = 6628 # number of integrations in one sidereal day
     normalization = zeros(Int, Nbase, sidereal_day)
@@ -25,14 +25,14 @@ function fold(spw, data, flags, target)
             output_data[α, jdx] /= normalization[α, jdx]
         end
     end
-    save(joinpath(getdir(spw), "folded-$target.jld"),
+    save(joinpath(getdir(spw), "folded-$target-$dataset-visibilities.jld"),
          "data", output_data, "flags", output_flags, compress=true)
     output_data, output_flags
 end
 
 function apply_special_case_flags(spw, flags, target)
     myflags = copy(flags)
-    if !contains(target, "rainy")
+    if contains(target, "100hr")
         if spw == 18
             myflags[:, 3807] = true # Sun
             myflags[:, 3828] = true # Sun

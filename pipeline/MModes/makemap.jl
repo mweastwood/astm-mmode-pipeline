@@ -1,16 +1,12 @@
-function makemap(spw, target="alm-peeled")
+function makemap(spw, dataset, target)
     dir = getdir(spw)
-    alm = load(joinpath(dir, target*".jld"), "alm")
-    makemap(spw, alm, target)
+    alm = load(joinpath(dir, "$target-$dataset.jld"), "alm")
+    makemap(spw, alm, dataset, target)
 end
 
-function makemap(spw, alm::Alm, target)
+function makemap(spw, alm::Alm, dataset, target)
     dir = getdir(spw)
-    if contains(target, "rainy")
-        meta = getmeta(spw, "rainy")
-    else
-        meta = getmeta(spw, "100hr")
-    end
+    meta = getmeta(spw, dataset)
     map = alm2map(alm, 512)
 
     ## TODO: does this need a factor of the beam solid angle?
@@ -55,7 +51,7 @@ function makemap(spw, alm::Alm, target)
     pixels = LibHealpix.interpolate(map, θ, ϕ)
     j2000 = HealpixMap(pixels)
 
-    output = replace(target, "alm", "map")
+    output = replace(target, "alm", "map")*"-$dataset"
     writehealpix(joinpath(dir, output*"-galactic.fits"), galactic, coordsys="G", replace=true)
     writehealpix(joinpath(dir, output*"-j2000.fits"), j2000, coordsys="C", replace=true)
     writehealpix(joinpath(dir, output*"-itrf.fits"), map, coordsys="C", replace=true)

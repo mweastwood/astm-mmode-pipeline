@@ -1,14 +1,13 @@
-function getmmodes(spw, target="folded-peeled-visibilities")
+function getmmodes(spw, dataset, target)
     dir = getdir(spw)
-    data, flags = load(joinpath(dir, target*".jld"), "data", "flags")
-    getmmodes(spw, data, flags, target)
+    data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
+    getmmodes(spw, data, flags, dataset, target)
 end
 
-function getmmodes(spw, data, flags, target)
+function getmmodes(spw, data, flags, dataset, target)
     blocks, block_flags = getmmodes_internal(data, flags)
-    output = replace(target, "folded-", "")
-    output = replace(output, "-visibilities", "")
-    save(joinpath(getdir(spw), "mmodes-$output.jld"),
+    target = replace(target, "folded-", "")
+    save(joinpath(getdir(spw), "mmodes-$target-$dataset.jld"),
          "blocks", blocks, "flags", block_flags, compress=true)
     blocks, block_flags
 end
@@ -54,7 +53,8 @@ end
 
 function decide_on_baseline_flags(flags, mmax)
     # a baseline will be flagged if it has any sidereal times that are flagged
-    baseline_flags = squeeze(any(flags, 2), 2)
+    #baseline_flags = squeeze(any(flags, 2), 2)
+    baseline_flags = squeeze(all(flags, 2), 2)
     Nbase = length(baseline_flags)
     block_flags = Vector{Bool}[]
     for m = 0:mmax

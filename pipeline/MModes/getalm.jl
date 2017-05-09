@@ -1,15 +1,15 @@
-function getalm(spw, target="mmodes-peeled"; tolerance=0.01)
+function getalm(spw, dataset, target; tolerance=0.01)
     dir = getdir(spw)
-    mmodes, mmode_flags = load(joinpath(dir, target*".jld"), "blocks", "flags")
-    getalm(spw, mmodes, mmode_flags, target, tolerance=tolerance)
+    mmodes, mmode_flags = load(joinpath(dir, "$target-$dataset.jld"), "blocks", "flags")
+    getalm(spw, mmodes, mmode_flags, dataset, target, tolerance=tolerance)
 end
 
-function getalm(spw, mmodes, mmode_flags, target; tolerance=0.01, pass=1)
+function getalm(spw, mmodes, mmode_flags, dataset, target; tolerance=0.01, pass=1)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
     alm = _getalm(transfermatrix, mmodes, mmode_flags, tolerance)
-    output = replace(target, "mmodes", "alm")
-    save(joinpath(dir, output*".jld"), "alm", alm, "tolerance", tolerance)
+    target = replace(target, "mmodes", "alm")
+    save(joinpath(dir, "$target-$dataset.jld"), "alm", alm, "tolerance", tolerance)
     alm
 end
 
@@ -29,11 +29,9 @@ function _getalm(transfermatrix::TransferMatrix, mmodes, mmode_flags, tolerance)
             try
                 remotecall(getalm_remote_processing_loop, worker, input_channel, output_channel,
                            transfermatrix, mmodes, mmode_flags, tolerance)
-                Lumberjack.debug("Worker $worker has been started")
                 while true
                     m′ = nextm()
                     m′ ≤ mmax || break
-                    Lumberjack.debug("Worker $worker is processing m=$(m′)")
                     put!(input_channel, m′)
                     block = take!(output_channel)
                     for l = m′:lmax
