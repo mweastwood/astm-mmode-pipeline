@@ -27,7 +27,7 @@ function _addrfi(spw, data, xx_rfi, yy_rfi, xx_rfi_flux, yy_rfi_flux)
         for s = 1:Nsource
             for α = 1:Nbase
                 data[1, α, idx] += xx_rfi_flux[s, idx]*xx_rfi[α, s]
-                data[1, α, idx] += yy_rfi_flux[s, idx]*yy_rfi[α, s]
+                data[2, α, idx] += yy_rfi_flux[s, idx]*yy_rfi[α, s]
             end
         end
     end
