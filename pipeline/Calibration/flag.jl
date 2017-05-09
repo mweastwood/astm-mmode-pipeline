@@ -150,7 +150,12 @@ end
 
 function do_special_case_flags!(spw, input, flags)
     if contains(input, "rainy")
-        #flags[:, 6036] = true # fireball?
+        if spw == 12
+            flags[:, 3467] = true # fireball
+            flags[:, 4939] = true # fireball
+        elseif spw == 16
+            flags[:, 6635] = true # fireball
+        end
     end
 end
 
