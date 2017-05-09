@@ -35,13 +35,14 @@ macro fitrfi_preamble(spw)
     esc(output)
 end
 
-macro fitrfi_pick_an_integration(idx)
+macro fitrfi_pick_an_integration(idx, flag_short=true)
     quote
-        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, dataset, $idx)
+        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, $flag_short,
+                                                        dataset, $idx)
     end |> esc
 end
 
-function fitrfi_pick_an_integration(spw, times, data, flags, dataset, idx)
+function fitrfi_pick_an_integration(spw, times, data, flags, flag_short, dataset, idx)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -56,17 +57,20 @@ function fitrfi_pick_an_integration(spw, times, data, flags, dataset, idx)
         visibilities.data[α, 1] = JonesMatrix(xx, 0, 0, yy)
         visibilities.flags[α, 1] = flags[α, idx]
     end
-    TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    if flag_short
+        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    end
     meta, visibilities
 end
 
-macro fitrfi_sum_over_integrations(range)
+macro fitrfi_sum_over_integrations(range, flag_short=true)
     quote
-        meta, visibilities = fitrfi_sum_over_integrations(spw, times, data, flags, dataset, $range)
+        meta, visibilities = fitrfi_sum_over_integrations(spw, times, data, flags, $flag_short,
+                                                          dataset, $range)
     end |> esc
 end
 
-function fitrfi_sum_over_integrations(spw, times, data, flags, dataset, range)
+function fitrfi_sum_over_integrations(spw, times, data, flags, flag_short, dataset, range)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -83,7 +87,9 @@ function fitrfi_sum_over_integrations(spw, times, data, flags, dataset, range)
             visibilities.flags[α, 1] = false
         end
     end
-    TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    if flag_short
+        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
+    end
     meta, visibilities
 end
 
@@ -218,7 +224,7 @@ function fitrfi_peel(meta, visibilities, sources)
         println(source)
     end
     beam = ConstantBeam()
-    peel!(visibilities, meta, beam, sources, peeliter=10, maxiter=200, tolerance=1e-5)
+    peel!(visibilities, meta, beam, sources, peeliter=10, maxiter=500, tolerance=1e-5)
 end
 
 macro fitrfi_select_components(range)
@@ -233,7 +239,7 @@ end
 
 macro fitrfi_rm_rfi_so_far(range)
     output = quote
-        rm_rfi(meta, visibilities, output_sources[range], output_calibrations[range])
+        rm_rfi(meta, visibilities, output_sources[$range], output_calibrations[$range])
     end
     esc(output)
 end
@@ -391,6 +397,30 @@ function fitrfi_spw08(times, data, flags, dataset, target)
             @fitrfi_peel_sources
             @fitrfi_select_components 1
 
+            # Big Pine RFI Peak #1
+            @fitrfi_pick_an_integration 5175
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # Big Pine RFI Peak #2
+            @fitrfi_pick_an_integration 6629
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # Big Pine RFI Peak #3
+            @fitrfi_pick_an_integration 7060
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources A3 "Cyg A"
+            @fitrfi_test_start_image
+            @fitrfi_peel_sources
+            @fitrfi_test_finish_image
+            @fitrfi_select_components 1
+
+
             # TODO: recheck this integration, I forgot to @fitrfi_rm_rfi_so_far
             # it's possible that this component I got is the one above
 
@@ -418,12 +448,50 @@ function fitrfi_spw10(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756
+            @fitrfi_sum_over_integrations 1:7756 false
+            @fitrfi_construct_sources 1
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # This is that piece of RFI from Big Pine showing up again. Here it intereferes with Cas
+            # A getting peeled correctly.
+            @fitrfi_pick_an_integration 7118
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources "Cyg A" A3 "Cas A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 2
+
+            # The Big Pine RFI strikes back.
+            @fitrfi_pick_an_integration 6645
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources A3 "Cyg A" "Vir A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # Return of the Big Pine RFI
+            @fitrfi_pick_an_integration 7060
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources "Cyg A" A3 "Cas A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 2
+
+            # Big Pine...
+            @fitrfi_pick_an_integration 5175
+            @fitrfi_rm_rfi_so_far 1:1
+            @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # Finally, something else interesting. This is a correlated noise component that gets in
+            # the way of peeling Vir A.
+            @fitrfi_sum_over_integrations_with_subtraction 5755:5855 false "Vir A" "Cas A"
+            @fitrfi_rm_rfi_so_far 1:1
             @fitrfi_construct_sources 1
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
             @fitrfi_select_components 1
+
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -449,10 +517,18 @@ function fitrfi_spw12(times, data, flags, dataset, target)
             @fitrfi_pick_an_integration 5857
             @fitrfi_rm_rfi_so_far 1:3
             @fitrfi_construct_sources 1 "Vir A"
+            @fitrfi_peel_sources
+            @fitrfi_select_components 1
+
+            # This is another correlated noise component that gets in the way of Vir A.
+            @fitrfi_pick_an_integration 6890
+            @fitrfi_rm_rfi_so_far 1:3
+            @fitrfi_construct_sources "Cyg A" "Cas A" 1 "Vir A"
             @fitrfi_test_start_image
             @fitrfi_peel_sources
             @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            @fitrfi_select_components 3
+
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -494,18 +570,33 @@ function fitrfi_spw16(times, data, flags, dataset, target)
             @fitrfi_peel_sources
             @fitrfi_select_components 1:2
 
-            # This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
-            # peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, and the
-            # solution doesn't actually converge, but the solution looks ok so I'm leaving it for
-            # now.
+            ## This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
+            ## peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, and the
+            ## solution doesn't actually converge, but the solution looks ok so I'm leaving it for
+            ## now.
             @fitrfi_pick_an_integration 5169
             @fitrfi_rm_rfi_so_far 1:2
             @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
+            @fitrfi_test_start_image
             @fitrfi_peel_sources
+            @fitrfi_test_finish_image
             @fitrfi_select_components 1
 
-
         elseif target == "rfi-restored-peeled"
+            ## The third component doesn't converge here, but it looks reasonable. I suspect this is
+            ## due to one polarization not converging and the other one looks fine.
+            ##@fitrfi_sum_over_integrations 1:7756
+            ##@fitrfi_construct_sources 3
+            ##@fitrfi_peel_sources
+            ##@fitrfi_select_components 1:3
+
+            #@fitrfi_pick_an_integration 5169
+            ##@fitrfi_rm_rfi_so_far 1:3
+            #@fitrfi_construct_sources A3
+            #@fitrfi_test_start_image
+            ##@fitrfi_peel_sources
+            ##@fitrfi_test_finish_image
+            ##@fitrfi_select_components 1
         else
             error("unknown target")
         end
