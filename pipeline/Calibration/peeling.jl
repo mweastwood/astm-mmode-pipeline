@@ -280,65 +280,77 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction      "3C 353"    60      500        30
             @pick_for_shapelets        "Sun"        5
         elseif spw == 8
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_peeling "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 30
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 10
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_peeling "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 30
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 12
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_peeling "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 15
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 14
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_peeling "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 15
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 16
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_peeling "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 15
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         elseif spw == 18
-            @pick_for_peeling "Cyg A" 15
-            @pick_for_peeling "Cas A" 10
-            @pick_for_peeling "Vir A" 45
-            @pick_for_peeling "Tau A" 45
-            @pick_for_subtraction "Her A"
-            @pick_for_subtraction "Hya A"
-            @pick_for_subtraction "Per B"
-            @pick_for_subtraction "3C 353"
-            @special_case_the_sun 15
+            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
+            # --------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Vir A"     30     2000        30
+            @pick_for_peeling          "Tau A"     30     2000        30
+            @pick_for_subtraction      "Her A"     30      500        30
+            @pick_for_subtraction      "Hya A"     60      500        30
+            @pick_for_subtraction      "Per B"     60      500        30
+            @pick_for_subtraction      "3C 353"    60      500        30
+            @pick_for_shapelets        "Sun"        5
         end
     end
 
