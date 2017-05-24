@@ -35,6 +35,14 @@ macro fitrfi_preamble(spw)
     esc(output)
 end
 
+function fitrfi_getvis(spw, times, data, flags, dataset, integrations::Range, flag_short)
+    fitrfi_sum_over_integrations(spw, times, data, flags, flag_short, dataset, integrations)
+end
+
+function fitrfi_getvis(spw, times, data, flags, dataset, integration::Integer, flag_short)
+    fitrfi_pick_an_integration(spw, times, data, flags, flag_short, dataset, integration)
+end
+
 macro fitrfi_pick_an_integration(idx, flag_short=true)
     quote
         meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, $flag_short,
@@ -191,23 +199,25 @@ function fitrfi_unknown_source()
     PointSource("RFI", direction, spectrum)
 end
 
-macro fitrfi_construct_sources(args...)
-    output = quote
-        sources = TTCal.Source[]
-    end
+function fitrfi_construct_sources(visibilities, meta, args)
+    sources = TTCal.Source[]
     for arg in args
         if haskey(fitrfi_source_dictionary, arg)
             lat, lon, el = fitrfi_source_dictionary[arg]
-            expr = :(push!(sources, fitrfi_known_source(visibilities, meta, $lat, $lon, $el)))
-            push!(output.args, expr)
+            push!(sources, fitrfi_known_source(visibilities, meta, lat, lon, el))
         elseif isa(arg, String)
-            expr = :(push!(sources, fitrfi_getdata_source($arg, visibilities, meta)))
-            push!(output.args, expr)
+            push!(sources, fitrfi_getdata_source(arg, visibilities, meta))
         elseif isa(arg, Integer)
             unknown_sources = fill(fitrfi_unknown_source(), arg)
-            expr = :(sources = [sources; $unknown_sources])
-            push!(output.args, expr)
+            sources = [sources; unknown_sources]
         end
+    end
+    sources
+end
+
+macro fitrfi_construct_sources(args...)
+    output = quote
+        sources = fitrfi_construct_sources(visibilities, meta, $args)
     end
     esc(output)
 end
@@ -215,6 +225,26 @@ end
 macro fitrfi_peel_sources()
     output = quote
         calibrations = fitrfi_peel(meta, visibilities, sources)
+    end
+    esc(output)
+end
+
+macro fitrfi_xx_only()
+    output = quote
+        for idx in eachindex(visibilities.data)
+            J = visibilities.data[idx]
+            visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, 0)
+        end
+    end
+    esc(output)
+end
+
+macro fitrfi_yy_only()
+    output = quote
+        for idx in eachindex(visibilities.data)
+            J = visibilities.data[idx]
+            visibilities.data[idx] = JonesMatrix(0, 0, 0, J.yy)
+        end
     end
     esc(output)
 end
@@ -272,8 +302,14 @@ function fitrfi_output(spw, meta, sources, calibrations, filename)
             yy[α, idx] = model.data[α, 1].yy
         end
     end
-    dir = getdir(spw)
-    save(joinpath(dir, "$filename.jld"), "xx", xx, "yy", yy)
+
+    # remove columns of zeros
+    xx = xx[:, squeeze(any(xx .!= 0, 1), 1)]
+    yy = yy[:, squeeze(any(yy .!= 0, 1), 1)]
+
+    output = joinpath(getdir(spw), filename*".jld")
+    isfile(output) && rm(output)
+    save(output, "xx", xx, "yy", yy)
     xx, yy
 end
 
@@ -314,6 +350,108 @@ function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations
         finalize(ms)
         wsclean(ms_path, joinpath(dir, "tmp", image_name*"-$idx"), j=8)
     end
+end
+
+macro fitrfi(integrations, sources, options...)
+    _options = Dict{Symbol, Any}(eval(current_module(), option) for option in options)
+
+    # First pack the data into a `Visibilities` object
+    flag_short = get(_options, :flag_short, true)
+    output = quote
+        meta, visibilities = fitrfi_getvis(spw, times, data, flags, dataset,
+                                           $integrations, $flag_short)
+    end
+
+    # Pick one polarization (if requested)
+    do_one_pol = haskey(_options, :pol)
+    if do_one_pol
+        pol = _options[:pol]
+        if pol == :xx
+            push!(output.args, quote
+                for idx in eachindex(visibilities.data)
+                    J = visibilities.data[idx]
+                    visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, 0)
+                end
+            end)
+        elseif pol == :yy
+            push!(output.args, quote
+                for idx in eachindex(visibilities.data)
+                    J = visibilities.data[idx]
+                    visibilities.data[idx] = JonesMatrix(0, 0, 0, J.yy)
+                end
+            end)
+        else
+            error("pol must be one of either :xx or :yy")
+        end
+    end
+
+    # Remove previously fit RFI
+    do_rm_rfi = haskey(_options, :rm_rfi)
+    if do_rm_rfi
+        rfi_selection = _options[:rm_rfi]
+        push!(output.args, quote
+            rm_rfi(meta, visibilities, output_sources[$rfi_selection],
+                   output_calibrations[$rfi_selection])
+        end)
+
+    end
+
+    # Fit for the RFI
+    istest = get(_options, :test, false)
+    _sources = isa(sources, Symbol)? (sources,) : sources
+    push!(output.args, quote
+        sources, calibrations = fitrfi_doit(spw, meta, visibilities, $_sources,
+                                            target, dataset, ms_path, $istest)
+    end)
+
+    # Force the other polarization to zero (if requested)
+    if do_one_pol
+        pol = _options[:pol]
+        if pol == :xx
+            push!(output.args, quote
+                for calibration in calibrations, jdx in eachindex(calibration.jones)
+                    J = calibration.jones[jdx]
+                    calibration.jones[jdx] = DiagonalJonesMatrix(J.xx, 0)
+                end
+            end)
+        elseif pol == :yy
+            push!(output.args, quote
+                for calibration in calibrations, jdx in eachindex(calibration.jones)
+                    J = calibration.jones[jdx]
+                    calibration.jones[jdx] = DiagonalJonesMatrix(0, J.yy)
+                end
+            end)
+        else
+            error("pol must be one of either :xx or :yy")
+        end
+    end
+
+    # Output the results
+    selection = _options[:select]
+    push!(output.args, quote
+        for idx in $selection
+            push!(output_sources, sources[idx])
+            push!(output_calibrations, calibrations[idx])
+        end
+    end)
+
+    esc(output)
+end
+
+function fitrfi_doit(spw, meta, visibilities, sources, target, dataset, ms_path, istest)
+    _sources = fitrfi_construct_sources(visibilities, meta, sources)
+    if istest
+        output = "fitrfi-test-start-$target-$dataset"
+        fitrfi_image_visibilities(spw, ms_path, output, meta, visibilities)
+    end
+    _calibrations = fitrfi_peel(meta, visibilities, _sources)
+    if istest
+        output = "fitrfi-test-finish-$target-$dataset"
+        fitrfi_image_visibilities(spw, ms_path, output, meta, visibilities)
+        output = "fitrfi-test-component-$target-$dataset"
+        fitrfi_image_corrupted_models(spw, ms_path, meta, _sources, _calibrations, output)
+    end
+    _sources, _calibrations
 end
 
 function fitrfi_spw04(times, data, flags, dataset, target)
@@ -583,20 +721,10 @@ function fitrfi_spw16(times, data, flags, dataset, target)
             @fitrfi_select_components 1
 
         elseif target == "rfi-restored-peeled"
-            ## The third component doesn't converge here, but it looks reasonable. I suspect this is
-            ## due to one polarization not converging and the other one looks fine.
-            ##@fitrfi_sum_over_integrations 1:7756
-            ##@fitrfi_construct_sources 3
-            ##@fitrfi_peel_sources
-            ##@fitrfi_select_components 1:3
-
-            #@fitrfi_pick_an_integration 5169
-            ##@fitrfi_rm_rfi_so_far 1:3
-            #@fitrfi_construct_sources A3
-            #@fitrfi_test_start_image
-            ##@fitrfi_peel_sources
-            ##@fitrfi_test_finish_image
-            ##@fitrfi_select_components 1
+            @fitrfi 1:7756 2 :select=>1:2
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:xx
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:yy
+            @fitrfi 5169 A3 :select=>1 :rm_rfi=>1:2 :pol=>:xx :test=>true
         else
             error("unknown target")
         end
