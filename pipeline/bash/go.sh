@@ -5,6 +5,7 @@ cd `dirname $0`/..
 
 JULIA=julia-0.5.0
 MACHINEFILE_ONE=../workspace/machine-files/one-process-each.machinefile
+MACHINEFILE_MAX=../workspace/machine-files/max-processes-each.machinefile
 
 #spws="4 6 8 10 12 14 16 18"
 #datasets="100hr rainy"
@@ -44,6 +45,25 @@ function subrfi {
     local target=`quote $3`
     print_parameters $spw $dataset $target
     $JULIA -p 8 -e "using Pipeline; @time Pipeline.Calibration.subrfi($spw, $dataset, $target)"
+}
+
+function peel {
+    title peel
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA --machinefile $MACHINEFILE_MAX -e \
+        "using Pipeline; @time Pipeline.Calibration.peel($spw, $dataset, $target)"
+}
+
+function smeared {
+    title smeared
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA "using Interactive; @time Interactive.smeared_image_everything($spw, $dataset, $target)"
 }
 
 function addrfi {
@@ -102,12 +122,14 @@ do
         #[ $1 -le 2 ] && [ $2 -ge 2 ] && title smooth && ./02-smooth.sh $spw $dataset
         #[ $1 -le 3 ] && [ $2 -ge 3 ] && title calibrate && ./03-calibrate.sh $spw $dataset
 
-        #[ $1 -le 10 ] && [ $2 -ge 10 ] && title fitrfi && ./10-fitrfi.sh $spw $dataset
-        #[ $1 -le 11 ] && [ $2 -ge 11 ] && title subrfi && ./11-subrfi.sh $spw $dataset
-        #[ $1 -le 12 ] && [ $2 -ge 12 ] && title peel && ./12-peel.sh $spw $dataset
-        [ $1 -le 13 ] && [ $2 -ge 13 ] && addrfi    $spw $dataset "peeled" "rfi-subtracted-calibrated"
-        [ $1 -le 14 ] && [ $2 -ge 14 ] && fitrfi    $spw $dataset "rfi-restored-peeled"
-        [ $1 -le 15 ] && [ $2 -ge 15 ] && subrfi    $spw $dataset "rfi-restored-peeled"
+        [ $1 -le 10 ] && [ $2 -ge 10 ] && fitrfi    $spw $dataset "calibrated"
+        [ $1 -le 11 ] && [ $2 -ge 11 ] && subrfi    $spw $dataset "calibrated"
+        [ $1 -le 12 ] && [ $2 -ge 12 ] && peel      $spw $dataset "rfi-subtracted-calibrated"
+        [ $1 -le 13 ] && [ $2 -ge 13 ] && smeared   $spw $dataset "peeled"
+        [ $1 -le 14 ] && [ $2 -ge 14 ] && addrfi    $spw $dataset "peeled" "rfi-subtracted-calibrated"
+        [ $1 -le 15 ] && [ $2 -ge 15 ] && fitrfi    $spw $dataset "rfi-restored-peeled"
+        [ $1 -le 16 ] && [ $2 -ge 16 ] && subrfi    $spw $dataset "rfi-restored-peeled"
+        [ $1 -le 17 ] && [ $2 -ge 17 ] && smeared   $spw $dataset "rfi-subtraced-peeled"
 
         [ $1 -le 20 ] && [ $2 -ge 20 ] && fold      $spw $dataset "rfi-subtracted-peeled"
         [ $1 -le 21 ] && [ $2 -ge 21 ] && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
