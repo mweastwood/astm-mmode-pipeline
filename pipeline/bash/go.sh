@@ -28,6 +28,24 @@ function print_parameters {
     echo "spw=$1, dataset=$2, target=$3"
 }
 
+function fitrfi {
+    title fitrfi
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -e "using Pipeline; @time Pipeline.Calibration.fitrfi($spw, $dataset, $target)"
+}
+
+function subrfi {
+    title subrfi
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -p 8 -e "using Pipeline; @time Pipeline.Calibration.subrfi($spw, $dataset, $target)"
+}
+
 function addrfi {
     title addrfi
     local spw=$1
@@ -88,11 +106,13 @@ do
         #[ $1 -le 11 ] && [ $2 -ge 11 ] && title subrfi && ./11-subrfi.sh $spw $dataset
         #[ $1 -le 12 ] && [ $2 -ge 12 ] && title peel && ./12-peel.sh $spw $dataset
         [ $1 -le 13 ] && [ $2 -ge 13 ] && addrfi    $spw $dataset "peeled" "rfi-subtracted-calibrated"
+        [ $1 -le 14 ] && [ $2 -ge 14 ] && fitrfi    $spw $dataset "rfi-restored-peeled"
+        [ $1 -le 15 ] && [ $2 -ge 15 ] && subrfi    $spw $dataset "rfi-restored-peeled"
 
-        [ $1 -le 20 ] && [ $2 -ge 20 ] && fold      $spw $dataset "rfi-restored-peeled"
-        [ $1 -le 21 ] && [ $2 -ge 21 ] && getmmodes $spw $dataset "folded-rfi-restored-peeled"
-        [ $1 -le 22 ] && [ $2 -ge 22 ] && getalm    $spw $dataset "mmodes-rfi-restored-peeled"
-        [ $1 -le 23 ] && [ $2 -ge 23 ] && makemap   $spw $dataset "alm-rfi-restored-peeled"
+        [ $1 -le 20 ] && [ $2 -ge 20 ] && fold      $spw $dataset "rfi-subtracted-peeled"
+        [ $1 -le 21 ] && [ $2 -ge 21 ] && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
+        [ $1 -le 22 ] && [ $2 -ge 22 ] && getalm    $spw $dataset "mmodes-rfi-subtracted-peeled"
+        [ $1 -le 23 ] && [ $2 -ge 23 ] && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
     done
 done
 
