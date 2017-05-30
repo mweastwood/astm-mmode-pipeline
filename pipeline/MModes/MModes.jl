@@ -15,5 +15,8 @@ include("lcurve.jl")
 include("makemap.jl")
 include("glamour-image.jl")
 
+# Wiener filtering
+include("getalm-rfi.jl")
+
 end
 

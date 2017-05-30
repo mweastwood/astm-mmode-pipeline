@@ -5,12 +5,19 @@ function fold(spw, dataset, target)
 end
 
 function fold(spw, data, flags, dataset, target)
+    output_data, output_flags = _fold(spw, data, flags, dataset, target)
+    save(joinpath(getdir(spw), "folded-$target-$dataset-visibilities.jld"),
+         "data", output_data, "flags", output_flags, compress=true)
+    output_data, output_flags
+end
+
+function _fold(spw, data, flags, dataset, target)
     _, Nbase, Ntime = size(data)
     sidereal_day = 6628 # number of integrations in one sidereal day
     normalization = zeros(Int, Nbase, sidereal_day)
     output_data = zeros(Complex128, Nbase, sidereal_day)
     output_flags = trues(Nbase, sidereal_day)
-    flags = apply_special_case_flags(spw, flags, target)
+    flags = apply_special_case_flags(spw, flags, dataset)
     for idx = 1:Ntime, α = 1:Nbase
         if !flags[α, idx]
             jdx = mod1(idx, sidereal_day)
@@ -25,14 +32,12 @@ function fold(spw, data, flags, dataset, target)
             output_data[α, jdx] /= normalization[α, jdx]
         end
     end
-    save(joinpath(getdir(spw), "folded-$target-$dataset-visibilities.jld"),
-         "data", output_data, "flags", output_flags, compress=true)
     output_data, output_flags
 end
 
-function apply_special_case_flags(spw, flags, target)
+function apply_special_case_flags(spw, flags, dataset)
     myflags = copy(flags)
-    if contains(target, "100hr")
+    if dataset == "100hr"
         if spw == 18
             myflags[:, 3807] = true # Sun
             myflags[:, 3828] = true # Sun
