@@ -201,6 +201,8 @@ function interactive_baseline_flags_plot(spw, xx, yy, flags, b, filename)
     println("q - quit")
     println("r - re-plot with new flags applied")
     println("w - write the baseline flags to disk")
+    println("(right click to flag individual baselines)")
+    println("(hold b and right click to mark the corners of a box)")
     while true
         print("> ")
         inp = chomp(readline())
