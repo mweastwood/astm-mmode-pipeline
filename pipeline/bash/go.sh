@@ -63,7 +63,7 @@ function smeared {
     local dataset=`quote $2`
     local target=`quote $3`
     print_parameters $spw $dataset $target
-    $JULIA "using Interactive; @time Interactive.smeared_image_everything($spw, $dataset, $target)"
+    $JULIA -e "using Interactive; @time Interactive.smeared_image_everything($spw, $dataset, $target)"
 }
 
 function addrfi {
@@ -129,7 +129,7 @@ do
         [ $1 -le 14 ] && [ $2 -ge 14 ] && addrfi    $spw $dataset "peeled" "rfi-subtracted-calibrated"
         [ $1 -le 15 ] && [ $2 -ge 15 ] && fitrfi    $spw $dataset "rfi-restored-peeled"
         [ $1 -le 16 ] && [ $2 -ge 16 ] && subrfi    $spw $dataset "rfi-restored-peeled"
-        [ $1 -le 17 ] && [ $2 -ge 17 ] && smeared   $spw $dataset "rfi-subtraced-peeled"
+        [ $1 -le 17 ] && [ $2 -ge 17 ] && smeared   $spw $dataset "rfi-subtracted-peeled"
 
         [ $1 -le 20 ] && [ $2 -ge 20 ] && fold      $spw $dataset "rfi-subtracted-peeled"
         [ $1 -le 21 ] && [ $2 -ge 21 ] && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
