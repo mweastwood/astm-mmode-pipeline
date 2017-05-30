@@ -16,9 +16,8 @@ function subrfi(spw, times, data, flags, dataset, target)
 
     dir = getdir(spw)
     xx_rfi, yy_rfi = load(joinpath(dir, "fitrfi-$target-$dataset.jld"), "xx", "yy")
-    Nrfi = size(xx_rfi, 2)
-    xx_rfi_flux = zeros(Nrfi, Ntime)
-    yy_rfi_flux = zeros(Nrfi, Ntime)
+    xx_rfi_flux = zeros(size(xx_rfi, 2), Ntime)
+    yy_rfi_flux = zeros(size(yy_rfi, 2), Ntime)
     @sync for worker in workers()
         @async begin
             input  = RemoteChannel()
@@ -28,7 +27,10 @@ function subrfi(spw, times, data, flags, dataset, target)
                 myidx = nextidx()
                 myidx ≤ Ntime || break
                 put!(input, (times[myidx], data[:, :, myidx], flags[:, myidx]))
-                data[:, :, myidx], xx_rfi_flux[:, myidx], yy_rfi_flux[:, myidx] = take!(output)
+                _data, _xx_rfi_flux, _yy_rfi_flux = take!(output)
+                data[:, :, myidx] = _data
+                xx_rfi_flux[:, myidx] = _xx_rfi_flux
+                yy_rfi_flux[:, myidx] = _yy_rfi_flux
                 increment_progress()
             end
             close(input)
@@ -111,9 +113,8 @@ function rm_rfi(flags, xx, yy, xx_rfi, yy_rfi)
         xx -= xx_rfi * xx_rfi_flux
         yy -= yy_rfi * yy_rfi_flux
     else
-        N = size(xx_rfi, 2) # the number of RFI sources
-        xx_rfi_flux = zeros(N)
-        yy_rfi_flux = zeros(N)
+        xx_rfi_flux = zeros(size(xx_rfi, 2))
+        yy_rfi_flux = zeros(size(yy_rfi, 2))
     end
     xx, yy, xx_rfi_flux, yy_rfi_flux
 end

@@ -35,22 +35,22 @@ macro fitrfi_preamble(spw)
     esc(output)
 end
 
-function fitrfi_getvis(spw, times, data, flags, dataset, integrations::Range, flag_short)
-    fitrfi_sum_over_integrations(spw, times, data, flags, flag_short, dataset, integrations)
+function fitrfi_getvis(spw, times, data, flags, dataset, integrations::Range, minuvw)
+    fitrfi_sum_over_integrations(spw, times, data, flags, minuvw, dataset, integrations)
 end
 
-function fitrfi_getvis(spw, times, data, flags, dataset, integration::Integer, flag_short)
-    fitrfi_pick_an_integration(spw, times, data, flags, flag_short, dataset, integration)
+function fitrfi_getvis(spw, times, data, flags, dataset, integration::Integer, minuvw)
+    fitrfi_pick_an_integration(spw, times, data, flags, minuvw, dataset, integration)
 end
 
-macro fitrfi_pick_an_integration(idx, flag_short=true)
+macro fitrfi_pick_an_integration(idx, minuvw=15)
     quote
-        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, $flag_short,
+        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, $minuvw,
                                                         dataset, $idx)
     end |> esc
 end
 
-function fitrfi_pick_an_integration(spw, times, data, flags, flag_short, dataset, idx)
+function fitrfi_pick_an_integration(spw, times, data, flags, minuvw, dataset, idx)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -65,20 +65,18 @@ function fitrfi_pick_an_integration(spw, times, data, flags, flag_short, dataset
         visibilities.data[α, 1] = JonesMatrix(xx, 0, 0, yy)
         visibilities.flags[α, 1] = flags[α, idx]
     end
-    if flag_short
-        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
-    end
+    TTCal.flag_short_baselines!(visibilities, meta, minuvw)
     meta, visibilities
 end
 
-macro fitrfi_sum_over_integrations(range, flag_short=true)
+macro fitrfi_sum_over_integrations(range, minuvw=15)
     quote
-        meta, visibilities = fitrfi_sum_over_integrations(spw, times, data, flags, $flag_short,
+        meta, visibilities = fitrfi_sum_over_integrations(spw, times, data, flags, $minuvw,
                                                           dataset, $range)
     end |> esc
 end
 
-function fitrfi_sum_over_integrations(spw, times, data, flags, flag_short, dataset, range)
+function fitrfi_sum_over_integrations(spw, times, data, flags, minuvw, dataset, range)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -95,21 +93,19 @@ function fitrfi_sum_over_integrations(spw, times, data, flags, flag_short, datas
             visibilities.flags[α, 1] = false
         end
     end
-    if flag_short
-        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
-    end
+    TTCal.flag_short_baselines!(visibilities, meta, minuvw)
     meta, visibilities
 end
 
-macro fitrfi_sum_over_integrations_with_subtraction(range, flag_short, sources...)
+macro fitrfi_sum_over_integrations_with_subtraction(range, minuvw, sources...)
     quote
         meta, visibilities = fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags,
-                                                                           $flag_short,
+                                                                           $minuvw,
                                                                            dataset, $range, $sources)
     end |> esc
 end
 
-function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, flag_short,
+function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, minuvw,
                                                        dataset, range, sources)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
@@ -129,7 +125,7 @@ function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, 
             temp.data[α, 1] = JonesMatrix(xx, 0, 0, yy)
             temp.flags[α, 1] = flags[α, idx]
         end
-        TTCal.flag_short_baselines!(temp, meta, 15.0)
+        TTCal.flag_short_baselines!(temp, meta, minuvw)
         for name in sources
             source = fitrfi_getdata_source(name, temp, meta)
             subsrc!(temp, meta, ConstantBeam(), source)
@@ -141,9 +137,7 @@ function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, 
             end
         end
     end
-    if flag_short
-        TTCal.flag_short_baselines!(visibilities, meta, 15.0)
-    end
+    TTCal.flag_short_baselines!(visibilities, meta, minuvw)
     meta, visibilities
 end
 
@@ -356,10 +350,10 @@ macro fitrfi(integrations, sources, options...)
     _options = Dict{Symbol, Any}(eval(current_module(), option) for option in options)
 
     # First pack the data into a `Visibilities` object
-    flag_short = get(_options, :flag_short, true)
+    minuvw = get(_options, :minuvw, 15)
     output = quote
         meta, visibilities = fitrfi_getvis(spw, times, data, flags, dataset,
-                                           $integrations, $flag_short)
+                                           $integrations, $minuvw)
     end
 
     # Pick one polarization (if requested)
@@ -425,6 +419,17 @@ macro fitrfi(integrations, sources, options...)
             error("pol must be one of either :xx or :yy")
         end
     end
+
+    # If a baseline is flagged in the calibration, we will set it to zero. This can happen if the
+    # calibration doesn't converge or if minuvw is set such that an antenna doesn't appear in any
+    # baselines.
+    push!(output.args, quote
+        for calibration in calibrations, kdx in eachindex(calibration.jones, calibration.flags)
+            if calibration.flags[kdx]
+                calibration.jones[kdx] = zero(DiagonalJonesMatrix)
+            end
+        end
+    end)
 
     # Output the results
     selection = _options[:select]
@@ -530,10 +535,7 @@ function fitrfi_spw08(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756
-            @fitrfi_construct_sources 1
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 1:7756 1 :select=>1
 
             # Big Pine RFI Peak #1
             @fitrfi_pick_an_integration 5175
@@ -586,10 +588,7 @@ function fitrfi_spw10(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756 false
-            @fitrfi_construct_sources 1
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 1:7756 1 :select=>1
 
             # This is that piece of RFI from Big Pine showing up again. Here it intereferes with Cas
             # A getting peeled correctly.
@@ -645,10 +644,7 @@ function fitrfi_spw12(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756
-            @fitrfi_construct_sources 3
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1:3
+            @fitrfi 1:7756 3 :select=>1:3
 
             # This is a correlated noise component that dominates over Vir A and interferes with it
             # being peeled.
@@ -682,12 +678,7 @@ function fitrfi_spw14(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756
-            @fitrfi_construct_sources 3
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 1:3
+            @fitrfi 1:7756 3 :select=>1:3 :test=>true
         elseif target == "rfi-restored-peeled"
         else
             error("unknown target")
@@ -703,28 +694,19 @@ function fitrfi_spw16(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756
-            @fitrfi_construct_sources 2
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1:2
+            @fitrfi 1:7756 2 :select=>1:2
 
-            ## This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
-            ## peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, and the
-            ## solution doesn't actually converge, but the solution looks ok so I'm leaving it for
-            ## now.
-            @fitrfi_pick_an_integration 5169
-            @fitrfi_rm_rfi_so_far 1:2
-            @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            # This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
+            # peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, but the
+            # solution looks ok so I'm leaving it for now.
+            @fitrfi 5169 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :pol=>:xx :test=>true
 
         elseif target == "rfi-restored-peeled"
             @fitrfi 1:7756 2 :select=>1:2
+            @fitrfi 1:7756 (1, :B4) :select=>1:2 :rm_rfi=>1:2 :minuvw=>30
             @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:xx
             @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:yy
-            @fitrfi 5169 A3 :select=>1 :rm_rfi=>1:2 :pol=>:xx :test=>true
+            @fitrfi 5169 A3 :select=>1 :rm_rfi=>1:2 :pol=>:xx
         else
             error("unknown target")
         end
@@ -739,10 +721,7 @@ function fitrfi_spw18(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi_sum_over_integrations 1:7756
-            @fitrfi_construct_sources 3
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1:3
+            @fitrfi 1:7756 3 :select=>1:3
 
             # This component causes Cas A to fail to peel in integration 911 (and nearby). However
             # it seems impossible to separate this component from Cas by considering a single

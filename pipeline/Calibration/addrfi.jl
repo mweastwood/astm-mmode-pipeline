@@ -21,14 +21,14 @@ function addrfi(spw, times, data, flags, xx_rfi, yy_rfi, xx_rfi_flux, yy_rfi_flu
 end
 
 function _addrfi(spw, data, xx_rfi, yy_rfi, xx_rfi_flux, yy_rfi_flux)
-    Nsource, Ntime = size(xx_rfi_flux)
+    _, Ntime = size(xx_rfi_flux)
     Nbase = size(xx_rfi, 1)
     for idx = 1:Ntime
-        for s = 1:Nsource
-            for α = 1:Nbase
-                data[1, α, idx] += xx_rfi_flux[s, idx]*xx_rfi[α, s]
-                data[2, α, idx] += yy_rfi_flux[s, idx]*yy_rfi[α, s]
-            end
+        for s = 1:size(xx_rfi_flux, 1), α = 1:Nbase
+            data[1, α, idx] += xx_rfi_flux[s, idx]*xx_rfi[α, s]
+        end
+        for s = 1:size(yy_rfi_flux, 1), α = 1:Nbase
+            data[2, α, idx] += yy_rfi_flux[s, idx]*yy_rfi[α, s]
         end
     end
     data
