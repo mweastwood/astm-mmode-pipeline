@@ -13,4 +13,3 @@ $JULIA -e 'isdir("workspace") || mkdir("workspace")'
 $JULIA -e 'isdir("workspace/source-lists") || mkdir("workspace/source-lists")'
 $JULIA -e 'isdir("logs") || mkdir("logs")'
 
-
