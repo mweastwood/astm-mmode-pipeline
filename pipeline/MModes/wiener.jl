@@ -7,14 +7,19 @@ function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
                                          "alm", "tolerance")
     alm_rfi = alm_rfi_restored - alm_rfi_subtracted
 
-    signal = alm2Cl(alm_rfi_subtracted, mrange)
-    contamination = alm2Cl(alm_rfi, mrange)
-    correction = signal ./ (signal + contamination)
-
     output = deepcopy(alm_rfi_subtracted)
-    apply_wiener_filter!(alm_rfi_restored, correction)
-    for m in mrange, l = m:lmax(output)
-        output[l, m] = alm_rfi_restored[l, m]
+    if dataset == "rainy" && spw == 4
+        # don't Wiener filter
+        correction = zeros(lmax(output)+1)
+    else
+        # do Wiener filter
+        signal = alm2Cl(alm_rfi_subtracted, mrange)
+        contamination = alm2Cl(alm_rfi, mrange)
+        correction = signal ./ (signal + contamination)
+        apply_wiener_filter!(alm_rfi_restored, correction)
+        for m in mrange, l = m:lmax(output)
+            output[l, m] = alm_rfi_restored[l, m]
+        end
     end
 
     save(joinpath(dir, "alm-wiener-filtered-$dataset.jld"),
