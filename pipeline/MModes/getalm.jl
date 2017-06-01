@@ -55,6 +55,7 @@ end
 
 function getalm_remote_processing_loop(input, output, transfermatrix, mmodes, mmode_flags, tolerance)
     BLAS.set_num_threads(16) # compensate for a bug in `addprocs`
+    local m
     while true
         try
             m = take!(input)
@@ -72,6 +73,8 @@ function getalm_remote_processing_loop(input, output, transfermatrix, mmodes, mm
                 # workers) then this will be an InvalidStateException. This is kind of messy...
                 break
             else
+                @show m
+                run(`hostname`)
                 println(exception)
                 rethrow(exception)
             end
