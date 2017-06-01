@@ -2,8 +2,9 @@ function sawtooth(spw, dataset, target)
     dir = getdir(spw)
     times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "times", "data", "flags")
     sawtooth = smooth_out_the_sawtooth!(data, flags)
-    save(joinpath(dir, "smoothed-$target-$dataset-visibilities.jld"),
-         "times", times, "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
+    output = joinpath(dir, "smoothed-$target-$dataset-visibilities.jld")
+    isfile(output) && rm(output)
+    save(output, "times", times, "data", data, "flags", flags, "sawtooth", sawtooth, compress=true)
     nothing
 end
 
