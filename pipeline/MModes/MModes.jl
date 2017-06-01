@@ -12,12 +12,9 @@ include("folddata.jl")
 include("getmmodes.jl")
 include("getalm.jl")
 include("lcurve.jl")
+include("wiener.jl")
 include("makemap.jl")
 include("glamour-image.jl")
-
-# Wiener filtering
-include("getalm-rfi.jl")
-include("wiener.jl")
 
 end
 
