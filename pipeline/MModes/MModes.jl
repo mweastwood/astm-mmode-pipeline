@@ -17,6 +17,7 @@ include("glamour-image.jl")
 
 # Wiener filtering
 include("getalm-rfi.jl")
+include("wiener.jl")
 
 end
 

@@ -6,7 +6,7 @@ end
 
 function getalm(spw, mmodes, mmode_flags, dataset, target; tolerance=0.01)
     dir = getdir(spw)
-    alm = _getalm(spw, mmodes, mmode_flags, tolerance)
+    alm = _getalm(spw, mmodes, mmode_flags, tolerance=tolerance)
     target = replace(target, "mmodes", "alm")
     save(joinpath(dir, "$target-$dataset.jld"), "alm", alm, "tolerance", tolerance)
     alm
