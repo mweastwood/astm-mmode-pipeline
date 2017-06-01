@@ -1,17 +1,17 @@
-function calibrate(spw, target="smoothed-visibilities")
+function calibrate(spw, dataset, target)
     dir = getdir(spw)
-    times, data, flags = load(joinpath(dir, target*".jld"), "times", "data", "flags")
+    times, data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "times", "data", "flags")
 
-    if target == "smoothed-100hr-visibilities"
+    if dataset == "100hr"
         day1_calibration_range =  3000: 5500
         day2_calibration_range =  9628:12128
         day3_calibration_range = 16256:18756
         day4_calibration_range = 22884:25384
 
-        day1_calibration = solve_for_gain_calibration(spw, times, data, flags, day1_calibration_range)
-        day2_calibration = solve_for_gain_calibration(spw, times, data, flags, day2_calibration_range)
-        day3_calibration = solve_for_gain_calibration(spw, times, data, flags, day3_calibration_range)
-        day4_calibration = solve_for_gain_calibration(spw, times, data, flags, day4_calibration_range)
+        day1_calibration = solve_for_gain_calibration(spw, dataset, times, data, flags, day1_calibration_range)
+        day2_calibration = solve_for_gain_calibration(spw, dataset, times, data, flags, day2_calibration_range)
+        day3_calibration = solve_for_gain_calibration(spw, dataset, times, data, flags, day3_calibration_range)
+        day4_calibration = solve_for_gain_calibration(spw, dataset, times, data, flags, day4_calibration_range)
 
         save(joinpath(dir, "gain-calibrations.jld"),
              "day1", day1_calibration, "day2", day2_calibration,
@@ -39,27 +39,27 @@ function calibrate(spw, target="smoothed-visibilities")
         apply_the_calibration(data_day2, flags_day2, day2_calibration)
         apply_the_calibration(data_day3, flags_day3, day3_calibration)
         apply_the_calibration(data_day4, flags_day4, day4_calibration)
-    elseif target == "smoothed-rainy-visibilities"
+    elseif dataset == "rainy"
         calibration_range = 1600:1700
-        calibration = solve_for_gain_calibration(spw, times, data, flags, calibration_range)
+        calibration = solve_for_gain_calibration(spw, dataset, times, data, flags, calibration_range)
         output = replace(replace(target, "smoothed-", ""), "visibilities", "gain-calibrations")
         save(joinpath(dir, output*".jld"), "calibration", calibration, compress=true)
         apply_the_calibration(data, flags, calibration)
     end
 
-    output = replace(target, "smoothed", "calibrated")
-    save(joinpath(dir, output*".jld"), "times", times, "data", data, "flags", flags, compress=true)
+    save(joinpath(dir, "calibrated-$dataset-visibilities.jld"),
+         "times", times, "data", data, "flags", flags, compress=true)
 
     nothing
 end
 
 """
-    solve_for_gain_calibration(spw, data, flags, range)
+    solve_for_gain_calibration(spw, dataset, times data, flags, range)
 
 Solve for the gain calibration of the given data. We will take a large track of data in order to
 mitigate the effect of unmodeled sky components on the gain calibration.
 """
-function solve_for_gain_calibration(spw, times, data, flags, range)
+function solve_for_gain_calibration(spw, dataset, times, data, flags, range)
     Ntime = length(range)
     Nbase = size(data, 2)
     Nant = Nbase2Nant(Nbase)
@@ -77,7 +77,7 @@ function solve_for_gain_calibration(spw, times, data, flags, range)
     sources = readsources(joinpath(Common.workspace, "source-lists", "getdata-sources.json"))[1:2]
     beam = SineBeam()
     model = Visibilities(Nbase, Ntime)
-    meta = getmeta(spw, "rainy")
+    meta = getmeta(spw, dataset)
 
     # We need to generate the model visibilities one-by-one because TTCal will only do one
     # integration at a time. At this point we need to make sure TTCal knows that we only want a

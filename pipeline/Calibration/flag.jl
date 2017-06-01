@@ -1,30 +1,30 @@
-function flag(spw, input)
+function flag(spw, dataset, target)
     dir = getdir(spw)
-    times, data = load(joinpath(dir, input*".jld"), "times", "data")
-    flags = flag!(spw, data, input)
-    save(joinpath(dir, "flagged-$input.jld"),
+    times, data = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "times", "data")
+    flags = flag!(spw, data, dataset, target)
+    save(joinpath(dir, "flagged-$target-$dataset-visiblities.jld"),
          "times", times, "data", data, "flags", flags, compress=true)
-    save(joinpath(dir, "flagged-autos-$input.jld"),
+    save(joinpath(dir, "flagged-$target-$dataset-autos.jld"),
          "data", just_the_autos(data), "flags", just_the_auto_flags(flags), compress=true)
 end
 
 """
-    flag!(spw, data, input)
+    flag!(spw, data, dataset, target)
 
 Apply a set of a priori antenna and baseline flags. Additionally look for and flag extremely
 egregious integrations.
 
 This function will modify the input `data` by zero-ing out the flagged pieces.
 """
-function flag!(spw, data, input)
+function flag!(spw, data, dataset, target)
     _, Nbase, Ntime = size(data)
     Nant = Nbase2Nant(Nbase)
     flags = zeros(Bool, Nbase, Ntime)
 
     # antenna flags
-    if input == "raw-100hr-visibilities"
+    if dataset == "100hr"
         files = ["100hr.ants"]
-    elseif input == "raw-rainy-visibilities"
+    elseif dataset == "rainy"
         files = ["rainy.ants"]
         file = @sprintf("rainy-spw%02d.ants", spw)
         if isfile(joinpath(Common.workspace, "flags", file))
@@ -42,9 +42,9 @@ function flag!(spw, data, input)
     end
 
     # baseline flags
-    if input == "raw-100hr-visibilities"
+    if dataset == "100hr"
         files = ["100hr.bl"]
-    elseif input == "raw-rainy-visibilities"
+    elseif dataset == "rainy"
         files = ["rainy.bl"]
         file = @sprintf("rainy-spw%02d.bl", spw)
         if isfile(joinpath(Common.workspace, "flags", file))
@@ -65,7 +65,7 @@ function flag!(spw, data, input)
     do_integration_flags!(flags, data)
 
     # special case flags
-    do_special_case_flags!(spw, input, flags)
+    do_special_case_flags!(spw, dataset, target, flags)
 
     flags
 end
@@ -148,8 +148,8 @@ function do_integration_flags!(flags, data)
     end
 end
 
-function do_special_case_flags!(spw, input, flags)
-    if contains(input, "rainy")
+function do_special_case_flags!(spw, dataset, target, flags)
+    if dataset == "rainy"
         if spw == 12
             flags[:, 3467] = true # fireball
             flags[:, 4939] = true # fireball

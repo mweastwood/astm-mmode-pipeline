@@ -6,7 +6,7 @@ end
 function getdata(spw, range, dataset)
     dadas = listdadas(spw, dataset)[range]
     Ntime = length(range)
-    meta = getmeta(spw)
+    meta = getmeta(spw, dataset)
 
     idx = 1
     nextidx() = (myidx = idx; idx += 1; myidx)
