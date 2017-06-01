@@ -466,30 +466,23 @@ function fitrfi_spw04(times, data, flags, dataset, target)
         if target == "calibrated"
             # This is a piece of horizon RFI that shows up from Big Pine. It's extremely bright
             # though, so a single integration is sufficient to take it out.
-            @fitrfi_pick_an_integration 6646
-            @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 6646 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1
 
             # This is the same RFI source as above, but the subtraction doesn't do a particularly
             # good job. So we'll fit for it again.
-            @fitrfi_pick_an_integration 6205
-            @fitrfi_construct_sources "Vir A" A3 "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 2
+            @fitrfi 6205 ("Vir A", :A3, "Cas A") :select=>2
 
             # Same RFI source, same problem.
-            @fitrfi_pick_an_integration 7118
-            @fitrfi_construct_sources A3 "Cyg A" "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 7118 (:A3, "Cyg A", "Cas A") :select=>1
 
             # Same RFI source, same problem.
-            @fitrfi_pick_an_integration 5157
-            @fitrfi_construct_sources A3 "Cas A" "Vir A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 5157 (:A3, "Cas A", "Vir A") :select=>1
+
         elseif target == "rfi-restored-peeled"
+            @fitrfi 6646 A3 :select=>1
+            @fitrfi 6205 A3 :select=>1
+            @fitrfi 7118 A3 :select=>1
+            @fitrfi 5157 A3 :select=>1
         else
             error("unknown target")
         end
@@ -506,21 +499,16 @@ function fitrfi_spw06(times, data, flags, dataset, target)
         if target == "calibrated"
             # Similar to spw04 above, this is the same piece of horizon RFI. Once again it is very
             # bright.
-            @fitrfi_pick_an_integration 6637
-            @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 6637 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1
 
             # Cas A fails to peel on this integration and it's unclear why. My hypothesis is that
             # the bright RFI wasn't subtracted very well, but it seems to be fine. We'll fit for it
             # again anyway, but it's not obvious why I should have to.
-            @fitrfi_pick_an_integration 6205
-            @fitrfi_construct_sources "Vir A" A3 "Cas A"
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 2
+            @fitrfi 6205 ("Vir A", :A3, "Cas A") :select=>2
+
         elseif target == "rfi-restored-peeled"
+            @fitrfi 6637 A3 :select=>1
+            @fitrfi 6205 A3 :select=>1
         else
             error("unknown target")
         end
@@ -538,42 +526,19 @@ function fitrfi_spw08(times, data, flags, dataset, target)
             @fitrfi 1:7756 1 :select=>1
 
             # Big Pine RFI Peak #1
-            @fitrfi_pick_an_integration 5175
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 5175 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :rm_rfi=>1:1
 
             # Big Pine RFI Peak #2
-            @fitrfi_pick_an_integration 6629
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources A3 "Cyg A" "Vir A" "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 6629 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1 :rm_rfi=>1:1
 
             # Big Pine RFI Peak #3
-            @fitrfi_pick_an_integration 7060
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources A3 "Cyg A"
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            @fitrfi 7060 (:A3, "Cyg A") :select=>1 :rm_rfi=>1:1
 
-
-            # TODO: recheck this integration, I forgot to @fitrfi_rm_rfi_so_far
-            # it's possible that this component I got is the one above
-
-            ## There is a correlated noise component that gets in the way of peeling Cas A on this
-            ## integration. There is also an RFI source on the horizon, but it gets mixed up with Cen
-            ## A if I try to pick that out on this integration.
-            #@fitrfi_pick_an_integration 6195
-            #@fitrfi_construct_sources "Vir A" 1 "Cas A"
-            #@fitrfi_test_start_image
-            #@fitrfi_peel_sources
-            #@fitrfi_test_finish_image
-            #@fitrfi_select_components 2
         elseif target == "rfi-restored-peeled"
+            @fitrfi 1:7756 1 :select=>1
+            @fitrfi 5175 A3 :select=>1 :rm_rfi=>1:1
+            @fitrfi 6629 A3 :select=>1 :rm_rfi=>1:1
+            @fitrfi 7060 A3 :select=>1 :rm_rfi=>1:1
         else
             error("unknown target")
         end
@@ -592,32 +557,16 @@ function fitrfi_spw10(times, data, flags, dataset, target)
 
             # This is that piece of RFI from Big Pine showing up again. Here it intereferes with Cas
             # A getting peeled correctly.
-            @fitrfi_pick_an_integration 7118
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources "Cyg A" A3 "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 2
+            @fitrfi 7118 ("Cyg A", :A3, "Cas A") :select=>2 :rm_rfi=>1:1
 
             # The Big Pine RFI strikes back.
-            @fitrfi_pick_an_integration 6645
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources A3 "Cyg A" "Vir A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 6645 (:A3, "Cyg A", "Vir A") :select=>1 :rm_rfi=>1:1
 
             # Return of the Big Pine RFI
-            @fitrfi_pick_an_integration 7060
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources "Cyg A" A3 "Cas A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 2
+            @fitrfi 7060 ("Cyg A", :A3, "Cas A") :select=>2 :rm_rfi=>1:1
 
             # Big Pine...
-            @fitrfi_pick_an_integration 5175
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources A3 "Cas A" "Tau A" "Vir A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 5175 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :rm_rfi=>1:1
 
             # Finally, something else interesting. This is a correlated noise component that gets in
             # the way of peeling Vir A.
@@ -630,6 +579,7 @@ function fitrfi_spw10(times, data, flags, dataset, target)
             @fitrfi_select_components 1
 
         elseif target == "rfi-restored-peeled"
+            error("TODO")
         else
             error("unknown target")
         end
@@ -648,22 +598,13 @@ function fitrfi_spw12(times, data, flags, dataset, target)
 
             # This is a correlated noise component that dominates over Vir A and interferes with it
             # being peeled.
-            @fitrfi_pick_an_integration 5857
-            @fitrfi_rm_rfi_so_far 1:3
-            @fitrfi_construct_sources 1 "Vir A"
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
+            @fitrfi 5857 (1, "Vir A") :select=>1 :rm_rfi=>1:3
 
             # This is another correlated noise component that gets in the way of Vir A.
-            @fitrfi_pick_an_integration 6890
-            @fitrfi_rm_rfi_so_far 1:3
-            @fitrfi_construct_sources "Cyg A" "Cas A" 1 "Vir A"
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 3
+            @fitrfi 6890 ("Cyg A", "Cas A", 1, "Vir A") :select=>3 :rm_rfi=>1:3
 
         elseif target == "rfi-restored-peeled"
+            error("TODO")
         else
             error("unknown target")
         end
@@ -680,6 +621,7 @@ function fitrfi_spw14(times, data, flags, dataset, target)
         if target == "calibrated"
             @fitrfi 1:7756 3 :select=>1:3 :test=>true
         elseif target == "rfi-restored-peeled"
+            @fitrfi 1:7756 3 :select=>1:3 :test=>true
         else
             error("unknown target")
         end
@@ -735,6 +677,7 @@ function fitrfi_spw18(times, data, flags, dataset, target)
             @fitrfi_select_components 1
 
         elseif target == "rfi-restored-peeled"
+            error("TODO")
         else
             error("unknown target")
         end
