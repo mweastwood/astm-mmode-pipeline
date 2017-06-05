@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eu
-cd `dirname $0`/..
+cd `dirname $0`
 
 JULIA=julia-0.5.0
 MACHINEFILE_ONE=../workspace/machine-files/one-process-each.machinefile
