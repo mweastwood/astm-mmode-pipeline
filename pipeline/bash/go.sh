@@ -10,13 +10,22 @@ MACHINEFILE_MAX=../workspace/machine-files/max-processes-each.machinefile
 #spws="4 6 8 10 12 14 16 18"
 #datasets="100hr rainy"
 
+lower=$1
+upper=$2
 spws=$3
 datasets=$4
+current_number=""
+
+function isbetween {
+    current_number=$1
+    [ $lower -le $current_number ] && [ $upper -ge $current_number ]
+}
 
 function title {
-    len=`expr length $1`
+    mytitle="$current_number-$1"
+    len=`expr length $mytitle`
     echo
-    echo $1
+    echo $mytitle
     printf '%*s\n' $len | tr ' ' "="
     date
 }
@@ -167,31 +176,31 @@ for dataset in $datasets
 do
     for spw in $spws
     do
-        [ $1 -le 00 ] && [ $2 -ge 00 ] && getdata   $spw $dataset
-        [ $1 -le 01 ] && [ $2 -ge 01 ] && flag      $spw $dataset "raw"
-        [ $1 -le 02 ] && [ $2 -ge 02 ] && smooth    $spw $dataset "flagged-raw"
-        [ $1 -le 03 ] && [ $2 -ge 03 ] && calibrate $spw $dataset "smoothed-flagged-raw"
+        isbetween 00 && getdata   $spw $dataset
+        isbetween 01 && flag      $spw $dataset "raw"
+        isbetween 02 && smooth    $spw $dataset "flagged-raw"
+        isbetween 03 && calibrate $spw $dataset "smoothed-flagged-raw"
 
-        [ $1 -le 10 ] && [ $2 -ge 10 ] && fitrfi    $spw $dataset "calibrated"
-        [ $1 -le 11 ] && [ $2 -ge 11 ] && subrfi    $spw $dataset "calibrated"
-        [ $1 -le 12 ] && [ $2 -ge 12 ] && peel      $spw $dataset "rfi-subtracted-calibrated"
-        [ $1 -le 13 ] && [ $2 -ge 13 ] && smeared   $spw $dataset "peeled"
-        [ $1 -le 14 ] && [ $2 -ge 14 ] && addrfi    $spw $dataset "peeled" "rfi-subtracted-calibrated"
-        [ $1 -le 15 ] && [ $2 -ge 15 ] && fitrfi    $spw $dataset "rfi-restored-peeled"
-        [ $1 -le 16 ] && [ $2 -ge 16 ] && subrfi    $spw $dataset "rfi-restored-peeled"
-        [ $1 -le 17 ] && [ $2 -ge 17 ] && smeared   $spw $dataset "rfi-subtracted-peeled"
+        isbetween 10 && fitrfi    $spw $dataset "calibrated"
+        isbetween 11 && subrfi    $spw $dataset "calibrated"
+        isbetween 12 && peel      $spw $dataset "rfi-subtracted-calibrated"
+        isbetween 13 && smeared   $spw $dataset "peeled"
+        isbetween 14 && addrfi    $spw $dataset "peeled" "rfi-subtracted-calibrated"
+        isbetween 15 && fitrfi    $spw $dataset "rfi-restored-peeled"
+        isbetween 16 && subrfi    $spw $dataset "rfi-restored-peeled"
+        isbetween 17 && smeared   $spw $dataset "rfi-subtracted-peeled"
 
-        [ $1 -le 20 ] && [ $2 -ge 20 ] && fold      $spw $dataset "rfi-restored-peeled"
-        [ $1 -le 21 ] && [ $2 -ge 21 ] && fold      $spw $dataset "rfi-subtracted-peeled"
-        [ $1 -le 22 ] && [ $2 -ge 22 ] && getmmodes $spw $dataset "folded-rfi-restored-peeled"
-        [ $1 -le 23 ] && [ $2 -ge 23 ] && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
-        [ $1 -le 24 ] && [ $2 -ge 24 ] && getalm    $spw $dataset "mmodes-rfi-restored-peeled"
-        [ $1 -le 25 ] && [ $2 -ge 25 ] && getalm    $spw $dataset "mmodes-rfi-subtracted-peeled"
-        [ $1 -le 26 ] && [ $2 -ge 26 ] && wiener    $spw $dataset "alm-rfi-restored-peeled" "alm-rfi-subtracted-peeled"
+        isbetween 20 && fold      $spw $dataset "rfi-restored-peeled"
+        isbetween 21 && fold      $spw $dataset "rfi-subtracted-peeled"
+        isbetween 22 && getmmodes $spw $dataset "folded-rfi-restored-peeled"
+        isbetween 23 && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
+        isbetween 24 && getalm    $spw $dataset "mmodes-rfi-restored-peeled"
+        isbetween 25 && getalm    $spw $dataset "mmodes-rfi-subtracted-peeled"
+        isbetween 26 && wiener    $spw $dataset "alm-rfi-restored-peeled" "alm-rfi-subtracted-peeled"
 
-        [ $1 -le 30 ] && [ $2 -ge 30 ] && makemap   $spw $dataset "alm-rfi-restored-peeled"
-        [ $1 -le 31 ] && [ $2 -ge 31 ] && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
-        [ $1 -le 32 ] && [ $2 -ge 32 ] && makemap   $spw $dataset "alm-wiener-filtered"
+        isbetween 30 && makemap   $spw $dataset "alm-rfi-restored-peeled"
+        isbetween 31 && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
+        isbetween 32 && makemap   $spw $dataset "alm-wiener-filtered"
     done
 done
 
