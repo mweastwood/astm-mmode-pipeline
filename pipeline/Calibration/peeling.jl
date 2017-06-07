@@ -259,7 +259,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
             # --------------------------------------------------------------
             @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
+            @pick_for_peeling          "Cas A"     10     1900        30
             @pick_for_peeling          "Vir A"     30     2500        30
             @pick_for_peeling          "Tau A"     30     2500        30
             @pick_for_subtraction      "Her A"     30      500        30

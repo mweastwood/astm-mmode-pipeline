@@ -478,11 +478,19 @@ function fitrfi_spw04(times, data, flags, dataset, target)
             # Same RFI source, same problem.
             @fitrfi 5157 (:A3, "Cas A", "Vir A") :select=>1
 
+            # Integrations selected by looking at Vir A residuals
+            @fitrfi 6126 (1, "Vir A") :select=>1 :pol=>:xx
+            @fitrfi 6626 (:A3, "Cyg A", "Vir A") :select=>1
+
         elseif target == "rfi-restored-peeled"
             @fitrfi 6646 A3 :select=>1
             @fitrfi 6205 A3 :select=>1
             @fitrfi 7118 A3 :select=>1
             @fitrfi 5157 A3 :select=>1
+
+            # Vir A
+            @fitrfi 6126 1 :select=>1 :pol=>:xx
+            @fitrfi 6626 A3 :select=>1
         else
             error("unknown target")
         end
@@ -507,6 +515,8 @@ function fitrfi_spw06(times, data, flags, dataset, target)
             @fitrfi 6205 ("Vir A", :A3, "Cas A") :select=>2
 
         elseif target == "rfi-restored-peeled"
+            @fitrfi 1:7756 2 :select=>1:2 :pol=>:xx
+            @fitrfi 1:7756 1 :select=>1 :pol=>:yy
             @fitrfi 6637 A3 :select=>1
             @fitrfi 6205 A3 :select=>1
         else
@@ -535,7 +545,9 @@ function fitrfi_spw08(times, data, flags, dataset, target)
             @fitrfi 7060 (:A3, "Cyg A") :select=>1 :rm_rfi=>1:1
 
         elseif target == "rfi-restored-peeled"
-            @fitrfi 1:7756 1 :select=>1
+            @fitrfi 1:7756 3 :select=>1:3
+            @fitrfi 1:7756 2 :select=>1:2 :rm_rfi=>1:3 :pol=>:xx
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:3 :pol=>:yy
             @fitrfi 5175 A3 :select=>1 :rm_rfi=>1:1
             @fitrfi 6629 A3 :select=>1 :rm_rfi=>1:1
             @fitrfi 7060 A3 :select=>1 :rm_rfi=>1:1
@@ -570,7 +582,7 @@ function fitrfi_spw10(times, data, flags, dataset, target)
 
             # Finally, something else interesting. This is a correlated noise component that gets in
             # the way of peeling Vir A.
-            @fitrfi_sum_over_integrations_with_subtraction 5755:5855 false "Vir A" "Cas A"
+            @fitrfi_sum_over_integrations_with_subtraction 5755:5855 0 "Vir A" "Cas A"
             @fitrfi_rm_rfi_so_far 1:1
             @fitrfi_construct_sources 1
             @fitrfi_test_start_image
@@ -579,7 +591,15 @@ function fitrfi_spw10(times, data, flags, dataset, target)
             @fitrfi_select_components 1
 
         elseif target == "rfi-restored-peeled"
-            error("TODO")
+            @fitrfi 1:7756 2 :select=>1:2
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:xx
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:yy
+            @fitrfi 7118 A3 :select=>1 :rm_rfi=>1:1
+            @fitrfi 6645 A3 :select=>1 :rm_rfi=>1:1
+            @fitrfi 7060 A3 :select=>1 :rm_rfi=>1:1
+            @fitrfi 5175 A3 :select=>1 :rm_rfi=>1:1
+            @fitrfi 5755:5855 1 :select=>1 :rm_rfi=>1:1 :minuvw=>0 :test=>true
+
         else
             error("unknown target")
         end
@@ -604,7 +624,10 @@ function fitrfi_spw12(times, data, flags, dataset, target)
             @fitrfi 6890 ("Cyg A", "Cas A", 1, "Vir A") :select=>3 :rm_rfi=>1:3
 
         elseif target == "rfi-restored-peeled"
-            error("TODO")
+            @fitrfi 1:7756 5 :select=>1:5
+            @fitrfi 5857 1 :select=>1 :rm_rfi=>1:3
+            @fitrfi 6890 1 :select=>1 :rm_rfi=>1:3
+
         else
             error("unknown target")
         end
@@ -621,7 +644,9 @@ function fitrfi_spw14(times, data, flags, dataset, target)
         if target == "calibrated"
             @fitrfi 1:7756 3 :select=>1:3 :test=>true
         elseif target == "rfi-restored-peeled"
-            @fitrfi 1:7756 3 :select=>1:3 :test=>true
+            @fitrfi 1:7756 3 :select=>1:3
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:3 :pol=>:xx
+            @fitrfi 1:7756 2 :select=>1:2 :rm_rfi=>1:3 :pol=>:yy :test=>true
         else
             error("unknown target")
         end
@@ -677,7 +702,16 @@ function fitrfi_spw18(times, data, flags, dataset, target)
             @fitrfi_select_components 1
 
         elseif target == "rfi-restored-peeled"
-            error("TODO")
+            @fitrfi 1:7756 4 :select=>1:4
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:4 :pol=>:xx
+            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:4 :pol=>:yy
+
+            # Note to self:
+            # There seems to be a source in the South that ends up being removed. However I'm pretty
+            # sure that's just a terrestrial transient of some kind. It's not an actual source and
+            # it's not a big deal that it gets removed.
+            @fitrfi 811:911 1 :select=>1 :rm_rfi=>1:3 :minuvw=>0
+
         else
             error("unknown target")
         end
