@@ -13,6 +13,7 @@ include("getmmodes.jl")
 include("getalm.jl")
 include("lcurve.jl")
 include("wiener.jl")
+include("observation-matrix.jl")
 include("makemap.jl")
 include("glamour-image.jl")
 

@@ -1,15 +1,20 @@
-function observation_matrix(spw, dataset="rainy")
+function observation_matrix(spw, dataset, mmodes_target, alm_target)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
-    flags = load(joinpath(dir, "mmodes-rfi-subtracted-peeled-$dataset.jld"), "flags")
-    tolerance = load(joinpath(dir, "alm-rfi-subtracted-peeled-$dataset.jld"), "tolerance")
+    flags = load(joinpath(dir, "$mmodes_target-$dataset.jld"), "flags")
+    tolerance, mrange, correction = load(joinpath(dir, "$alm_target-$dataset.jld"),
+                                         "tolerance", "mrange", "correction")
+
     blocks = observation_matrix(spw, transfermatrix, flags, tolerance)
+    account_for_wiener_filter!(blocks, mrange, correction)
+
     save(joinpath(dir, "observation-matrix-$dataset.jld"),
          "blocks", blocks, "flags", flags, "tolerance", tolerance,
-         "lmax", transfermatrix.lmax, "mmax", transfermatrix.mmax)
+         "lmax", transfermatrix.lmax, "mmax", transfermatrix.mmax,
+         "mrange", mrange, "correction", correction, compress=true)
 end
 
-function observation_matrix(spw, transfermatrix, flags, tolerance)
+function observation_matrix(spw, transfermatrix::TransferMatrix, flags, tolerance)
     lmax = transfermatrix.lmax
     mmax = transfermatrix.mmax
     blocks = Vector{Matrix{Complex128}}(mmax+1)
@@ -26,11 +31,9 @@ function observation_matrix(spw, transfermatrix, flags, tolerance)
             try
                 remotecall(observation_matrix_remote_processing_loop, worker, input_channel, output_channel,
                            transfermatrix, flags, tolerance)
-                Lumberjack.debug("Worker $worker has been started")
                 while true
                     m′ = nextm()
                     m′ ≤ mmax || break
-                    Lumberjack.debug("Worker $worker is processing m=$(m′)")
                     put!(input_channel, m′)
                     block = take!(output_channel)
                     blocks[m′+1] = block
@@ -70,6 +73,16 @@ function observation_matrix_remote_processing_loop(input, output, transfermatrix
                 println(exception)
                 rethrow(exception)
             end
+        end
+    end
+end
+
+function account_for_wiener_filter!(blocks, mrange, correction)
+    lmax = length(correction) - 1
+    for m in mrange
+        block = blocks[m+1]
+        for l = m:lmax
+            block[l-m+1,:] *= correction[l+1]
         end
     end
 end

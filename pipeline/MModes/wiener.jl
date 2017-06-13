@@ -38,7 +38,7 @@ function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
 end
 
 function apply_wiener_filter!(alm, mrange, correction)
-    for m in mrange, l = 0:lmax(alm)
+    for m in mrange, l = m:lmax(alm)
         alm[l, m] *= correction[l+1]
     end
 end

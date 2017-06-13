@@ -7,7 +7,7 @@ end
 function makemap(spw, alm::Alm, dataset, target)
     dir = getdir(spw)
     meta = getmeta(spw, dataset)
-    map = alm2map(alm, 512)
+    map = alm2map(alm, 2048)
 
     ## TODO: does this need a factor of the beam solid angle?
     #mmodes = MModes(joinpath(dir, "mmodes")) # read the frequency from the m-modes
