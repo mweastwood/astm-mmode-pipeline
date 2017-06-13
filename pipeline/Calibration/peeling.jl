@@ -227,18 +227,6 @@ macro pick_for_shapelets(name, elevation_cutoff)
     esc(output)
 end
 
-macro special_case_the_sun(elevation_cutoff)
-    quote
-        if source.name == "Sun"
-            if TTCal.isabovehorizon(frame, source, deg2rad($elevation_cutoff))
-                push!(to_peel, idx)
-            else
-                push!(to_sub_faint, idx)
-            end
-        end
-    end |> esc
-end
-
 function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions, istest=false)
     # We have three categories for how sources are removed:
     #  1) peel them (for very bright sources)
@@ -314,7 +302,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction      "Hya A"     60      500        30
             @pick_for_subtraction      "Per B"     60      500        30
             @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_shapelets        "Sun"        5
+            @pick_for_peeling          "Sun"       15        0         0
         elseif spw == 14
             #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
             # --------------------------------------------------------------
@@ -326,7 +314,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction      "Hya A"     60      500        30
             @pick_for_subtraction      "Per B"     60      500        30
             @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_shapelets        "Sun"        5
+            @pick_for_peeling          "Sun"       15        0         0
         elseif spw == 16
             #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
             # --------------------------------------------------------------
@@ -338,7 +326,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction      "Hya A"     60      500        30
             @pick_for_subtraction      "Per B"     60      500        30
             @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_shapelets        "Sun"        5
+            @pick_for_peeling          "Sun"       15        0         0
         elseif spw == 18
             #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
             # --------------------------------------------------------------
@@ -350,7 +338,7 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
             @pick_for_subtraction      "Hya A"     60      500        30
             @pick_for_subtraction      "Per B"     60      500        30
             @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_shapelets        "Sun"        5
+            @pick_for_peeling          "Sun"       15        0         0
         end
     end
 
