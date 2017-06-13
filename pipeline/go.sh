@@ -172,6 +172,19 @@ function makemap {
     $JULIA -e "using Pipeline; @time Pipeline.MModes.makemap($spw, $dataset, $target)"
 }
 
+function observe {
+    title observe
+    local spw=$1
+    local dataset=`quote $2`
+    local mmodes_target=`quote $3`
+    local alm_target=`quote $4`
+    echo "spw=$spw, dataset=$dataset"
+    echo "mmodes_target=$mmodes_target"
+    echo "alm_target=$alm_target"
+    $JULIA --machinefile $MACHINEFILE_ONE -e \
+        "using Pipeline; @time Pipeline.MModes.observation_matrix($spw, $dataset, $mmodes_target, $alm_target)"
+}
+
 for dataset in $datasets
 do
     for spw in $spws
@@ -201,6 +214,8 @@ do
         isbetween 30 && makemap   $spw $dataset "alm-rfi-restored-peeled"
         isbetween 31 && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
         isbetween 32 && makemap   $spw $dataset "alm-wiener-filtered"
+
+        isbetween 40 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "alm-wiener-filtered"
     done
 done
 
