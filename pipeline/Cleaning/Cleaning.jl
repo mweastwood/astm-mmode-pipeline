@@ -8,6 +8,7 @@ using BPJSpec
 using ..Common
 
 include("getpsf.jl")
+include("clean-worker.jl")
 include("clean.jl")
 include("postage-stamp.jl")
 

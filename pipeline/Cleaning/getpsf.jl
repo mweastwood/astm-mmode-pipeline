@@ -60,3 +60,23 @@ function getpsf_peak(observation_matrix, θ, ϕ, nside, lmax, mmax)
     maximum(map.pixels)
 end
 
+immutable PSFPeakValues
+    θ :: Vector{Float64} # angle from north in radians
+    values :: Vector{Float64}
+end
+
+function loadpsf_peak(spw::Integer, dataset)
+    dir = getdir(spw)
+    θ, values = load(joinpath(dir, "psf-peak-value-$dataset.jld"), "theta", "peaks")
+    PSFPeakValues(θ, values)
+end
+
+function loadpsf_peak(spws::AbstractVector, dataset)
+    PSFPeakValues[loadpsf_peak(spw, dataset) for spw in spws]
+end
+
+function getpeak(psfpeaks::PSFPeakValues, θ)
+    idx = searchsortedlast(psfpeaks.θ, θ)
+    psfpeaks.values[idx]
+end
+

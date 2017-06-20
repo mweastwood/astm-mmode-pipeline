@@ -1,69 +1,101 @@
-function clean(spw, dataset)
-    dir = getdir(spw)
-
-    println("reading observation matrix")
-    observation_matrix, lmax, mmax = load(joinpath(dir, "observation-matrix-$dataset.jld"),
-                                          "blocks", "lmax", "mmax")
-
-    println("reading PSF peak values")
-    θpeaks, peaks = load(joinpath(dir, "psf-peak-value-rainy.jld"), "theta", "peaks")
-
-    println("reading dirty map")
-    map = readhealpix(joinpath(dir, "map-wiener-filtered-$dataset-itrf.fits"))
-
-    println("computing unit vectors")
-    x, y, z = unit_vectors(map)
-
-    for idx = 1:100
-        println("selecting pixels")
-        @time pixels = select_pixels(map, x, y, z, 256)
-        println("cleaning")
-        @time model = clean(map, pixels, observation_matrix, θpeaks, peaks, lmax, mmax)
-        map -= model
-        writehealpix(@sprintf("test-%03d.fits", idx), map, replace=true)
+function clean(dataset)
+    println("Cleaning")
+    spws = 4:2:18
+    pool = classify_workers(spws)
+    io = start_workers(pool, spws, dataset)
+    try
+        psfs = loadpsf_peak(spws, dataset)
+        maps = readmaps(spws, dataset)
+        x, y, z = unit_vectors(nside(maps[1]))
+        clean(spws, dataset, pool, io, psfs, maps, x, y, z)
+    finally
+        close_worker_io(io)
     end
 end
 
-function clean(map, pixels, observation_matrix, θpeaks, peaks, lmax, mmax)
-    alm = Alm(Complex128, lmax, mmax)
-    # compute the contribution from each pixel
+function clean(spws, dataset, pool, io, psfs, maps, x, y, z)
+    maxiter = 500
+    for iter = 1:maxiter
+        println("================")
+        @printf("Iteration #%05d\n", iter)
+        @time maps = clean_iteration(pool, io, psfs, maps, x, y, z)
+        if mod(iter, 50) == 0
+            println("...writing maps...")
+            for (spw, map) in zip(spws, maps)
+                dir = getdir(spw)
+                iterstr = @sprintf("%05d", iter)
+                filename = "cleaned-map-$dataset-$iterstr.fits"
+                writehealpix(joinpath(dir, "tmp", filename), map, replace=true)
+            end
+        end
+    end
+end
+
+function clean_iteration(pool, io, psfs, maps, x, y, z)
+    Npixels = 256
+    println("* selecting pixels")
+    @time pixels = select_pixels(maps, x, y, z, Npixels)
+    println("* spherical harmonics")
+    @time model_alms = spherical_harmonics(pool, maps, psfs, pixels)
+    println("* observing")
+    @time model_alms = observe(pool, io, model_alms)
+    println("* spherical harmonic transforms")
+    @time model_maps = spherical_harmonic_transforms(pool, model_alms, nside(maps[1]))
+    println("* subtracting model")
+    @time subtract_model(maps, model_maps, 0.25)
+end
+
+function spherical_harmonics(pool, maps, psfs, pixels)
+    N = length(maps)
+    lmax = mmax = 1000
+    alms = Alm[Alm(Complex128, lmax, mmax) for map in maps]
+    function output(myalm, θ, ϕ, pixel)
+        for idx = 1:N
+            scale = maps[idx][pixel] / getpeak(psfs[idx], θ)
+            alms[idx].alm[:] += scale * myalm.alm
+        end
+    end
     not_done() = length(pixels) > 0
     next_pixel() = pop!(pixels)
-    angles(pixel) = LibHealpix.pix2ang_ring(nside(map), pixel)
-    scale(pixel, θ, ϕ) = (idx = searchsortedlast(θpeaks, θ); 0.15 * map[pixel] / peaks[idx])
-    output(myalm) = alm += myalm
-    @sync for worker in workers()
+    angles(pixel) = LibHealpix.pix2ang_ring(nside(maps[1]), pixel)
+    workers = [pool.spherical_harmonic_workers; pool.spherical_harmonic_transform_workers]
+    @sync for worker in workers
         @async while not_done()
             mypixel = next_pixel()
             θ, ϕ = angles(mypixel)
-            myscale = scale(mypixel, θ, ϕ)
-            myalm = myscale * remotecall_fetch(pointsource_alm, worker, θ, ϕ, lmax, mmax)
-            output(myalm)
+            myalm = remotecall_fetch(pointsource_alm, worker, θ, ϕ, lmax, mmax)
+            output(myalm, θ, ϕ, mypixel)
         end
     end
-    # run these pixels through the interferometer's response
-    alm = observe(observation_matrix, alm)
-    alm2map(alm, nside(map))
+    alms
 end
 
-function observe(observation_matrix, input_alm)
-    output_alm = Alm(Complex128, lmax(input_alm), mmax(input_alm))
-    for m = 0:mmax(input_alm)
-        A = observation_matrix[m+1]
-        x = [input_alm[l, m] for l = m:lmax(input_alm)]
-        y = A*x
-        for l = m:lmax(input_alm)
-            output_alm[l, m] = y[l-m+1]
-        end
+function observe(pool, io, alms)
+    N = length(alms)
+    for idx = 1:N
+        channel = io.observation_matrix_worker_input[idx]
+        put!(channel, alms[idx])
     end
-    output_alm
+    Alm[take!(channel) for channel in io.observation_matrix_worker_output]
 end
 
-function select_pixels(map, x, y, z, N)
-    abs_pixel_values = abs(map.pixels)
-    @time sorted_pixels = sortperm(abs_pixel_values)
+function spherical_harmonic_transforms(pool, alms, nside)
+    sht(alm) = alm2map(alm, nside)
+    workers = pool.spherical_harmonic_transform_workers
+    futures = [remotecall(sht, worker, alm) for (worker, alm) in zip(workers, alms)]
+    HealpixMap[fetch(future) for future in futures]
+end
+
+function subtract_model(maps, models, λ)
+    [map - λ*model for (map, model) in zip(maps, models)]
+end
+
+function select_pixels(maps, x, y, z, N)
+    map = sum(maps)
+    abs_pixel_values = abs(map.pixels)::Vector{Float32}
+    sorted_pixels = sortperm(abs_pixel_values)::Vector{Int}
     selected_pixels = Int[]
-    @time while length(selected_pixels) < N
+    while length(selected_pixels) < N
         @label top
         # take the pixel with the largest absolute value
         pixel = pop!(sorted_pixels)
@@ -75,19 +107,27 @@ function select_pixels(map, x, y, z, N)
             # of acos due to floating point precision, so we will clamp the result to ensure
             # that we don't get a DomainError
             distance = acosd(clamp(dotproduct, -1, 1))
-            distance < 5 && @goto top
+            distance < 3 && @goto top
         end
         push!(selected_pixels, pixel)
     end
     selected_pixels
 end
 
-function unit_vectors(map)
-    x = zeros(length(map))
-    y = zeros(length(map))
-    z = zeros(length(map))
-    for pix = 1:length(map)
-        vec = LibHealpix.pix2vec_ring(nside(map), pix)
+function readmap(spw, dataset)
+    dir = getdir(spw)
+    readhealpix(joinpath(dir, "map-wiener-filtered-$dataset-itrf.fits"))
+end
+
+readmaps(spws, dataset) = HealpixMap[readmap(spw, dataset) for spw in spws]
+
+function unit_vectors(nside)
+    npix = nside2npix(nside)
+    x = zeros(npix)
+    y = zeros(npix)
+    z = zeros(npix)
+    for pix = 1:npix
+        vec = LibHealpix.pix2vec_ring(nside, pix)
         x[pix] = vec[1]
         y[pix] = vec[2]
         z[pix] = vec[3]

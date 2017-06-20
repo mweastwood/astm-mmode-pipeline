@@ -1,82 +1,89 @@
-module CleanWorker
-    using CasaCore.Measures
-    using JLD
-    using LibHealpix
+immutable CleanWorkerPool
+    observation_matrix_workers :: Vector{Int}
+    spherical_harmonic_workers :: Vector{Int}
+    spherical_harmonic_transform_workers :: Vector{Int}
+end
 
-    using ..Common
-    import ..GetPSF
+immutable CleanWorkerIO
+    observation_matrix_worker_input :: Vector{RemoteChannel}
+    observation_matrix_worker_output :: Vector{RemoteChannel}
+end
 
-    function set_map(_map)
-        global map = _map
-        nothing
+function classify_workers(spws = 4:2:18)
+    N = length(spws)
+    gethostname() = chomp(readstring(`hostname`))
+    myhostname = gethostname()
+    futures   = [remotecall(gethostname, worker) for worker in workers()]
+    hostnames = [fetch(future) for future in futures]
+    unique_hostnames = unique(hostnames)
+
+    observation_matrix_workers = Int[]
+    spherical_harmonic_workers = collect(workers())
+    spherical_harmonic_transform_workers = Int[]
+
+    # use local workers for doing the spherical harmonic transforms
+    for hostname in repeated(myhostname)
+        length(spherical_harmonic_transform_workers) < N || break
+        idx = first(find(hostnames .== hostname))
+        worker = spherical_harmonic_workers[idx]
+        push!(spherical_harmonic_transform_workers, worker)
+        deleteat!(spherical_harmonic_workers, idx)
+        deleteat!(hostnames, idx)
     end
 
-    function set_lmax_mmax(_lmax, _mmax)
-        global lmax = _lmax
-        global mmax = _mmax
-        nothing
+    # use a distributed group of remote workers for multiplying by the observation matrix
+    for hostname in cycle(unique_hostnames)
+        length(observation_matrix_workers) < N || break
+        any(hostnames .== hostname) || continue
+        idx = first(find(hostnames .== hostname))
+        worker = spherical_harmonic_workers[idx]
+        push!(observation_matrix_workers, worker)
+        deleteat!(spherical_harmonic_workers, idx)
+        deleteat!(hostnames, idx)
     end
 
-    function read_observation_matrix(spw, dataset)
-        global observation = load(joinpath(getdir(18), "observation-matrix-$dataset.jld"), "blocks")
-        nothing
-    end
+    CleanWorkerPool(observation_matrix_workers,
+                    spherical_harmonic_workers,
+                    spherical_harmonic_transform_workers)
+end
 
-    function clean_major_iteration(region)
-        clean_major_iteration(map, observation, lmax, mmax, region)
-    end
+function close_worker_io(io)
+    foreach(close, io.observation_matrix_worker_input)
+    foreach(close, io.observation_matrix_worker_output)
+end
 
-    function clean_major_iteration(map, observation, lmax, mmax, region)
-        background = get_region_median(map, region.annulus)
-        centroid = get_region_centroid(map, region.aperture, background)
-        psf_alm  = GetPSF.getpsf_alm(observation, π/2-latitude(centroid), longitude(centroid), lmax, mmax)
-        psf  = alm2map(psf_alm, nside(map))
-        flux = get_region_flux(map, psf, background, region.aperture)
-        flux, centroid, flux*psf
+function start_workers(pool, spws, dataset)
+    N = length(pool.observation_matrix_workers)
+    observation_matrix_worker_input  = [RemoteChannel() for idx = 1:N]
+    observation_matrix_worker_output = [RemoteChannel() for idx = 1:N]
+    for idx = 1:N
+        worker = pool.observation_matrix_workers[idx]
+        remotecall(observation_matrix_worker_loop, worker, spws[idx], dataset,
+                   observation_matrix_worker_input[idx], observation_matrix_worker_output[idx])
     end
+    CleanWorkerIO(observation_matrix_worker_input, observation_matrix_worker_output)
+end
 
-    function get_region_centroid(map, region, background) :: Direction
-        #normalization = 0.0
-        #centroid = [0.0, 0.0, 0.0]
-        #for pixel in region
-        #    difference = map[pixel] - background
-        #    if difference ≥ 0
-        #        # Taking a centroid doesn't seem to make sense when talking about negative pixels. We'll
-        #        # just exclude those pixels for now, but it seems like we should do something a little
-        #        # more intelligent.
-        #        normalization += difference
-        #        centroid += difference*LibHealpix.pix2vec_ring(nside(map), pixel)
-        #    end
-        #end
-        #centroid /= normalization
-        #centroid /= norm(centroid)
-        max_residual = 0.0
-        centroid = [0.0, 0.0, 0.0]
-        for pixel in region
-            residual = abs(map[pixel] - background)
-            if residual > max_residual
-                max_residual = residual
-                centroid = LibHealpix.pix2vec_ring(nside(map), pixel)
-            end
+function observation_matrix_worker_loop(spw, dataset, input, output)
+    dir = getdir(spw)
+    observation_matrix = load(joinpath(dir, "observation-matrix-$dataset.jld"), "blocks")
+    while true
+        input_alm = take!(input)
+        output_alm = observe(observation_matrix, input_alm)
+        put!(output, output_alm)
+    end
+end
+
+function observe(observation_matrix, input_alm)
+    output_alm = Alm(Complex128, lmax(input_alm), mmax(input_alm))
+    for m = 0:mmax(input_alm)
+        A = observation_matrix[m+1]
+        x = [input_alm[l, m] for l = m:lmax(input_alm)]
+        y = A*x
+        for l = m:lmax(input_alm)
+            output_alm[l, m] = y[l-m+1]
         end
-        Direction(dir"ITRF", centroid[1], centroid[2], centroid[3])
     end
-    get_region_centroid(map, region) = get_region_centroid(map, region, 0)
-
-    function get_region_median(map, region)
-        values = [map[pixel] for pixel in region]
-        median(values)
-    end
-
-    function get_region_flux(map, psf, background, region)
-        measured = Float64[]
-        model = Float64[]
-        for pixel in region
-            push!(measured, map[pixel])
-            push!(model, psf[pixel])
-        end
-        scale = model\(measured-background)
-        scale[1]
-    end
+    output_alm
 end
 
