@@ -91,8 +91,9 @@ function subtract_model(maps, models, λ)
 end
 
 function select_pixels(maps, x, y, z, N)
+    T = eltype(maps[1].pixels)
     map = sum(maps)
-    abs_pixel_values = abs(map.pixels)::Vector{Float32}
+    abs_pixel_values = abs(map.pixels)::Vector{T}
     sorted_pixels = sortperm(abs_pixel_values)::Vector{Int}
     selected_pixels = Int[]
     while length(selected_pixels) < N
