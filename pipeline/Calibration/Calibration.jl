@@ -17,6 +17,7 @@ include("fitrfi.jl")
 include("subrfi.jl")
 include("addrfi.jl")
 include("peeling.jl")
+include("removed-source-visibilities.jl")
 
 end
 
