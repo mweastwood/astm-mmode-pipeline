@@ -185,6 +185,25 @@ function observe {
         "using Pipeline; @time Pipeline.MModes.observation_matrix($spw, $dataset, $mmodes_target, $alm_target)"
 }
 
+function peakpsf {
+    title peakpsf
+    local spw=$1
+    local dataset=`quote $2`
+    echo "spw=$spw, dataset=$dataset"
+    $JULIA -e "using Pipeline; @time Pipeline.Cleaning.getpsf_peak($spw, $dataset)"
+}
+
+function restore {
+    title restore
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    local src=`quote "$4"`
+    print_parameters $spw $dataset $target
+    echo "source=$src"
+    $JULIA -e "using Pipeline; Pipeline.Calibration.removed_source_visibilities($spw, $dataset, $target, $src)"
+}
+
 for dataset in $datasets
 do
     for spw in $spws
@@ -216,6 +235,31 @@ do
         isbetween 32 && makemap   $spw $dataset "alm-wiener-filtered"
 
         isbetween 40 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "alm-wiener-filtered"
+        isbetween 41 && peakpsf   $spw $dataset
+
+        isbetween 50 && restore   $spw $dataset "peeled" 'Cyg A'
+        isbetween 51 && fold      $spw $dataset "cyga-peeled"
+        isbetween 52 && getmmodes $spw $dataset "folded-cyga-peeled"
+        isbetween 53 && getalm    $spw $dataset "mmodes-cyga-peeled"
+        isbetween 54 && makemap   $spw $dataset "alm-cyga-peeled"
+
+        isbetween 60 && restore   $spw $dataset "peeled" 'Hya A'
+        isbetween 61 && fold      $spw $dataset "hyaa-peeled"
+        isbetween 62 && getmmodes $spw $dataset "folded-hyaa-peeled"
+        isbetween 63 && getalm    $spw $dataset "mmodes-hyaa-peeled"
+        isbetween 64 && makemap   $spw $dataset "alm-hyaa-peeled"
+
+        isbetween 70 && restore   $spw $dataset "peeled" 'Per B'
+        isbetween 71 && fold      $spw $dataset "perb-peeled"
+        isbetween 72 && getmmodes $spw $dataset "folded-perb-peeled"
+        isbetween 73 && getalm    $spw $dataset "mmodes-perb-peeled"
+        isbetween 74 && makemap   $spw $dataset "alm-perb-peeled"
+
+        isbetween 80 && restore   $spw $dataset "peeled" '3C 353'
+        isbetween 81 && fold      $spw $dataset "3c353-peeled"
+        isbetween 82 && getmmodes $spw $dataset "folded-3c353-peeled"
+        isbetween 83 && getalm    $spw $dataset "mmodes-3c353-peeled"
+        isbetween 84 && makemap   $spw $dataset "alm-3c353-peeled"
     done
 done
 
