@@ -31,6 +31,7 @@ macro fitrfi_preamble(spw)
 
         output_sources = Source[]
         output_calibrations = GainCalibration[]
+        output_baseline_flags = Vector{Bool}[]
     end
     esc(output)
 end
@@ -41,13 +42,6 @@ end
 
 function fitrfi_getvis(spw, times, data, flags, dataset, integration::Integer, minuvw)
     fitrfi_pick_an_integration(spw, times, data, flags, minuvw, dataset, integration)
-end
-
-macro fitrfi_pick_an_integration(idx, minuvw=15)
-    quote
-        meta, visibilities = fitrfi_pick_an_integration(spw, times, data, flags, $minuvw,
-                                                        dataset, $idx)
-    end |> esc
 end
 
 function fitrfi_pick_an_integration(spw, times, data, flags, minuvw, dataset, idx)
@@ -69,14 +63,8 @@ function fitrfi_pick_an_integration(spw, times, data, flags, minuvw, dataset, id
     meta, visibilities
 end
 
-macro fitrfi_sum_over_integrations(range, minuvw=15)
-    quote
-        meta, visibilities = fitrfi_sum_over_integrations(spw, times, data, flags, $minuvw,
-                                                          dataset, $range)
-    end |> esc
-end
-
 function fitrfi_sum_over_integrations(spw, times, data, flags, minuvw, dataset, range)
+    # TODO normalize by number of summed integrations (could differ per baseline)
     _, Nbase, Ntime = size(data)
     meta = getmeta(spw, dataset)
     meta.channels = meta.channels[55:55]
@@ -95,14 +83,6 @@ function fitrfi_sum_over_integrations(spw, times, data, flags, minuvw, dataset, 
     end
     TTCal.flag_short_baselines!(visibilities, meta, minuvw)
     meta, visibilities
-end
-
-macro fitrfi_sum_over_integrations_with_subtraction(range, minuvw, sources...)
-    quote
-        meta, visibilities = fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags,
-                                                                           $minuvw,
-                                                                           dataset, $range, $sources)
-    end |> esc
 end
 
 function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, minuvw,
@@ -141,6 +121,15 @@ function fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags, 
     meta, visibilities
 end
 
+macro fitrfi_sum_over_integrations_with_subtraction(range, minuvw, sources...)
+    quote
+        meta, visibilities = fitrfi_sum_over_integrations_with_subtraction(spw, times, data, flags,
+                                                                           $minuvw,
+                                                                           dataset, $range, $sources)
+        minuvw = $minuvw
+    end |> esc
+end
+
 function fitrfi_getdata_source(name, visibilities, meta)
     getdata_sources = readsources(joinpath(dirname(@__FILE__), "..", "..", "workspace", "source-lists",
                                            "getdata-sources.json"))
@@ -158,7 +147,7 @@ end
 macro fitrfi_test_finish_image()
     quote
         fitrfi_image_visibilities(spw, ms_path, "fitrfi-test-finish-$target-$dataset", meta, visibilities)
-        fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations,
+        fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, visibilities.flags[:, 1],
                                       "fitrfi-test-component-$target-$dataset")
     end |> esc
 end
@@ -256,6 +245,7 @@ macro fitrfi_select_components(range)
         for idx in $range
             push!(output_sources, sources[idx])
             push!(output_calibrations, calibrations[idx])
+            push!(output_baseline_flags, visibilities.flags[:, 1])
         end
     end
     esc(output)
@@ -276,7 +266,7 @@ macro fitrfi_finish()
             meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
         end
         fitrfi_image_corrupted_models(spw, ms_path, meta, output_sources, output_calibrations,
-                                      "fitrfi-$target-$dataset")
+                                      output_baseline_flags, "fitrfi-$target-$dataset")
         xx, yy = fitrfi_output(spw, meta, output_sources, output_calibrations,
                                "fitrfi-$target-$dataset")
     end
@@ -320,9 +310,13 @@ function fitrfi_image_visibilities(spw, ms_path, image_name, meta, visibilities)
     wsclean(ms_path, joinpath(dir, "tmp", image_name), j=8)
 end
 
-function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, image_name)
+make_vector_of_vectors{T}(vector::Vector{Vector{T}}, N) = vector
+make_vector_of_vectors(vector::Vector, N) = fill(vector, N)
+
+function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations, flags, image_name)
     beam = ConstantBeam()
     dir = getdir(spw)
+    _flags = make_vector_of_vectors(flags, length(sources))
 
     # delete existing images
     files = readdir(joinpath(dir, "tmp"))
@@ -339,6 +333,7 @@ function fitrfi_image_corrupted_models(spw, ms_path, meta, sources, calibrations
         model = genvis(meta, beam, sources[idx])
         corrupt!(model, meta, calibrations[idx])
         output_visibilities.data[:, 55] = model.data[:, 1]
+        output_visibilities.flags[:, 55] = _flags[idx]
         ms = Table(ms_path)
         TTCal.write(ms, "DATA", output_visibilities)
         finalize(ms)
@@ -394,8 +389,8 @@ macro fitrfi(integrations, sources, options...)
     istest = get(_options, :test, false)
     _sources = isa(sources, Symbol)? (sources,) : sources
     push!(output.args, quote
-        sources, calibrations = fitrfi_doit(spw, meta, visibilities, $_sources,
-                                            target, dataset, ms_path, $istest)
+        sources, calibrations, baseline_flags = fitrfi_doit(spw, meta, visibilities, $_sources,
+                                                            target, dataset, ms_path, $istest)
     end)
 
     # Force the other polarization to zero (if requested)
@@ -437,6 +432,7 @@ macro fitrfi(integrations, sources, options...)
         for idx in $selection
             push!(output_sources, sources[idx])
             push!(output_calibrations, calibrations[idx])
+            push!(output_baseline_flags, baseline_flags)
         end
     end)
 
@@ -445,6 +441,7 @@ end
 
 function fitrfi_doit(spw, meta, visibilities, sources, target, dataset, ms_path, istest)
     _sources = fitrfi_construct_sources(visibilities, meta, sources)
+    _flags = visibilities.flags[:, 1]
     if istest
         output = "fitrfi-test-start-$target-$dataset"
         fitrfi_image_visibilities(spw, ms_path, output, meta, visibilities)
@@ -454,9 +451,9 @@ function fitrfi_doit(spw, meta, visibilities, sources, target, dataset, ms_path,
         output = "fitrfi-test-finish-$target-$dataset"
         fitrfi_image_visibilities(spw, ms_path, output, meta, visibilities)
         output = "fitrfi-test-component-$target-$dataset"
-        fitrfi_image_corrupted_models(spw, ms_path, meta, _sources, _calibrations, output)
+        fitrfi_image_corrupted_models(spw, ms_path, meta, _sources, _calibrations, _flags, output)
     end
-    _sources, _calibrations
+    _sources, _calibrations, _flags
 end
 
 function fitrfi_spw04(times, data, flags, dataset, target)
@@ -533,7 +530,7 @@ function fitrfi_spw08(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 1 :select=>1
+            @fitrfi 1:7756 1 :select=>1 :test=>true
 
             # Big Pine RFI Peak #1
             @fitrfi 5175 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :rm_rfi=>1:1
@@ -565,7 +562,7 @@ function fitrfi_spw10(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 1 :select=>1
+            @fitrfi 1:7756 1 :select=>1 :test=>true
 
             # This is that piece of RFI from Big Pine showing up again. Here it intereferes with Cas
             # A getting peeled correctly.
@@ -614,7 +611,7 @@ function fitrfi_spw12(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 3 :select=>1:3
+            @fitrfi 1:7756 3 :select=>1:3 :test=>true
 
             # This is a correlated noise component that dominates over Vir A and interferes with it
             # being peeled.
@@ -661,12 +658,12 @@ function fitrfi_spw16(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 2 :select=>1:2
+            @fitrfi 1:7756 2 :select=>1:2 :test=>true
 
             # This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
             # peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, but the
             # solution looks ok so I'm leaving it for now.
-            @fitrfi 5169 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :pol=>:xx :test=>true
+            @fitrfi 5169 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :pol=>:xx
 
         elseif target == "rfi-restored-peeled"
             @fitrfi 1:7756 2 :select=>1:2
@@ -688,7 +685,7 @@ function fitrfi_spw18(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 3 :select=>1:3
+            @fitrfi 1:7756 3 :select=>1:3 :test=>true
 
             # This component causes Cas A to fail to peel in integration 911 (and nearby). However
             # it seems impossible to separate this component from Cas by considering a single
