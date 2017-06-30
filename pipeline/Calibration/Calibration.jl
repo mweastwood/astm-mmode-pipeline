@@ -2,6 +2,7 @@ module Calibration
 
 using JLD
 using ProgressMeter
+using NLopt
 using CasaCore.Measures
 using CasaCore.Tables
 using TTCal
@@ -18,6 +19,7 @@ include("subrfi.jl")
 include("addrfi.jl")
 include("peeling.jl")
 include("removed-source-visibilities.jl")
+include("fitbeam.jl")
 
 end
 

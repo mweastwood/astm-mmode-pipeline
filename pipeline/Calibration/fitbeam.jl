@@ -1,125 +1,204 @@
-function fitbeam(spw)
-    Lumberjack.info("Fitting the beam at spectral window $spw")
+function fitbeam(spw, dataset, target)
     dir = getdir(spw)
-    raw_I, raw_Q, az, el = load(joinpath(dir, "source-information.jld"), "I", "Q", "az", "el")
-    names = UTF8String[]
-    I = Vector{Float64}[]
-    Q = Vector{Float64}[]
-    ρ = Vector{Float64}[]
-    θ = Vector{Float64}[]
-    for source in keys(raw_I)
-        source == "Sun" && continue
-        my_I = raw_I[source]::Vector{Float64}
-        my_Q = raw_Q[source]::Vector{Float64}
-        my_az = az[source]::Vector{Float64}
-        my_el = el[source]::Vector{Float64}
-        l = sin(my_az).*cos(my_el)
-        m = cos(my_az).*cos(my_el)
-        # weed out some of the garbage
-        keep = fill(true, length(my_I))
-        for idx = 1:length(my_I)
-            if idx != 1
-                if isnan(my_I[idx]) || isnan(my_Q[idx])
-                    keep[idx] = false
-                elseif abs(my_I[idx] - my_I[idx-1]) > 0.2min(abs(my_I[idx]), abs(my_I[idx-1]))
-                    keep[idx] = false
-                    keep[idx-1] = false
-                elseif hypot(l[idx] - l[idx-1], m[idx] - m[idx-1]) > 0.1
-                    keep[idx] = false
-                    keep[idx-1] = false
-                end
-            end
-        end
-        l = l[keep]
-        m = m[keep]
-        my_I = my_I[keep]
-        my_Q = my_Q[keep]
-        my_ρ = hypot(l, m)
-        my_θ = atan2(l, m)
-        push!(I, my_I)
-        push!(Q, my_Q)
-        push!(ρ, my_ρ)
-        push!(θ, my_θ)
-        push!(names, source)
-    end
-    N = length(I)
+    peeling_data = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "peeling-data")
+    _fitbeam(spw, dataset, peeling_data)
+end
 
-    function chi_squared(x, g)
-        fluxes = x[1:N]
-        params = x[N+1:end]
-        χ2 = 0.0
-        for idx = 1:N
-            my_I = I[idx]
-            my_Q = Q[idx]
-            my_ρ = ρ[idx]
-            my_θ = θ[idx]
-            for jdx = 1:length(my_I)
-                stokes_I_beam = (params[1]*TTCal.zernike(0, 0, my_ρ[jdx], my_θ[jdx])
-                                + params[2]*TTCal.zernike(2, 0, my_ρ[jdx], my_θ[jdx])
-                                + params[3]*TTCal.zernike(4, 0, my_ρ[jdx], my_θ[jdx])
-                                + params[4]*TTCal.zernike(4, 4, my_ρ[jdx], my_θ[jdx])
-                                + params[5]*TTCal.zernike(6, 0, my_ρ[jdx], my_θ[jdx])
-                                + params[6]*TTCal.zernike(6, 4, my_ρ[jdx], my_θ[jdx])
-                                + params[7]*TTCal.zernike(8, 0, my_ρ[jdx], my_θ[jdx])
-                                + params[8]*TTCal.zernike(8, 4, my_ρ[jdx], my_θ[jdx])
-                                + params[9]*TTCal.zernike(8, 8, my_ρ[jdx], my_θ[jdx]))
-                stokes_Q_beam = (params[10]*TTCal.zernike(2, 2, my_ρ[jdx], my_θ[jdx])
-                                + params[11]*TTCal.zernike(4, 2, my_ρ[jdx], my_θ[jdx])
-                                + params[12]*TTCal.zernike(6, 2, my_ρ[jdx], my_θ[jdx])
-                                + params[13]*TTCal.zernike(6, 6, my_ρ[jdx], my_θ[jdx])
-                                + params[14]*TTCal.zernike(8, 2, my_ρ[jdx], my_θ[jdx])
-                                + params[15]*TTCal.zernike(8, 6, my_ρ[jdx], my_θ[jdx]))
-                χ2 += abs2(my_I[jdx] - fluxes[idx]*stokes_I_beam) + abs2(my_Q[jdx] - fluxes[idx]*stokes_Q_beam)
-            end
-        end
-        Lumberjack.debug("params = $x")
-        χ2
-    end
+function _fitbeam(spw, dataset, peeling_data)
+    meta = getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    peeling_data = filter_out_the_sun(peeling_data)
 
-    function normalization(x, g)
-        params = x[N+1:end]
-        beam = (params[1]*TTCal.zernike(0, 0, 0, 0)
-                    + params[2]*TTCal.zernike(2, 0, 0, 0)
-                    + params[3]*TTCal.zernike(4, 0, 0, 0)
-                    + params[4]*TTCal.zernike(4, 4, 0, 0)
-                    + params[5]*TTCal.zernike(6, 0, 0, 0)
-                    + params[6]*TTCal.zernike(6, 4, 0, 0)
-                    + params[7]*TTCal.zernike(8, 0, 0, 0)
-                    + params[8]*TTCal.zernike(8, 4, 0, 0)
-                    + params[9]*TTCal.zernike(8, 8, 0, 0))
-        beam - 1
-    end
+    N = length(peeling_data[1].sources)
+    names = [source.name for source in peeling_data[1].sources]
+    I, Q, l, m, σ = prepare_data(frame, peeling_data)
+    ρ = hypot.(l, m)
+    θ = atan2.(l, m)
 
-    Lumberjack.info("Starting optimization.")
     opt = Opt(:LN_COBYLA, N+15)
-    min_objective!(opt, chi_squared)
-    equality_constraint!(opt, normalization)
+    min_objective!(opt, (x, g) -> chi_squared(x, I, Q, ρ, θ, σ))
+    equality_constraint!(opt, (x, g) -> normalization(x, I))
     ftol_rel!(opt, 1e-4)
 
     x0 = [fill(10000.0, N); 1.0; fill(0.0, 14)]
-    #x0 = [2144.191533687852,1689.7825612220843,941.2355667514099,677.9271199554415,17085.132880250636,18848.425606341832,426.5897732606499,0.5438737422971801,-0.45184258604991584,-0.01674142678893857,-0.04036363639937381,-0.032644353993999724,0.047008431536809975,-0.01161849690351406,-0.0008122133788586208,-0.016239247375396112,-0.10410871718009305,0.12315052775867515,9.34730233532972e-5,-0.006081616593686574,-0.001440312783256139,0.002597285340770812]
-    #x0 = [3619.170800138876,2108.7176828655256,1795.9873815260642,1282.0350681694254,28010.82128649241,27549.278266050158,692.8744545700363,0.5249880062190876,-0.4820942107600547,-0.011269308262222052,-0.0463246012905888,-0.007124905630025072,0.056935795248331963,-0.002937814346945719,-0.00014347363545219214,-0.009984798916080541,-0.0918613683795595,0.10204059303344623,0.0002913640698440229,-0.00828507588501658,-0.00220464859224213,0.0059441134296844755]
     minf, x, ret = optimize(opt, x0)
-    Lumberjack.debug("ret = $ret")
-    Lumberjack.info("Optimization completed.")
 
-    source_fluxes = x[1:N]
+    fluxes = x[1:N]
     coeff_I = x[N+1:N+9]
     coeff_Q = x[N+10:N+15]
+    output_params(spw, names, fluxes, coeff_I, coeff_Q)
+    output_healpix(spw, dataset, coeff_I)
 
-    output_params(spw, names, source_fluxes, coeff_I, coeff_Q)
-    output_healpix(spw, coeff_I)
+    #figure(1); clf()
+    #img = zeros(501, 501)
+    #for (idx, l_) in enumerate(linspace(-1, 1, size(img, 1)))
+    #    for (jdx, m_) in enumerate(linspace(-1, 1, size(img, 2)))
+    #        ρ_ = hypot(l_, m_)
+    #        θ_ = atan2(l_, m_)
+    #        ρ_ > 1 && continue
+    #        img[jdx, idx] = (params[1]*TTCal.zernike(0, 0, ρ_, θ_)
+    #                        + params[2]*TTCal.zernike(2, 0, ρ_, θ_)
+    #                        + params[3]*TTCal.zernike(4, 0, ρ_, θ_)
+    #                        + params[4]*TTCal.zernike(4, 4, ρ_, θ_)
+    #                        + params[5]*TTCal.zernike(6, 0, ρ_, θ_)
+    #                        + params[6]*TTCal.zernike(6, 4, ρ_, θ_)
+    #                        + params[7]*TTCal.zernike(8, 0, ρ_, θ_)
+    #                        + params[8]*TTCal.zernike(8, 4, ρ_, θ_)
+    #                        + params[9]*TTCal.zernike(8, 8, ρ_, θ_))
+    #    end
+    #end
+    #circle = plt[:Circle]((0, 0), 1, alpha=0)
+    #gca()[:add_patch](circle)
+    #imshow(img, extent=(-1, 1, -1, 1), interpolation="nearest", vmin=0, vmax=1,
+    #       cmap=get_cmap("magma"), clip_path=circle)
+    #gca()[:set_aspect]("equal")
+    #colorbar()
+    #for s = 1:N
+    #    scatter(l[s], m[s], c=(I[s]/fluxes[s]), vmin=0, vmax=1, cmap=get_cmap("magma"))
+    #end
+    #xlim(-1, 1)
+    #ylim(-1, 1)
 
+    #for s = 1:N
+    #    figure(s); clf()
+    #    plot(I[s], "k.")
+    #    expected = Float64[]
+    #    for (l_, m_) in zip(l[s], m[s])
+    #        ρ_ = hypot(l_, m_)
+    #        θ_ = atan2(l_, m_)
+    #        beam = (params[1]*TTCal.zernike(0, 0, ρ_, θ_)
+    #                    + params[2]*TTCal.zernike(2, 0, ρ_, θ_)
+    #                    + params[3]*TTCal.zernike(4, 0, ρ_, θ_)
+    #                    + params[4]*TTCal.zernike(4, 4, ρ_, θ_)
+    #                    + params[5]*TTCal.zernike(6, 0, ρ_, θ_)
+    #                    + params[6]*TTCal.zernike(6, 4, ρ_, θ_)
+    #                    + params[7]*TTCal.zernike(8, 0, ρ_, θ_)
+    #                    + params[8]*TTCal.zernike(8, 4, ρ_, θ_)
+    #                    + params[9]*TTCal.zernike(8, 8, ρ_, θ_))
+    #        push!(expected, beam*fluxes[s])
+    #    end
+    #    plot(expected, "r.")
+    #    title(names[s])
+    #end
 end
 
-function output_params(spw, names, source_fluxes, coeff_I, coeff_Q)
+function filter_out_the_sun(peeling_data)
+    peeling_data = deepcopy(peeling_data)
+    for idx = 1:length(peeling_data)
+        data = peeling_data[idx]
+        names = [source.name for source in data.sources]
+        sun = first(find(names .== "Sun"))
+        deleteat!(data.sources, sun)
+        deleteat!(data.I, sun)
+        deleteat!(data.Q, sun)
+        deleteat!(data.directions, sun)
+    end
+    peeling_data
+end
+
+function prepare_data(frame, peeling_data)
+    Ntime = length(peeling_data)
+    Nsource = length(peeling_data[1].sources)
+    output_I = Vector{Float64}[]
+    output_Q = Vector{Float64}[]
+    output_l = Vector{Float64}[]
+    output_m = Vector{Float64}[]
+    output_σ = Vector{Float64}[]
+    for s = 1:Nsource
+        I = Float64[]
+        Q = Float64[]
+        l = Float64[]
+        m = Float64[]
+        σ = Float64[]
+        for idx = 1:Ntime
+            data = peeling_data[idx]
+            data.I[s] == data.Q[s] == 0 && continue
+            push!(I, data.I[s])
+            push!(Q, data.Q[s])
+
+            t = data.time
+            set!(frame, Epoch(epoch"UTC", t*seconds))
+            azel = measure(frame, data.directions[s], dir"AZEL")
+            az = longitude(azel)
+            el =  latitude(azel)
+            push!(l, sin(az) * cos(el))
+            push!(m, cos(az) * cos(el))
+        end
+        for idx = 1:length(I)
+            range = max(1, idx-50):min(length(I), idx+50)
+            push!(σ, std(I[range]))
+        end
+        push!(output_I, I)
+        push!(output_Q, Q)
+        push!(output_l, l)
+        push!(output_m, m)
+        push!(output_σ, σ)
+    end
+    output_I, output_Q, output_l, output_m, output_σ
+end
+
+function chi_squared(x, I, Q, ρ, θ, σ)
+    Nsources = length(I)
+    fluxes = x[1:Nsources]
+    params = x[Nsources+1:end]
+    χ2 = 0.0
+    normalization = 0.0
+    for s = 1:Nsources
+        my_I = I[s]
+        my_Q = Q[s]
+        my_ρ = ρ[s]
+        my_θ = θ[s]
+        my_σ = σ[s]
+        Ntime = length(my_I)
+        for idx = 1:Ntime
+            stokes_I_beam = (params[1]*TTCal.zernike(0, 0, my_ρ[idx], my_θ[idx])
+                            + params[2]*TTCal.zernike(2, 0, my_ρ[idx], my_θ[idx])
+                            + params[3]*TTCal.zernike(4, 0, my_ρ[idx], my_θ[idx])
+                            + params[4]*TTCal.zernike(4, 4, my_ρ[idx], my_θ[idx])
+                            + params[5]*TTCal.zernike(6, 0, my_ρ[idx], my_θ[idx])
+                            + params[6]*TTCal.zernike(6, 4, my_ρ[idx], my_θ[idx])
+                            + params[7]*TTCal.zernike(8, 0, my_ρ[idx], my_θ[idx])
+                            + params[8]*TTCal.zernike(8, 4, my_ρ[idx], my_θ[idx])
+                            + params[9]*TTCal.zernike(8, 8, my_ρ[idx], my_θ[idx]))
+            stokes_Q_beam = (params[10]*TTCal.zernike(2, 2, my_ρ[idx], my_θ[idx])
+                            + params[11]*TTCal.zernike(4, 2, my_ρ[idx], my_θ[idx])
+                            + params[12]*TTCal.zernike(6, 2, my_ρ[idx], my_θ[idx])
+                            + params[13]*TTCal.zernike(6, 6, my_ρ[idx], my_θ[idx])
+                            + params[14]*TTCal.zernike(8, 2, my_ρ[idx], my_θ[idx])
+                            + params[15]*TTCal.zernike(8, 6, my_ρ[idx], my_θ[idx]))
+            temp  = abs2(my_I[idx] - fluxes[s]*stokes_I_beam)
+            temp += abs2(my_Q[idx] - fluxes[s]*stokes_Q_beam)
+            χ2 += temp
+            normalization += 1
+        end
+    end
+    χ2 /= normalization
+    χ2
+end
+
+function normalization(x, I)
+    N = length(I)
+    params = x[N+1:end]
+    beam = (params[1]*TTCal.zernike(0, 0, 0, 0)
+                + params[2]*TTCal.zernike(2, 0, 0, 0)
+                + params[3]*TTCal.zernike(4, 0, 0, 0)
+                + params[4]*TTCal.zernike(4, 4, 0, 0)
+                + params[5]*TTCal.zernike(6, 0, 0, 0)
+                + params[6]*TTCal.zernike(6, 4, 0, 0)
+                + params[7]*TTCal.zernike(8, 0, 0, 0)
+                + params[8]*TTCal.zernike(8, 4, 0, 0)
+                + params[9]*TTCal.zernike(8, 8, 0, 0))
+    beam - 1
+end
+
+function output_params(spw, names, fluxes, coeff_I, coeff_Q)
     dir = getdir(spw)
 
     # image the results
-    img1 = zeros(1000, 1000)
-    img2 = zeros(1000, 1000)
-    l = linspace(-1, 1, 1000)
-    m = linspace(-1, 1, 1000)
+    img1 = zeros(512, 512)
+    img2 = zeros(512, 512)
+    l = linspace(-1, 1, 512)
+    m = linspace(-1, 1, 512)
     for j = 1:length(m), i = 1:length(l)
         ρ = hypot(l[i], m[j])
         ρ ≥ 1 && continue
@@ -143,17 +222,12 @@ function output_params(spw, names, source_fluxes, coeff_I, coeff_Q)
         img2[i,j] = stokes_Q_beam
     end
 
-    save(joinpath(dir, "beam.jld"), "sources", names, "fluxes", source_fluxes,
+    save(joinpath(dir, "beam.jld"), "sources", names, "fluxes", fluxes,
                                     "I-coeff", coeff_I, "Q-coeff", coeff_Q,
                                     "I-image", img1, "Q-image", img2)
 end
 
-function output_healpix(spw, coeff)
-    mountain_az, mountain_el = load(joinpath(workspace, "mountain-elevation.jld"), "az", "el")
-    mountain_az = deg2rad(mountain_az)
-    mountain_el = deg2rad(mountain_el)
-    mountain = interpolate((mountain_az,), mountain_el, Gridded(Linear()))
-
+function output_healpix(spw, dataset, coeff)
     meta = getmeta(spw)
     frame = TTCal.reference_frame(meta)
     position = measure(frame, TTCal.position(meta), pos"ITRF")
@@ -173,8 +247,7 @@ function output_healpix(spw, coeff)
         az = atan2(x, y)
         ρ = cos(el)
         θ = az
-        # check to see where the horizon is at this azimuth
-        threshold = mountain[mod2pi(az)]
+        threshold = 0
         if el < threshold
             map[pix] = 0
         else
@@ -190,7 +263,7 @@ function output_healpix(spw, coeff)
         end
     end
 
-    output = joinpath(getdir(spw), "beam-map.fits")
+    output = joinpath(getdir(spw), "beam.fits")
     writehealpix(output, map, replace=true)
 
     nothing
