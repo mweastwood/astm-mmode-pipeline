@@ -20,6 +20,7 @@ include("Interactive/inspect-integration.jl")
 include("Interactive/imaging.jl")
 include("Interactive/bisect.jl")
 include("Interactive/find-subtraction-errors.jl")
+include("Interactive/verify-beam.jl")
 
 end
 
