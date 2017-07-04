@@ -40,7 +40,7 @@ function calibrate(spw, dataset, target)
         apply_the_calibration(data_day3, flags_day3, day3_calibration)
         apply_the_calibration(data_day4, flags_day4, day4_calibration)
     elseif dataset == "rainy"
-        calibration_range = 1600:1700
+        calibration_range = 1000:3000
         calibration = solve_for_gain_calibration(spw, dataset, times, data, flags, calibration_range)
         output = replace(replace(target, "smoothed-", ""), "visibilities", "gain-calibrations")
         save(joinpath(dir, output*".jld"), "calibration", calibration, compress=true)
