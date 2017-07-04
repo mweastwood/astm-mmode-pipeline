@@ -6,7 +6,8 @@ function _lcurve(spw, input_filename)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
     mmodes, mmode_flags = load(joinpath(dir, input_filename), "blocks", "flags")
-    _lcurve(spw, transfermatrix, mmodes, mmode_flags)
+    trials, lsnorm, regnorm = _lcurve(spw, transfermatrix, mmodes, mmode_flags)
+    save(joinpath(dir, "lcurve.jld"), "trials", trials, "lsnorm", lsnorm, "regnorm", regnorm)
 end
 
 function _lcurve(spw, transfermatrix, mmodes, mmode_flags)
