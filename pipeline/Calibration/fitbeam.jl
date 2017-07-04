@@ -26,60 +26,8 @@ function _fitbeam(spw, dataset, peeling_data)
     fluxes = x[1:N]
     coeff_I = x[N+1:N+9]
     coeff_Q = x[N+10:N+15]
-    output_params(spw, names, fluxes, coeff_I, coeff_Q)
+    output_params(spw, names, fluxes, coeff_I, coeff_Q, I, Q, l, m)
     output_healpix(spw, dataset, coeff_I)
-
-    #figure(1); clf()
-    #img = zeros(501, 501)
-    #for (idx, l_) in enumerate(linspace(-1, 1, size(img, 1)))
-    #    for (jdx, m_) in enumerate(linspace(-1, 1, size(img, 2)))
-    #        ρ_ = hypot(l_, m_)
-    #        θ_ = atan2(l_, m_)
-    #        ρ_ > 1 && continue
-    #        img[jdx, idx] = (params[1]*TTCal.zernike(0, 0, ρ_, θ_)
-    #                        + params[2]*TTCal.zernike(2, 0, ρ_, θ_)
-    #                        + params[3]*TTCal.zernike(4, 0, ρ_, θ_)
-    #                        + params[4]*TTCal.zernike(4, 4, ρ_, θ_)
-    #                        + params[5]*TTCal.zernike(6, 0, ρ_, θ_)
-    #                        + params[6]*TTCal.zernike(6, 4, ρ_, θ_)
-    #                        + params[7]*TTCal.zernike(8, 0, ρ_, θ_)
-    #                        + params[8]*TTCal.zernike(8, 4, ρ_, θ_)
-    #                        + params[9]*TTCal.zernike(8, 8, ρ_, θ_))
-    #    end
-    #end
-    #circle = plt[:Circle]((0, 0), 1, alpha=0)
-    #gca()[:add_patch](circle)
-    #imshow(img, extent=(-1, 1, -1, 1), interpolation="nearest", vmin=0, vmax=1,
-    #       cmap=get_cmap("magma"), clip_path=circle)
-    #gca()[:set_aspect]("equal")
-    #colorbar()
-    #for s = 1:N
-    #    scatter(l[s], m[s], c=(I[s]/fluxes[s]), vmin=0, vmax=1, cmap=get_cmap("magma"))
-    #end
-    #xlim(-1, 1)
-    #ylim(-1, 1)
-
-    #for s = 1:N
-    #    figure(s); clf()
-    #    plot(I[s], "k.")
-    #    expected = Float64[]
-    #    for (l_, m_) in zip(l[s], m[s])
-    #        ρ_ = hypot(l_, m_)
-    #        θ_ = atan2(l_, m_)
-    #        beam = (params[1]*TTCal.zernike(0, 0, ρ_, θ_)
-    #                    + params[2]*TTCal.zernike(2, 0, ρ_, θ_)
-    #                    + params[3]*TTCal.zernike(4, 0, ρ_, θ_)
-    #                    + params[4]*TTCal.zernike(4, 4, ρ_, θ_)
-    #                    + params[5]*TTCal.zernike(6, 0, ρ_, θ_)
-    #                    + params[6]*TTCal.zernike(6, 4, ρ_, θ_)
-    #                    + params[7]*TTCal.zernike(8, 0, ρ_, θ_)
-    #                    + params[8]*TTCal.zernike(8, 4, ρ_, θ_)
-    #                    + params[9]*TTCal.zernike(8, 8, ρ_, θ_))
-    #        push!(expected, beam*fluxes[s])
-    #    end
-    #    plot(expected, "r.")
-    #    title(names[s])
-    #end
 end
 
 function filter_out_the_sun(peeling_data)
@@ -191,18 +139,18 @@ function normalization(x, I)
     beam - 1
 end
 
-function output_params(spw, names, fluxes, coeff_I, coeff_Q)
+function output_params(spw, names, fluxes, coeff_I, coeff_Q, I, Q, l, m)
     dir = getdir(spw)
 
     # image the results
     img1 = zeros(512, 512)
     img2 = zeros(512, 512)
-    l = linspace(-1, 1, 512)
-    m = linspace(-1, 1, 512)
-    for j = 1:length(m), i = 1:length(l)
-        ρ = hypot(l[i], m[j])
+    _l = linspace(-1, 1, 512)
+    _m = linspace(-1, 1, 512)
+    for j = 1:length(_m), i = 1:length(_l)
+        ρ = hypot(_l[i], _m[j])
         ρ ≥ 1 && continue
-        θ = atan2(l[i], m[j])
+        θ = atan2(_l[i], _m[j])
         stokes_I_beam = (coeff_I[1]*TTCal.zernike(0, 0, ρ, θ)
                         + coeff_I[2]*TTCal.zernike(2, 0, ρ, θ)
                         + coeff_I[3]*TTCal.zernike(4, 0, ρ, θ)
@@ -224,11 +172,12 @@ function output_params(spw, names, fluxes, coeff_I, coeff_Q)
 
     save(joinpath(dir, "beam.jld"), "sources", names, "fluxes", fluxes,
                                     "I-coeff", coeff_I, "Q-coeff", coeff_Q,
-                                    "I-image", img1, "Q-image", img2)
+                                    "I-image", img1, "Q-image", img2,
+                                    "I", I, "Q", Q, "l", l, "m", m)
 end
 
 function output_healpix(spw, dataset, coeff)
-    meta = getmeta(spw)
+    meta = getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
     position = measure(frame, TTCal.position(meta), pos"ITRF")
     zenith = [position.x, position.y, position.z]

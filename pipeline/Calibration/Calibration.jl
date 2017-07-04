@@ -5,6 +5,7 @@ using ProgressMeter
 using NLopt
 using CasaCore.Measures
 using CasaCore.Tables
+using LibHealpix
 using TTCal
 using ..Utility
 using ..Common
