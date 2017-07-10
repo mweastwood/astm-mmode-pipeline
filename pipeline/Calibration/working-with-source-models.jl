@@ -71,6 +71,12 @@ function scaleflux!(source, scale, polarization_fraction)
     source.spectrum.stokes = StokesVector(I*scale, I*scale*polarization_fraction, 0, 0)
 end
 
+function scaleflux!(source::RFISource, scale, polarization_fraction)
+    stokes = source.spectrum.stokes
+    stokes = [StokesVector(s.I*scale, s.I*polarization_fraction, 0, 0) for s in stokes]
+    source.spectrum.stokes = stokes
+end
+
 function scaleflux!(source::MultiSource, scale, polarization_fraction)
     for component in source.components
         scaleflux!(component, scale, polarization_fraction)

@@ -232,12 +232,60 @@ macro fitrfi_yy_only()
     esc(output)
 end
 
-function fitrfi_peel(meta, visibilities, sources)
+function fitrfi_peel(meta, visibilities, sources, tolerance=1e-5, pol=:both)
+    @show pol
     for source in sources
         println(source)
     end
     beam = ConstantBeam()
-    peel!(visibilities, meta, beam, sources, peeliter=10, maxiter=500, tolerance=1e-5)
+    if pol == "xx"
+        return fitrfi_peel_xx_only!(visibilities, meta, beam, sources, tolerance)
+    elseif pol == "yy"
+        return fitrfi_peel_yy_only!(visibilities, meta, beam, sources, tolerance)
+    elseif pol == "both"
+        return peel!(visibilities, meta, beam, sources, peeliter=10, maxiter=500,
+                     tolerance=tolerance)
+    end
+end
+
+function fitrfi_peel_xx_only!(visibilities, meta, beam, sources, tolerance)
+    model = genvis(meta, beam, sources)
+    for idx in eachindex(visibilities.data)
+        J = visibilities.data[idx]
+        Jm = model.data[idx]
+        visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, Jm.yy)
+    end
+    calibrations = peel!(visibilities, meta, beam, sources, peeliter=10, maxiter=500,
+                         tolerance=tolerance)
+    for idx in eachindex(visibilities.data)
+        J = visibilities.data[idx]
+        visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, 0)
+    end
+    for calibration in calibrations, jdx in eachindex(calibration.jones)
+        J = calibration.jones[jdx]
+        calibration.jones[jdx] = DiagonalJonesMatrix(J.xx, 0)
+    end
+    calibrations
+end
+
+function fitrfi_peel_yy_only!(visibilities, meta, beam, sources, tolerance)
+    model = genvis(meta, beam, sources)
+    for idx in eachindex(visibilities.data)
+        J = visibilities.data[idx]
+        Jm = model.data[idx]
+        visibilities.data[idx] = JonesMatrix(Jm.xx, 0, 0, J.yy)
+    end
+    calibrations = peel!(visibilities, meta, beam, sources, peeliter=10, maxiter=500,
+                         tolerance=tolerance)
+    for idx in eachindex(visibilities.data)
+        J = visibilities.data[idx]
+        visibilities.data[idx] = JonesMatrix(0, 0, 0, J.yy)
+    end
+    for calibration in calibrations, jdx in eachindex(calibration.jones)
+        J = calibration.jones[jdx]
+        calibration.jones[jdx] = DiagonalJonesMatrix(0, J.yy)
+    end
+    calibrations
 end
 
 macro fitrfi_select_components(range)
@@ -351,29 +399,6 @@ macro fitrfi(integrations, sources, options...)
                                            $integrations, $minuvw)
     end
 
-    # Pick one polarization (if requested)
-    do_one_pol = haskey(_options, :pol)
-    if do_one_pol
-        pol = _options[:pol]
-        if pol == :xx
-            push!(output.args, quote
-                for idx in eachindex(visibilities.data)
-                    J = visibilities.data[idx]
-                    visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, 0)
-                end
-            end)
-        elseif pol == :yy
-            push!(output.args, quote
-                for idx in eachindex(visibilities.data)
-                    J = visibilities.data[idx]
-                    visibilities.data[idx] = JonesMatrix(0, 0, 0, J.yy)
-                end
-            end)
-        else
-            error("pol must be one of either :xx or :yy")
-        end
-    end
-
     # Remove previously fit RFI
     do_rm_rfi = haskey(_options, :rm_rfi)
     if do_rm_rfi
@@ -382,38 +407,18 @@ macro fitrfi(integrations, sources, options...)
             rm_rfi(meta, visibilities, output_sources[$rfi_selection],
                    output_calibrations[$rfi_selection])
         end)
-
     end
 
     # Fit for the RFI
     istest = get(_options, :test, false)
+    pol = string(get(_options, :pol, :both))
+    tolerance = get(_options, :tolerance, 1e-5)
     _sources = isa(sources, Symbol)? (sources,) : sources
     push!(output.args, quote
         sources, calibrations, baseline_flags = fitrfi_doit(spw, meta, visibilities, $_sources,
-                                                            target, dataset, ms_path, $istest)
+                                                            target, dataset, ms_path,
+                                                            $tolerance, $istest, $pol)
     end)
-
-    # Force the other polarization to zero (if requested)
-    if do_one_pol
-        pol = _options[:pol]
-        if pol == :xx
-            push!(output.args, quote
-                for calibration in calibrations, jdx in eachindex(calibration.jones)
-                    J = calibration.jones[jdx]
-                    calibration.jones[jdx] = DiagonalJonesMatrix(J.xx, 0)
-                end
-            end)
-        elseif pol == :yy
-            push!(output.args, quote
-                for calibration in calibrations, jdx in eachindex(calibration.jones)
-                    J = calibration.jones[jdx]
-                    calibration.jones[jdx] = DiagonalJonesMatrix(0, J.yy)
-                end
-            end)
-        else
-            error("pol must be one of either :xx or :yy")
-        end
-    end
 
     # If a baseline is flagged in the calibration, we will set it to zero. This can happen if the
     # calibration doesn't converge or if minuvw is set such that an antenna doesn't appear in any
@@ -439,14 +444,59 @@ macro fitrfi(integrations, sources, options...)
     esc(output)
 end
 
-function fitrfi_doit(spw, meta, visibilities, sources, target, dataset, ms_path, istest)
+function fitrfi_doit(spw, meta, visibilities, sources, target, dataset, ms_path, tolerance,
+                     istest, pol)
+
+    if pol == "xx"
+        for idx in eachindex(visibilities.data)
+            J = visibilities.data[idx]
+            visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, 0)
+        end
+    elseif pol == "yy"
+        for idx in eachindex(visibilities.data)
+            J = visibilities.data[idx]
+            visibilities.data[idx] = JonesMatrix(0, 0, 0, J.yy)
+        end
+    end
+
     _sources = fitrfi_construct_sources(visibilities, meta, sources)
     _flags = visibilities.flags[:, 1]
     if istest
         output = "fitrfi-test-start-$target-$dataset"
         fitrfi_image_visibilities(spw, ms_path, output, meta, visibilities)
     end
-    _calibrations = fitrfi_peel(meta, visibilities, _sources)
+
+    # Set Q to zero if we are doing one polarization.  Otherwise the model visibilities will have
+    # zeros for one of xx or yy.  This makes the determinant zero and therefore makes the matrix
+    # singular, which causes problems in TTCal.
+    if pol != "both"
+        for source in _sources
+            scaleflux!(source, 2, 0)
+        end
+    end
+
+    _calibrations = fitrfi_peel(meta, visibilities, _sources, tolerance, pol)
+
+    if pol == "xx"
+        for idx in eachindex(visibilities.data)
+            J = visibilities.data[idx]
+            visibilities.data[idx] = JonesMatrix(J.xx, 0, 0, 0)
+        end
+        for calibration in _calibrations, jdx in eachindex(calibration.jones)
+            J = calibration.jones[jdx]
+            calibration.jones[jdx] = DiagonalJonesMatrix(J.xx, 0)
+        end
+    elseif pol == "yy"
+        for idx in eachindex(visibilities.data)
+            J = visibilities.data[idx]
+            visibilities.data[idx] = JonesMatrix(0, 0, 0, J.yy)
+        end
+        for calibration in _calibrations, jdx in eachindex(calibration.jones)
+            J = calibration.jones[jdx]
+            calibration.jones[jdx] = DiagonalJonesMatrix(0, J.yy)
+        end
+    end
+
     if istest
         output = "fitrfi-test-finish-$target-$dataset"
         fitrfi_image_visibilities(spw, ms_path, output, meta, visibilities)
