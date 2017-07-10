@@ -212,6 +212,7 @@ do
         isbetween 01 && flag      $spw $dataset "raw"
         isbetween 02 && smooth    $spw $dataset "flagged-raw"
         isbetween 03 && calibrate $spw $dataset "smoothed-flagged-raw"
+        isbetween 04 && smeared   $spw $dataset "calibrated"
 
         isbetween 10 && fitrfi    $spw $dataset "calibrated"
         isbetween 11 && subrfi    $spw $dataset "calibrated"
