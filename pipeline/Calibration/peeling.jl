@@ -120,6 +120,7 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     end
     TTCal.flag_short_baselines!(visibilities, meta, 15.0)
 
+    original_sources = deepcopy(sources)
     sources, I, Q, directions = update_source_list(visibilities, meta, sources)
     names = getfield.(sources, 1)
     decisions = pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions, istest)
@@ -169,6 +170,7 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     if dosubtraction
         fit_sources_with_shapelets!(meta, visibilities, @view(sources[to_fit_with_shapelets]))
         to_sub = [to_sub_bright; to_sub_faint; to_fit_with_shapelets]
+        sources[to_sub] = original_sources[to_sub]
         update_source_list_in_place(visibilities, meta, @view(sources[to_sub]),
                                     @view(I[to_sub]), @view(Q[to_sub]), @view(directions[to_sub]))
         istest && @show sources[to_sub]
