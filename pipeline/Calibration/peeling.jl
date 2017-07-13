@@ -163,6 +163,31 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
         subsrc!(visibilities, meta, ConstantBeam(), sources[to_sub_bright])
         calibrations = peel!(visibilities, meta, ConstantBeam(), sources[to_peel],
                              peeliter=5, maxiter=100, tolerance=1e-3, quiet=!istest)
+
+        # We need some resilience against bright fireballs getting in the way of peeling. So we will
+        # check to see if the source was actually removed and put it back into the dataset if it was
+        # not removed.
+        if spw == 12
+            keep = fill(true, length(to_peel))
+            for index = 1:length(to_peel)
+                master_index = to_peel[index]
+                @show master_index, index
+                residual_I = getflux(visibilities, meta, sources[master_index])
+                percent = (residual_I - I[master_index]) / I[master_index]
+                if percent < 0.1
+                    model = genvis(meta, sources[master_index])
+                    corrupt!(model, meta, calibrations[index])
+                    putsrc!(visibilities, model)
+                    keep[index] = false
+                end
+            end
+            # Note: add the source to the list of "faint" sources so that it doesn't get re-added to
+            # the image again in the putsrc! line below.
+            to_sub_faint = [to_sub_faint; to_peel[!keep]]
+            to_peel = to_peel[keep]
+            calibrations = calibrations[keep]
+        end
+
         putsrc!(visibilities, meta, ConstantBeam(), sources[to_sub_bright])
     else
         calibrations = GainCalibration[]
@@ -188,10 +213,15 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
     xx, yy, data
 end
 
-macro pick_for_peeling(name, elevation_cutoff, flux_cutoff_high=0, flux_cutoff_low=30)
+macro pick_for_peeling(name, east_elevation_cutoff, west_elevation_cutoff,
+                       flux_cutoff_high, flux_cutoff_low)
     output = quote
         if source.name == $name
-            θ = deg2rad($elevation_cutoff)
+            if is_rising(frame, source)
+                θ = deg2rad($east_elevation_cutoff)
+            else
+                θ = deg2rad($west_elevation_cutoff)
+            end
             is_above_elevation_cutoff = TTCal.isabovehorizon(frame, source, θ)
             if I[idx] ≥ $flux_cutoff_high && is_above_elevation_cutoff
                 push!(to_peel, idx)
@@ -203,10 +233,15 @@ macro pick_for_peeling(name, elevation_cutoff, flux_cutoff_high=0, flux_cutoff_l
     esc(output)
 end
 
-macro pick_for_subtraction(name, elevation_cutoff=0, flux_cutoff_high=0, flux_cutoff_low=30)
+macro pick_for_subtraction(name, east_elevation_cutoff, west_elevation_cutoff,
+                           flux_cutoff_high, flux_cutoff_low)
     output = quote
         if source.name == $name
-            θ = deg2rad($elevation_cutoff)
+            if is_rising(frame, source)
+                θ = deg2rad($east_elevation_cutoff)
+            else
+                θ = deg2rad($west_elevation_cutoff)
+            end
             is_above_elevation_cutoff = TTCal.isabovehorizon(frame, source, θ)
             if I[idx] ≥ $flux_cutoff_high && is_above_elevation_cutoff
                 push!(to_sub_bright, idx)
@@ -246,106 +281,103 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
         source = sources[idx]
         TTCal.isabovehorizon(frame, source) || continue
         if spw == 4
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     1900        30
-            @pick_for_peeling          "Vir A"     30     2500        30
-            @pick_for_peeling          "Tau A"     30     2500        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10        5       2000        30
+            @pick_for_peeling          "Cas A"     10       10       1900        30
+            @pick_for_peeling          "Vir A"     30       30       2500        30
+            @pick_for_peeling          "Tau A"     30       30       2500        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
             @pick_for_shapelets        "Sun"        5
         elseif spw == 6
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       2000        30
+            @pick_for_peeling          "Cas A"     10       10       2000        30
+            @pick_for_peeling          "Vir A"     30       30       2000        30
+            @pick_for_peeling          "Tau A"     30       30       2000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
             @pick_for_shapelets        "Sun"        5
         elseif spw == 8
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       1000        30
+            @pick_for_peeling          "Cas A"      8        8       1000        30
+            @pick_for_peeling          "Vir A"     30       30       1000        30
+            @pick_for_peeling          "Tau A"     30       30       1000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
             @pick_for_shapelets        "Sun"        5
         elseif spw == 10
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       1000        30
+            @pick_for_peeling          "Cas A"     10       10       1000        30
+            @pick_for_peeling          "Vir A"     30       30       1000        30
+            @pick_for_peeling          "Tau A"     30       30       1000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
             @pick_for_shapelets        "Sun"        5
         elseif spw == 12
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_peeling          "Sun"       15        0         0
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       1000        30
+            @pick_for_peeling          "Cas A"     10       10       1000        30
+            @pick_for_peeling          "Vir A"     30       30       1000        30
+            @pick_for_peeling          "Tau A"     30       30       1000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
+            @pick_for_peeling          "Sun"       15       15          0         0
         elseif spw == 14
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_peeling          "Sun"       15        0         0
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       1000        30
+            @pick_for_peeling          "Cas A"     10       10       1000        30
+            @pick_for_peeling          "Vir A"     30       30       1000        30
+            @pick_for_peeling          "Tau A"     30       30       1000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
+            @pick_for_peeling          "Sun"       15       15          0         0
         elseif spw == 16
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_peeling          "Sun"       15        0         0
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       1000        30
+            @pick_for_peeling          "Cas A"     10       10       1000        30
+            @pick_for_peeling          "Vir A"     30       30       1000        30
+            @pick_for_peeling          "Tau A"     30       30       1000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
+            @pick_for_peeling          "Sun"       15       15          0         0
         elseif spw == 18
-            #   Removal Technique    |   Name   | elev | flux-hi | flux-lo |
-            # --------------------------------------------------------------
-            @pick_for_peeling          "Cyg A"     10     2000        30
-            @pick_for_peeling          "Cas A"     10     2000        30
-            @pick_for_peeling          "Vir A"     30     2000        30
-            @pick_for_peeling          "Tau A"     30     2000        30
-            @pick_for_subtraction      "Her A"     30      500        30
-            @pick_for_subtraction      "Hya A"     60      500        30
-            @pick_for_subtraction      "Per B"     60      500        30
-            @pick_for_subtraction      "3C 353"    60      500        30
-            @pick_for_peeling          "Sun"       15        0         0
+            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
+            # -------------------------------------------------------------------------
+            @pick_for_peeling          "Cyg A"     10       10       1000        30
+            @pick_for_peeling          "Cas A"     10       10       1000        30
+            @pick_for_peeling          "Vir A"     30       30       1000        30
+            @pick_for_peeling          "Tau A"     30       30       1000        30
+            @pick_for_subtraction      "Her A"     30       30        500        30
+            @pick_for_subtraction      "Hya A"     60       60        500        30
+            @pick_for_subtraction      "Per B"     60       60        500        30
+            @pick_for_subtraction      "3C 353"    60       60        500        30
+            @pick_for_peeling          "Sun"       15       15          0         0
         end
     end
-
-    # TODO we'd probably like to be able to specify a range of sidereal times a
-    # source should be peeled, rather than just a cut in elevation
 
     # If a source we are trying to subtract has higher flux than a source we are trying to peel, we
     # should probably be peeling that source.
@@ -359,6 +391,20 @@ function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, dire
     end
     to_peel = [to_peel; to_sub_bright[move]]
     to_sub_bright = to_sub_bright[!move]
+
+    # If a source is much fainter than another source that is being peeled, it should be subtracted
+    # instead.
+    if length(to_peel) > 0
+        max_I = maximum(I[to_peel])
+        move = zeros(Bool, length(to_peel))
+        for idx in to_peel
+            if 10I[idx] < max_I
+                move[to_peel .== idx] = true
+            end
+        end
+        to_sub_bright = [to_sub_bright; to_peel[move]]
+        to_peel = to_peel[!move]
+    end
 
     fluxes = I[to_peel]
     perm = sortperm(fluxes, rev=true)
@@ -387,7 +433,7 @@ end
 function fit_sun(meta, xx, yy, flags)
     dir = Direction(dir"SUN")
     frame = TTCal.reference_frame(meta)
-    fit_shapelets("Sun", meta, xx, yy, flags, dir, 5, deg2rad(27.25/60)/sqrt(8log(2)))
+    fit_shapelets("Sun", meta, xx, yy, flags, dir, 6, deg2rad(27.25/60)/sqrt(8log(2)))
 end
 
 function fit_shapelets(name, meta, xx, yy, flags, dir, nmax, scale)

@@ -115,3 +115,13 @@ function changedirection!(source::MultiSource, frame, direction)
     end
 end
 
+function is_rising(frame, source)
+    direction = _get_source_direction(source)
+    azel = measure(frame, direction, dir"AZEL")
+    az = longitude(azel) # ∈ (-π/2, π/2)
+    az > 0
+end
+
+_get_source_direction(source) = source.direction
+_get_source_direction(source::MultiSource) = _get_source_direction(source.components[1])
+
