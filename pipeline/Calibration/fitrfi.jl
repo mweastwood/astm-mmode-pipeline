@@ -232,7 +232,7 @@ macro fitrfi_yy_only()
     esc(output)
 end
 
-function fitrfi_peel(meta, visibilities, sources, tolerance=1e-5, pol=:both)
+function fitrfi_peel(meta, visibilities, sources, tolerance=1e-5, pol="both")
     @show pol
     for source in sources
         println(source)
@@ -511,33 +511,32 @@ function fitrfi_spw04(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            # This is a piece of horizon RFI that shows up from Big Pine. It's extremely bright
-            # though, so a single integration is sufficient to take it out.
-            @fitrfi 6646 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1
-
-            # This is the same RFI source as above, but the subtraction doesn't do a particularly
-            # good job. So we'll fit for it again.
+            # RFI
+            @fitrfi 5157 (:A3, "Cas A", "Vir A") :select=>1
             @fitrfi 6205 ("Vir A", :A3, "Cas A") :select=>2
-
-            # Same RFI source, same problem.
+            @fitrfi 6626 (:A3, "Cyg A", "Vir A") :select=>1
+            @fitrfi 6646 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1
             @fitrfi 7118 (:A3, "Cyg A", "Cas A") :select=>1
 
-            # Same RFI source, same problem.
-            @fitrfi 5157 (:A3, "Cas A", "Vir A") :select=>1
-
-            # Integrations selected by looking at Vir A residuals
+            # Pickup
+            @fitrfi 3357 ("Cas A", 1, "Cyg A") :select=>2 :pol=>:xx
             @fitrfi 6126 (1, "Vir A") :select=>1 :pol=>:xx
-            @fitrfi 6626 (:A3, "Cyg A", "Vir A") :select=>1
 
         elseif target == "rfi-restored-peeled"
-            @fitrfi 6646 A3 :select=>1
-            @fitrfi 6205 A3 :select=>1
-            @fitrfi 7118 A3 :select=>1
-            @fitrfi 5157 A3 :select=>1
+            # Smeared
+            @fitrfi 1:7756 A3 :select=>1
 
-            # Vir A
-            @fitrfi 6126 1 :select=>1 :pol=>:xx
+            # RFI
+            @fitrfi 5157 A3 :select=>1
+            @fitrfi 6205 A3 :select=>1
             @fitrfi 6626 A3 :select=>1
+            @fitrfi 6646 A3 :select=>1
+            @fitrfi 7118 A3 :select=>1
+
+            # Pickup
+            @fitrfi 3357 1 :select=>1 :pol=>:xx
+            @fitrfi 6126 1 :select=>1 :pol=>:xx
+
         else
             error("unknown target")
         end
@@ -552,20 +551,23 @@ function fitrfi_spw06(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            # Similar to spw04 above, this is the same piece of horizon RFI. Once again it is very
-            # bright.
-            @fitrfi 6637 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1
-
-            # Cas A fails to peel on this integration and it's unclear why. My hypothesis is that
-            # the bright RFI wasn't subtracted very well, but it seems to be fine. We'll fit for it
-            # again anyway, but it's not obvious why I should have to.
+            # RFI
             @fitrfi 6205 ("Vir A", :A3, "Cas A") :select=>2
+            @fitrfi 6637 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1
+            @fitrfi 6650 (:A3, "Cyg A", "Cas A") :select=>1 :pol=>:xx
+            @fitrfi 7079 (:A3, "Cyg A", "Cas A") :select=>1 :pol=>:xx
+            @fitrfi 7118 (:A3, "Cyg A") :select=>1
 
         elseif target == "rfi-restored-peeled"
-            @fitrfi 1:7756 2 :select=>1:2 :pol=>:xx
-            @fitrfi 1:7756 1 :select=>1 :pol=>:yy
-            @fitrfi 6637 A3 :select=>1
+            # Smeared
+            @fitrfi 1:7756 2 :select=>1:2
+
+            # RFI
             @fitrfi 6205 A3 :select=>1
+            @fitrfi 6637 A3 :select=>1
+            @fitrfi 6650 A3 :select=>1 :pol=>:xx
+            @fitrfi 7079 A3 :select=>1 :pol=>:xx
+            @fitrfi 7118 A3 :select=>1
         else
             error("unknown target")
         end
@@ -580,24 +582,32 @@ function fitrfi_spw08(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 1 :select=>1 :test=>true
+            # Smeared
+            @fitrfi 1:7756 1 :select=>1
 
-            # Big Pine RFI Peak #1
+            # RFI
             @fitrfi 5175 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :rm_rfi=>1:1
-
-            # Big Pine RFI Peak #2
             @fitrfi 6629 (:A3, "Cyg A", "Vir A", "Cas A") :select=>1 :rm_rfi=>1:1
-
-            # Big Pine RFI Peak #3
             @fitrfi 7060 (:A3, "Cyg A") :select=>1 :rm_rfi=>1:1
 
+            # Pickup
+            @fitrfi 4916 ("Cas A", 1, "Tau A") :select=>2 :rm_rfi=>1:1 :pol=>:xx
+            @fitrfi 6166 (1, "Vir A") :select=>1 :rm_rfi=>1:1 :minuvw=>4
+            @fitrfi 6699 ("Cyg A", 1, "Vir A") :select=>2 :rm_rfi=>1:1 :minuvw=>5
+
         elseif target == "rfi-restored-peeled"
+            # Smearaed
             @fitrfi 1:7756 3 :select=>1:3
-            @fitrfi 1:7756 2 :select=>1:2 :rm_rfi=>1:3 :pol=>:xx
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:3 :pol=>:yy
+
+            # RFI
             @fitrfi 5175 A3 :select=>1 :rm_rfi=>1:1
             @fitrfi 6629 A3 :select=>1 :rm_rfi=>1:1
             @fitrfi 7060 A3 :select=>1 :rm_rfi=>1:1
+
+            # Pickup
+            @fitrfi 4916 1 :select=>1 :rm_rfi=>1:1 :pol=>:xx
+            @fitrfi 6166 1 :select=>1 :rm_rfi=>1:1 :minuvw=>4
+            @fitrfi 6699 1 :select=>1 :rm_rfi=>1:1 :minuvw=>5
         else
             error("unknown target")
         end
@@ -612,40 +622,35 @@ function fitrfi_spw10(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 1 :select=>1 :test=>true
+            # Smeared
+            @fitrfi 1:7756 1 :select=>1
 
-            # This is that piece of RFI from Big Pine showing up again. Here it intereferes with Cas
-            # A getting peeled correctly.
-            @fitrfi 7118 ("Cyg A", :A3, "Cas A") :select=>2 :rm_rfi=>1:1
-
-            # The Big Pine RFI strikes back.
-            @fitrfi 6645 (:A3, "Cyg A", "Vir A") :select=>1 :rm_rfi=>1:1
-
-            # Return of the Big Pine RFI
-            @fitrfi 7060 ("Cyg A", :A3, "Cas A") :select=>2 :rm_rfi=>1:1
-
-            # Big Pine...
+            # RFI
             @fitrfi 5175 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :rm_rfi=>1:1
+            @fitrfi 6645 (:A3, "Cyg A", "Vir A") :select=>1 :rm_rfi=>1:1
+            @fitrfi 7060 ("Cyg A", :A3, "Cas A") :select=>2 :rm_rfi=>1:1
+            @fitrfi 7118 ("Cyg A", :A3, "Cas A") :select=>2 :rm_rfi=>1:1
 
             # Finally, something else interesting. This is a correlated noise component that gets in
             # the way of peeling Vir A.
-            @fitrfi_sum_over_integrations_with_subtraction 5755:5855 0 "Vir A" "Cas A"
-            @fitrfi_rm_rfi_so_far 1:1
-            @fitrfi_construct_sources 1
-            @fitrfi_test_start_image
-            @fitrfi_peel_sources
-            @fitrfi_test_finish_image
-            @fitrfi_select_components 1
+            # (commented because I don't like how I'm fitting for this one -- it's sketchy)
+            #@fitrfi_sum_over_integrations_with_subtraction 5755:5855 0 "Vir A" "Cas A"
+            #@fitrfi_rm_rfi_so_far 1:1
+            #@fitrfi_construct_sources 1
+            #@fitrfi_test_start_image
+            #@fitrfi_peel_sources
+            #@fitrfi_test_finish_image
+            #@fitrfi_select_components 1
 
         elseif target == "rfi-restored-peeled"
+            # Smeared
             @fitrfi 1:7756 2 :select=>1:2
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:xx
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:yy
-            @fitrfi 7118 A3 :select=>1 :rm_rfi=>1:1
+
+            # RFI
+            @fitrfi 5175 A3 :select=>1 :rm_rfi=>1:1
             @fitrfi 6645 A3 :select=>1 :rm_rfi=>1:1
             @fitrfi 7060 A3 :select=>1 :rm_rfi=>1:1
-            @fitrfi 5175 A3 :select=>1 :rm_rfi=>1:1
-            @fitrfi 5755:5855 1 :select=>1 :rm_rfi=>1:1 :minuvw=>0 :test=>true
+            @fitrfi 7118 A3 :select=>1 :rm_rfi=>1:1
 
         else
             error("unknown target")
@@ -661,17 +666,20 @@ function fitrfi_spw12(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 3 :select=>1:3 :test=>true
+            # Smeared
+            @fitrfi 1:7756 3 :select=>1:3
 
-            # This is a correlated noise component that dominates over Vir A and interferes with it
-            # being peeled.
+            # Pickup
+            @fitrfi 6021 (1, "Vir A") :select=>1 :rm_rfi=>1:3
             @fitrfi 5857 (1, "Vir A") :select=>1 :rm_rfi=>1:3
-
-            # This is another correlated noise component that gets in the way of Vir A.
             @fitrfi 6890 ("Cyg A", "Cas A", 1, "Vir A") :select=>3 :rm_rfi=>1:3
 
         elseif target == "rfi-restored-peeled"
+            # Smeared
             @fitrfi 1:7756 5 :select=>1:5
+
+            # Pickup
+            @fitrfi 6021 1 :select=>1 :rm_rfi=>1:3
             @fitrfi 5857 1 :select=>1 :rm_rfi=>1:3
             @fitrfi 6890 1 :select=>1 :rm_rfi=>1:3
 
@@ -689,11 +697,13 @@ function fitrfi_spw14(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 3 :select=>1:3 :test=>true
-        elseif target == "rfi-restored-peeled"
+            # Smeared
             @fitrfi 1:7756 3 :select=>1:3
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:3 :pol=>:xx
-            @fitrfi 1:7756 2 :select=>1:2 :rm_rfi=>1:3 :pol=>:yy :test=>true
+
+        elseif target == "rfi-restored-peeled"
+            # Smeared
+            @fitrfi 1:7756 3 :select=>1:3
+
         else
             error("unknown target")
         end
@@ -708,19 +718,18 @@ function fitrfi_spw16(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
-            @fitrfi 1:7756 2 :select=>1:2 :test=>true
+            # Smeared
+            @fitrfi 1:7756 2 :select=>1:2
 
-            # This is a bright piece of RFI that shows up towards Big Pine. It causes problems for
-            # peeling Cas A. Peeling really wants to take pieces of Tau A and Vir A here, but the
-            # solution looks ok so I'm leaving it for now.
-            @fitrfi 5169 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :pol=>:xx
+            # RFI
+            @fitrfi 5169 (:A3, "Cas A", "Tau A", "Vir A") :select=>1 :rm_rfi=>1:2 :test=>true
 
         elseif target == "rfi-restored-peeled"
+            # Smeared
             @fitrfi 1:7756 2 :select=>1:2
-            @fitrfi 1:7756 (1, :B4) :select=>1:2 :rm_rfi=>1:2 :minuvw=>30
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:xx
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:2 :pol=>:yy
-            @fitrfi 5169 A3 :select=>1 :rm_rfi=>1:2 :pol=>:xx
+
+            # RFI
+            @fitrfi 5169 A3 :select=>1 :rm_rfi=>1:2
         else
             error("unknown target")
         end
@@ -735,29 +744,12 @@ function fitrfi_spw18(times, data, flags, dataset, target)
     if dataset == "100hr"
     elseif dataset == "rainy"
         if target == "calibrated"
+            # Smeared
             @fitrfi 1:7756 3 :select=>1:3 :test=>true
 
-            # This component causes Cas A to fail to peel in integration 911 (and nearby). However
-            # it seems impossible to separate this component from Cas by considering a single
-            # integration, and if you use multiple integrations it is difficult to get peeling to
-            # converge. However, if you use multiple integrations and do not flag short baselines
-            # things seem to work out.
-            @fitrfi_sum_over_integrations_with_subtraction 811:911 false "Cyg A" "Cas A"
-            @fitrfi_rm_rfi_so_far 1:3
-            @fitrfi_construct_sources 1
-            @fitrfi_peel_sources
-            @fitrfi_select_components 1
-
         elseif target == "rfi-restored-peeled"
+            # Smeared
             @fitrfi 1:7756 4 :select=>1:4
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:4 :pol=>:xx
-            @fitrfi 1:7756 1 :select=>1 :rm_rfi=>1:4 :pol=>:yy
-
-            # Note to self:
-            # There seems to be a source in the South that ends up being removed. However I'm pretty
-            # sure that's just a terrestrial transient of some kind. It's not an actual source and
-            # it's not a big deal that it gets removed.
-            @fitrfi 811:911 1 :select=>1 :rm_rfi=>1:3 :minuvw=>0
 
         else
             error("unknown target")

@@ -151,10 +151,13 @@ end
 function do_special_case_flags!(spw, dataset, target, flags)
     if dataset == "rainy"
         if spw == 12
-            flags[:, 3467] = true # fireball
-            flags[:, 4939] = true # fireball
+            # No longer necessary due to improvements in the peeling script
+            #flags[:, 3467] = true # fireball
+            #flags[:, 6166] = true # fireball
+            #flags[:, 6400] = true # fireball
+            #flags[:, 4939] = true # fireball
         elseif spw == 16
-            flags[:, 6635] = true # fireball
+            #flags[:, 6635] = true # fireball
         end
     end
 end

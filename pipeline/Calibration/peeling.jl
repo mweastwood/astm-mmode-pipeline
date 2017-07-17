@@ -38,7 +38,7 @@ function peel(spw, dataset, target, times, data, flags;
             while true
                 myidx = nextidx()
                 myidx ≤ Ntime || break
-                put!(input, (times[myidx], data[:, :, myidx], flags[:, myidx]))
+                put!(input, (myidx, times[myidx], data[:, :, myidx], flags[:, myidx]))
                 data[:, :, myidx], flags[:, myidx], peeling_data[myidx] = take!(output)
                 increment_progress()
             end
@@ -69,9 +69,9 @@ function peel_worker_loop(spw, input, output, dataset, istest, dopeeling, dosubt
                                    "getdata-sources.json"))
     while true
         try
-            time, data, flags = take!(input)
+            integration, time, data, flags = take!(input)
             peeling_data = peel_do_the_work(time, data, flags, spw, dir, meta, sources,
-                                            istest, dopeeling, dosubtraction)
+                                            dataset, integration, istest, dopeeling, dosubtraction)
             put!(output, (data, flags, peeling_data))
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
@@ -88,7 +88,7 @@ function peel_worker_loop(spw, input, output, dataset, istest, dopeeling, dosubt
 end
 
 function peel_do_the_work(time, data, flags, spw, dir, meta, sources,
-                          istest, dopeeling=true, dosubtraction=true)
+                          dataset, integration, istest, dopeeling=true, dosubtraction=true)
     xx = data[1, :]
     yy = data[2, :]
 
@@ -102,7 +102,7 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, sources,
     end
 
     xx, yy, peeling_data = rm_sources(time, flags, xx, yy, spw, meta, sources,
-                                      istest, dopeeling, dosubtraction)
+                                      dataset, integration, istest, dopeeling, dosubtraction)
 
     data[1, :] = xx
     data[2, :] = yy
@@ -111,7 +111,7 @@ function peel_do_the_work(time, data, flags, spw, dir, meta, sources,
 end
 
 function rm_sources(time, flags, xx, yy, spw, meta, sources,
-                    istest, dopeeling, dosubtraction)
+                    dataset, integration, istest, dopeeling, dosubtraction)
     prototype_peeling_flags(spw, flags)
     visibilities = Visibilities(Nbase(meta), 1)
     for α = 1:Nbase(meta)
@@ -167,16 +167,16 @@ function rm_sources(time, flags, xx, yy, spw, meta, sources,
         # We need some resilience against bright fireballs getting in the way of peeling. So we will
         # check to see if the source was actually removed and put it back into the dataset if it was
         # not removed.
-        if spw == 12
+        if spw in (12, 14, 16, 18)
             keep = fill(true, length(to_peel))
             for index = 1:length(to_peel)
                 master_index = to_peel[index]
-                @show master_index, index
-                residual_I = getflux(visibilities, meta, sources[master_index])
-                percent = (residual_I - I[master_index]) / I[master_index]
-                if percent < 0.1
-                    model = genvis(meta, sources[master_index])
-                    corrupt!(model, meta, calibrations[index])
+                source = sources[master_index]
+                model = genvis(meta, source)
+                corrupt!(model, meta, calibrations[index])
+                removed_I = getflux(model, meta, source)
+                istest && @show source.name, removed_I, I[master_index]
+                if abs(removed_I) < 0.9*abs(I[master_index])
                     putsrc!(visibilities, model)
                     keep[index] = false
                 end
