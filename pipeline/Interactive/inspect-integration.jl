@@ -13,22 +13,23 @@ function inspect_integration(spw, times, data, flags, dataset, target, integrati
     # Get the original
     println("\n=== original ===")
     title = @sprintf("%05d-step02", integration)*"-$target-$dataset"
-    inspect_do_the_work(spw, dataset, mytime, mydata, myflags, title, true, true)
+    inspect_do_the_work(spw, dataset, integration, mytime, mydata, myflags, title, true, true)
 
     # Turn off all source removal
     println("\n=== no source removal ===")
     title = @sprintf("%05d-step00", integration)*"-$target-$dataset"
-    inspect_do_the_work(spw, dataset, mytime, mydata, myflags, title, false, false)
+    inspect_do_the_work(spw, dataset, integration, mytime, mydata, myflags, title, false, false)
 
     # No subtraction
     println("\n=== no subtraction ===")
     title = @sprintf("%05d-step01", integration)*"-$target-$dataset"
-    inspect_do_the_work(spw, dataset, mytime, mydata, myflags, title, true, false)
+    inspect_do_the_work(spw, dataset, integration, mytime, mydata, myflags, title, true, false)
 
     println("This has been a message from integration #$integration")
 end
 
-function inspect_do_the_work(spw, dataset, time, data, flags, title, dopeeling, dosubtraction)
+function inspect_do_the_work(spw, dataset, integration, time, data, flags,
+                             title, dopeeling, dosubtraction)
     data = copy(data)
     flags = copy(flags)
 
@@ -39,7 +40,7 @@ function inspect_do_the_work(spw, dataset, time, data, flags, title, dopeeling, 
                                    "getdata-sources.json"))
 
     Calibration.peel_do_the_work(time, data, flags, spw, dir, meta, sources,
-                                 true, dopeeling, dosubtraction)
+                                 dataset, integration, true, dopeeling, dosubtraction)
     image(spw, data, flags, 1:1, joinpath(dir, "tmp", title))
 end
 

@@ -5,6 +5,11 @@ function verify_beam(spw)
              "I-image", "Q-image", "I", "Q", "l", "m")
     N = length(names)
 
+    println([names fluxes])
+    for coeff in coeff_I
+        println(coeff)
+    end
+
     # Image of the I beam with source tracks
     figure(1); clf()
     circle = plt[:Circle]((0, 0), 1, alpha=0)

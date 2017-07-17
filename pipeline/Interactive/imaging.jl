@@ -71,8 +71,8 @@ function image(spw, data, flags, range, image_path; minuvw=0)
         end
     end
 
-    dadas = listdadas(spw, "100hr")[range]
-    ms, ms_path = dada2ms(dadas[1], "100hr")
+    dadas = listdadas(spw, "rainy")[range]
+    ms, ms_path = dada2ms(dadas[1], "rainy")
     TTCal.write(ms, "DATA", output)
     finalize(ms)
     wsclean(ms_path, image_path, j=8, minuvw=minuvw)
@@ -113,8 +113,8 @@ function image_with_new_phase_center(spw, times, data, flags, range, phase_cente
         end
     end
 
-    dadas = listdadas(spw, "100hr")[range]
-    ms, ms_path = dada2ms(dadas[1], "100hr")
+    dadas = listdadas(spw, "rainy")[range]
+    ms, ms_path = dada2ms(dadas[1], "rainy")
     TTCal.write(ms, "DATA", output)
     finalize(ms)
     wsclean(ms_path, image_path, j=8)
@@ -148,8 +148,8 @@ function image_mmodes(spw, target="mmodes-peeled", m=0)
         end
     end
 
-    dadas = listdadas(spw, "100hr")[1]
-    ms, ms_path = dada2ms(dadas, "100hr")
+    dadas = listdadas(spw, "rainy")[1]
+    ms, ms_path = dada2ms(dadas, "rainy")
     TTCal.write(ms, "DATA", output)
     finalize(ms)
     image_path = joinpath(dir, "tmp", "image-$target-m=$m")
