@@ -7,6 +7,7 @@ using CasaCore.Measures
 using CasaCore.Tables
 using LibHealpix
 using TTCal
+using FITSIO
 using ..Utility
 using ..Common
 
@@ -19,8 +20,11 @@ include("fitrfi.jl")
 include("subrfi.jl")
 include("addrfi.jl")
 include("peeling.jl")
-include("removed-source-visibilities.jl")
 include("fitbeam.jl")
+include("removed-source-visibilities.jl")
+
+include("getsun.jl")
+include("rm-sun.jl")
 
 end
 

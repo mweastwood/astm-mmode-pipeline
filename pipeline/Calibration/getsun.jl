@@ -1,56 +1,56 @@
-function getsun()
-    Lumberjack.info("Fitting a model of the Sun")
-    spw = 18
+function getsun(spw)
     dir = getdir(spw)
-    times, data, flags, peeling_data = load(joinpath(dir, "peeled-rainy-visibilities.jld"),
-                                            "times", "data", "flags", "peeling-data")
-    getsun(spw, times, data, flags, peeling_data)
+    println("* Loading")
+    @time times, data, flags = load(joinpath(dir, "peeled-rainy-visibilities.jld"), "times", "data", "flags")
+    @time sun_data = load(joinpath(dir, "sun-peeled-rainy-visibilities.jld"), "data")
+    println("* Restoring the Sun")
+    getsun(spw, times, data+sun_data, flags)
 end
 
-function getsun(spw, times, data, flags, peeling_data)
+function getsun(spw, times, data, flags)
     integrations = 1850:2750
     times = times[integrations]
     data = data[:, :, integrations]
     flags = flags[:, integrations]
-    peeling_data = peeling_data[integrations]
-
-    Lumberjack.info("* Restoring the Sun")
-    restore_the_sun!(spw, times, data, flags, peeling_data)
 
     function residual(x, g)
         println("=====")
         @show x
         sun = getsun_construct_model(x)
-        @show sun
-        Lumberjack.info("* Peeling the Sun")
+        println("* Peeling the Sun")
         summed_data, summed_flags = getsun_residual_visibilities(spw, times, data, flags, sun)
-        Lumberjack.info("* Imaging the residuals")
+        println("* Imaging the residuals")
         output = getsun_residual_image(spw, summed_data, summed_flags)
         @show output
         output
     end
 
-    N = 4^2
-    #x0 = zeros(N)
-    x0 = [-0.1510759761698713,
-          -0.02066199368032352,
-          -0.018493304474277106,
-          -0.0012873111106452735,
-          -0.036009230301391706,
-          0.00016816926519434334,
-          0.10053548515299322,
-          -0.0012698942453968239,
-          0.009018968911481295,
-          -0.005032715278400886,
-          0.06749641456795911,
-          0.0002023066369522653,
-          0.0017188608486568857,
-          0.001160116390556377,
-          -0.02489101087535827,
-          0.00010983142769303976]
-    xmin = -ones(N)
-    xmax = +ones(N)
+    # spw18
+    #x0 = [1455.88, 1976.86, -17.328,
+    #      -0.1510759761698713,   -0.02066199368032352,   -0.018493304474277106, -0.0012873111106452735,
+    #      -0.036009230301391706,  0.00016816926519434334, 0.10053548515299322,  -0.0012698942453968239,
+    #       0.009018968911481295, -0.005032715278400886,   0.06749641456795911,   0.0002023066369522653,
+    #       0.0017188608486568857, 0.001160116390556377,  -0.02489101087535827,   0.00010983142769303976]
 
+    # spw14
+    x0 = [1622.2669729386591, 2293.413730331039, -20.0493648229423,
+          -0.13658950102982556, -0.0015192147751638962, -0.014392339908425792, -0.005765899007730887,
+          -0.047316905221074665, 0.04824140333473242,    0.10639368298705491,  -0.00761371053942145,
+           0.02182254648237799, -0.007500232542486043,   0.06014367076653129,   0.0026133957685073057,
+           0.005094455449773894, 0.0002991638049416478, -0.026020631618510058, -0.0010620435723069604]
+
+
+    xmin = [1000, 1000, -90,
+            -0.5, -0.2, -0.2, -0.2,
+            -0.2, -0.2, -0.2, -0.2,
+            -0.2, -0.2, -0.2, -0.2,
+            -0.2, -0.2, -0.2, -0.2]
+
+    xmax = [3000, 3000, +90,
+            +0.5, +0.2, +0.2, +0.2,
+            +0.2, +0.2, +0.2, +0.2,
+            +0.2, +0.2, +0.2, +0.2,
+            +0.2, +0.2, +0.2, +0.2]
 
     #opt = Opt(:LN_SBPLX, length(x0))
     #ftol_rel!(opt, 1e-3)
@@ -68,64 +68,23 @@ function getsun(spw, times, data, flags, peeling_data)
        println(y)
     end
 
-    output = joinpath(sourcelists, "sun-$(now()).json")
+    str = @sprintf("spw%02d", spw)
+    output = "sun-$str-$(now()).json"
+    path = joinpath(dirname(@__FILE__), "..", "..", "workspace", "source-lists", output)
     sun = getsun_construct_model(x)
-    writesources(output, [sun])
-end
-
-function restore_the_sun!(spw, times, data, flags, peeling_data)
-    meta = getmeta(spw)
-    meta.channels = meta.channels[55:55]
-    meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
-
-    N = length(times)
-    for integration = 1:N
-        my_peeling_data = peeling_data[integration]
-        sources = my_peeling_data.sources
-        to_peel = my_peeling_data.to_peel
-        to_sub  = my_peeling_data.to_sub
-        sun_idxs = find(getfield.(sources, 1) .== "Sun")
-        if length(sun_idxs) > 0
-            sun_idx = sun_idxs[1]
-            sun = sources[sun_idx]
-            meta.time = Epoch(epoch"UTC", times[integration]*seconds)
-            if sun_idx in to_peel # was the Sun peeled?
-                calibration = my_peeling_data.calibrations[to_peel .== sun_idx][1]
-                restore_the_sun_peeled!(meta, data, sun, calibration, integration)
-            elseif sun_idx in to_sub # was the Sun subtracted?
-                restore_the_sun_subtracted!(meta, data, sun, integration)
-            end
-        end
-    end
-end
-
-function restore_the_sun_peeled!(meta, data, sun, calibration, integration)
-    model = genvis(meta, sun)
-    corrupt!(model, meta, calibration)
-    xx = getfield.(model.data[:, 1], 1)
-    yy = getfield.(model.data[:, 1], 4)
-    for α = 1:Nbase(meta)
-        data[1, α, integration] += xx[α]
-        data[2, α, integration] += yy[α]
-    end
-end
-
-function restore_the_sun_subtracted!(meta, data, sun, integration)
-    model = genvis(meta, sun)
-    xx = getfield.(model.data[:, 1], 1)
-    yy = getfield.(model.data[:, 1], 4)
-    for α = 1:Nbase(meta)
-        data[1, α, integration] += xx[α]
-        data[2, α, integration] += yy[α]
-    end
+    writesources(path, [sun])
 end
 
 function getsun_construct_model(x)
     components = TTCal.Source[]
     push!(components, GaussianSource("Gaussian", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
-                                     deg2rad(1455.88/3600), deg2rad(1976.86/3600), deg2rad(-17.328)))
+                                     deg2rad(x[1]/3600), deg2rad(x[2]/3600), deg2rad(x[3])))
     push!(components, ShapeletSource("Shapelets", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
-                                     deg2rad((10/60)/sqrt(8log(2))), x))
+                                     deg2rad((10/60)/sqrt(8log(2))), x[4:end]))
+    #push!(components, GaussianSource("Gaussian", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
+    #                                 deg2rad(1455.88/3600), deg2rad(1976.86/3600), deg2rad(-17.328)))
+    #push!(components, ShapeletSource("Shapelets", Direction(dir"SUN"), PowerLaw(1, 0, 0, 0, 1e6, [0.0]),
+    #                                 deg2rad((10/60)/sqrt(8log(2))), x))
     MultiSource("Sun", components)
 end
 
@@ -165,7 +124,7 @@ function getsun_residual_visibilities(spw, times, data, flags, sun)
 end
 
 function getsun_peel_sun_worker(spw, time, data, flags, sun)
-    meta = getmeta(spw)
+    meta = getmeta(spw, "rainy")
     meta.channels = meta.channels[55:55]
     meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
     meta.time = Epoch(epoch"UTC", time*seconds)
@@ -202,7 +161,7 @@ function getsun_residual_image(spw, summed_data, summed_flags)
     path = "/dev/shm/mweastwood/getsun-output.ms"
     if !isdir(path)
         dada = listdadas(spw, "rainy")[1]
-        dada2ms_core(dada, path, "rainy")
+        Utility.dada2ms_core(dada, path, "rainy")
     end
     ms = Table(path)
     TTCal.write(ms, "CORRECTED_DATA", output)
