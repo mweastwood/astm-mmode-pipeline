@@ -115,12 +115,12 @@ function select_pixels(maps, x, y, z, N)
     selected_pixels
 end
 
-function readmap(spw, dataset)
+function readmap(spw, dataset, target)
     dir = getdir(spw)
-    readhealpix(joinpath(dir, "map-wiener-filtered-$dataset-itrf.fits"))
+    readhealpix(joinpath(dir, "$target-$dataset-itrf.fits"))
 end
 
-readmaps(spws, dataset) = HealpixMap[readmap(spw, dataset) for spw in spws]
+readmaps(spws, dataset, target) = HealpixMap[readmap(spw, dataset, target) for spw in spws]
 
 function unit_vectors(nside)
     npix = nside2npix(nside)
