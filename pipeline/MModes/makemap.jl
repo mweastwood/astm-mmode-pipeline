@@ -1,13 +1,13 @@
-function makemap(spw, dataset, target)
+function makemap(spw, dataset, target, nside=2048)
     dir = getdir(spw)
     alm = load(joinpath(dir, "$target-$dataset.jld"), "alm")
-    makemap(spw, alm, dataset, target)
+    makemap(spw, alm, dataset, target, nside)
 end
 
-function makemap(spw, alm::Alm, dataset, target)
+function makemap(spw, alm::Alm, dataset, target, nside)
     dir = getdir(spw)
     meta = getmeta(spw, dataset)
-    map = alm2map(alm, 2048)
+    map = alm2map(alm, nside)
 
     ## TODO: does this need a factor of the beam solid angle?
     #mmodes = MModes(joinpath(dir, "mmodes")) # read the frequency from the m-modes
@@ -25,7 +25,7 @@ function makemap(spw, alm::Alm, dataset, target)
     θ = zeros(length(map))
     ϕ = zeros(length(map))
     for idx = 1:length(map)
-        vec = LibHealpix.pix2vec_ring(nside(map), idx)
+        vec = LibHealpix.pix2vec_ring(nside, idx)
         θ[idx] = acos(dot(vec, zvec))
         ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
     end
@@ -44,7 +44,7 @@ function makemap(spw, alm::Alm, dataset, target)
     θ = zeros(length(map))
     ϕ = zeros(length(map))
     for idx = 1:length(map)
-        vec = LibHealpix.pix2vec_ring(nside(map), idx)
+        vec = LibHealpix.pix2vec_ring(nside, idx)
         θ[idx] = acos(dot(vec, zvec))
         ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
     end
@@ -52,9 +52,9 @@ function makemap(spw, alm::Alm, dataset, target)
     j2000 = HealpixMap(pixels)
 
     output = replace(target, "alm", "map")*"-$dataset"
-    writehealpix(joinpath(dir, output*"-galactic.fits"), galactic, coordsys="G", replace=true)
-    writehealpix(joinpath(dir, output*"-j2000.fits"), j2000, coordsys="C", replace=true)
-    writehealpix(joinpath(dir, output*"-itrf.fits"), map, coordsys="C", replace=true)
+    writehealpix(joinpath(dir, output*"-$nside-galactic.fits"), galactic, coordsys="G", replace=true)
+    writehealpix(joinpath(dir, output*"-$nside-j2000.fits"), j2000, coordsys="C", replace=true)
+    writehealpix(joinpath(dir, output*"-$nside-itrf.fits"), map, coordsys="C", replace=true)
 
     nothing
 end

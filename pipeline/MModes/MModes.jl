@@ -18,7 +18,7 @@ include("wiener.jl")
 include("observation-matrix.jl")
 include("makemap.jl")
 #include("powerlaw.jl")
-#include("glamour-image.jl")
+include("glamour-image.jl")
 
 end
 
