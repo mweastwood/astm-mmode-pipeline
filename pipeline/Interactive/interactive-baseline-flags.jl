@@ -28,6 +28,11 @@ function interactive_baseline_flags_tau(spw, filename)
     interactive_baseline_flags(spw, filename, direction)
 end
 
+function interactive_baseline_flags_sun(spw, filename)
+    direction = Direction(dir"SUN")
+    interactive_baseline_flags(spw, filename, direction)
+end
+
 function interactive_mmode_baseline_flags(spw, filename, m)
     dir = getdir(spw)
     mmodes, mmode_flags = load(joinpath(dir, filename*".jld"), "blocks", "flags")
