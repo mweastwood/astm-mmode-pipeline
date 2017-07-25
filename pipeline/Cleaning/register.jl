@@ -4,23 +4,23 @@ function register(spw)
     dir = getdir(spw)
     map = readhealpix(joinpath(dir, "map-wiener-filtered-rainy-2048-itrf.fits"))
 
-    @time ra, dec, flux = read_vlssr_catalog()
-    @time ra, dec, flux = flux_cutoff(ra, dec, flux, 30)
-    @time ra, dec, flux = near_bright_source_filter(ra, dec, flux)
-    @time ra, dec, flux = too_close_together(ra, dec, flux)
+    alm = map2alm(map, 1000, 1000)
+    map = alm2map(alm, 256)
 
+    ra, dec, flux = read_vlssr_catalog()
+    ra, dec, flux = flux_cutoff(ra, dec, flux, 30)
+    ra, dec, flux = near_bright_source_filter(ra, dec, flux)
+    ra, dec, flux = too_close_together(ra, dec, flux)
     N = length(flux)
     @show N
-    @time rhat = unit_vector_map(2048)
-    @time directions = convert_to_itrf(spw, ra, dec)
 
-    measured_directions = Direction[]
-    @time for idx = 1:N
-        push!(measured_directions, register_centroid(spw, map, directions[idx], rhat))
-    end
+    rhat = unit_vector_map(nside(map))
+    directions = convert_to_itrf(spw, ra, dec)
+    measured_directions = register_centroid(spw, map, directions, rhat)
 
     ra = longitude.(directions)
     dec = latitude.(directions)
+    output_region_file(ra, dec)
     measured_ra = longitude.(measured_directions)
     measured_dec = latitude.(measured_directions)
     for idx = 1:N
@@ -36,8 +36,6 @@ function register(spw)
     dθ = dec - measured_dec # opposite because dec runs in opposite direction to θ
     dϕ = measured_ra - ra
 
-    display([ra measured_ra dec measured_dec])
-
     coeff = zeros(30)
     xmin  = -10ones(length(coeff))
     xmax  = +10ones(length(coeff))
@@ -48,10 +46,6 @@ function register(spw)
     lower_bounds!(opt, xmin)
     upper_bounds!(opt, xmax)
     minf, coeff, ret = optimize(opt, coeff)
-    println("++++")
-    println("DONE")
-    @show vecnorm(dθ) vecnorm(dϕ)
-    @show minf, coeff, ret
 
     fix_ra(ra) = rad2deg(mod2pi.(ra + π)-π)/15
     fix_dec(dec) = rad2deg(dec)
@@ -69,6 +63,10 @@ function register(spw)
         plot(fix_ra(ra[idx]), fix_dec(dec[idx]), "b.")
     end
     gca()[:invert_xaxis]()
+
+    writehealpix(joinpath(dir, "tmp", "before.fits"), map, replace=true)
+    map = dedistort(map, coeff)
+    writehealpix(joinpath(dir, "tmp", "after.fits"), map, replace=true)
 
 end
 
@@ -175,7 +173,7 @@ function output_region_file(ra, dec)
         println(ds9_region_file, @sprintf("circle(%s,%s,%d\")", ra_str, dec_str, 10000))
     end
 
-    N = length(flux)
+    N = length(ra)
     for idx = 1:N
         write_out(ra[idx], dec[idx])
     end
@@ -205,7 +203,55 @@ function unit_vector_map(nside)
     rhat
 end
 
-function register_centroid(spw, map, itrf, rhat)
+function register_centroid(spw, map, directions, rhat)
+    idx = 1
+    N = length(directions)
+    nextidx() = (idx′ = idx; idx += 1; idx′)
+    prg = Progress(N, "Progress: ")
+    lck = ReentrantLock()
+    increment_progress() = (lock(lck); next!(prg); unlock(lck))
+    centroids = similar(directions)
+    @sync for worker in workers()
+        @async begin
+            input  = RemoteChannel()
+            output = RemoteChannel()
+            try
+                remotecall(_register_centroid_loop, worker, spw, map, rhat, input, output)
+                while true
+                    idx′ = nextidx()
+                    idx′ ≤ N || break
+                    put!(input, directions[idx′])
+                    centroids[idx′] = take!(output)
+                    increment_progress()
+                end
+            catch exception
+                println(exception)
+            finally
+                close(input)
+                close(output)
+            end
+        end
+    end
+    centroids
+end
+
+function _register_centroid_loop(spw, map, rhat, input, output)
+    while true
+        try
+            itrf = take!(input)
+            put!(output, _register_centroid(spw, map, itrf, rhat))
+        catch exception
+            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
+                break
+            else
+                println(exception)
+                rethrow(exception)
+            end
+        end
+    end
+end
+
+function _register_centroid(spw, map, itrf, rhat)
     aperture = Int[]
     annulus  = Int[]
     for pixel = 1:length(map)
@@ -328,5 +374,88 @@ function Φ(l, m, θ, ϕ)
     dθ = _dϕ
     dϕ = -_dθ
     dθ, dϕ
+end
+
+function dedistort(map, coeff)
+    @show coeff
+    idx = 1
+    N = length(map)
+    nextidx() = (idx′ = idx; idx += 1; idx′)
+    prg = Progress(N, "Progress: ")
+    lck = ReentrantLock()
+    increment_progress() = (lock(lck); next!(prg); unlock(lck))
+    newmap = zeros(N)
+    @sync for worker in workers()
+        @async begin
+            input  = RemoteChannel()
+            output = RemoteChannel()
+            try
+                remotecall(_dedistort_loop, worker, map, coeff, input, output)
+                while true
+                    idx′ = nextidx()
+                    idx′ ≤ N || break
+                    put!(input, idx′)
+                    newmap[idx′] = take!(output)
+                    increment_progress()
+                end
+            catch exception
+                println(exception)
+            finally
+                close(input)
+                close(output)
+            end
+        end
+    end
+    HealpixMap(newmap)
+end
+
+function _dedistort_loop(map, coeff, input, output)
+    while true
+        try
+            pixel = take!(input)
+            put!(output, _dedistort(map, coeff, pixel))
+        catch exception
+            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
+                break
+            else
+                println(exception)
+                rethrow(exception)
+            end
+        end
+    end
+end
+
+
+function _dedistort(map, coeff, pix)
+    vec = LibHealpix.pix2vec_ring(nside(map), pix)
+    θ, ϕ = LibHealpix.pix2ang_ring(nside(map), pix)
+    dθ, dϕ = vector_spherical_harmonics(coeff, θ, ϕ)
+
+    # Rotate the vector to the xz-plane
+    R = [cos(-ϕ) -sin(-ϕ) 0
+         sin(-ϕ)  cos(-ϕ) 0
+         0        0       1]
+    vec = R*vec
+
+    # Rotate by dθ about the y-axis
+    R = [cos(-dθ) 0 -sin(-dθ)
+         0        1  0
+         sin(-dθ) 0  cos(-dθ)]
+    vec = R*vec
+
+    # Rotate the vector back out of the xz-plane
+    R = [cos(ϕ) -sin(ϕ) 0
+         sin(ϕ)  cos(ϕ) 0
+         0        0       1]
+    vec = R*vec
+
+    # Rotate by dϕ about the z-axis
+    R = [cos(dϕ) -sin(dϕ) 0
+         sin(dϕ)  cos(dϕ) 0
+         0        0       1]
+    vec = R*vec
+
+    pix′ = LibHealpix.vec2pix_ring(nside(map), vec)
+    map[pix′]
 end
 
