@@ -204,6 +204,14 @@ function restore {
     $JULIA -e "using Pipeline; Pipeline.Calibration.removed_source_visibilities($spw, $dataset, $target, $src)"
 }
 
+function restore-and-image {
+    restore   $1 $2 "peeled" "$3"
+    fold      $1 $2 "$4-peeled"
+    getmmodes $1 $2 "folded-$4-peeled"
+    getalm    $1 $2 "mmodes-$4-peeled"
+    makemap   $1 $2 "alm-$4-peeled"
+}
+
 for dataset in $datasets
 do
     for spw in $spws
@@ -238,29 +246,14 @@ do
         isbetween 40 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "alm-wiener-filtered"
         isbetween 41 && peakpsf   $spw $dataset
 
-        isbetween 50 && restore   $spw $dataset "peeled" 'Cyg A'
-        isbetween 51 && fold      $spw $dataset "cyga-peeled"
-        isbetween 52 && getmmodes $spw $dataset "folded-cyga-peeled"
-        isbetween 53 && getalm    $spw $dataset "mmodes-cyga-peeled"
-        isbetween 54 && makemap   $spw $dataset "alm-cyga-peeled"
-
-        isbetween 60 && restore   $spw $dataset "peeled" 'Hya A'
-        isbetween 61 && fold      $spw $dataset "hyaa-peeled"
-        isbetween 62 && getmmodes $spw $dataset "folded-hyaa-peeled"
-        isbetween 63 && getalm    $spw $dataset "mmodes-hyaa-peeled"
-        isbetween 64 && makemap   $spw $dataset "alm-hyaa-peeled"
-
-        isbetween 70 && restore   $spw $dataset "peeled" 'Per B'
-        isbetween 71 && fold      $spw $dataset "perb-peeled"
-        isbetween 72 && getmmodes $spw $dataset "folded-perb-peeled"
-        isbetween 73 && getalm    $spw $dataset "mmodes-perb-peeled"
-        isbetween 74 && makemap   $spw $dataset "alm-perb-peeled"
-
-        isbetween 80 && restore   $spw $dataset "peeled" '3C 353'
-        isbetween 81 && fold      $spw $dataset "3c353-peeled"
-        isbetween 82 && getmmodes $spw $dataset "folded-3c353-peeled"
-        isbetween 83 && getalm    $spw $dataset "mmodes-3c353-peeled"
-        isbetween 84 && makemap   $spw $dataset "alm-3c353-peeled"
+        isbetween 50 && restore-and-image $spw $dataset 'Cyg A' 'cyga'
+        isbetween 51 && restore-and-image $spw $dataset 'Cas A' 'casa'
+        isbetween 52 && restore-and-image $spw $dataset 'Tau A' 'taua'
+        isbetween 53 && restore-and-image $spw $dataset 'Vir A' 'vira'
+        isbetween 54 && restore-and-image $spw $dataset 'Hya A' 'hyaa'
+        isbetween 55 && restore-and-image $spw $dataset 'Her A' 'hera'
+        isbetween 56 && restore-and-image $spw $dataset 'Per B' 'perb'
+        isbetween 57 && restore-and-image $spw $dataset '3C 353' '3c353'
     done
 done
 
