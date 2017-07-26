@@ -72,3 +72,25 @@ function decide_on_baseline_flags(flags, mmax)
     block_flags
 end
 
+# ODD INTEGRATIONS ONLY
+
+function getmmodes_odd(spw, dataset, target)
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
+    data  =  data[:, 1:2:end]
+    flags = flags[:, 1:2:end]
+    target = "odd-"*target
+    getmmodes(spw, data, flags, dataset, target)
+end
+
+# EVEN INTEGRATIONS ONLY
+
+function getmmodes_even(spw, dataset, target)
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
+    data  =  data[:, 2:2:end]
+    flags = flags[:, 2:2:end]
+    target = "even-"*target
+    getmmodes(spw, data, flags, dataset, target)
+end
+

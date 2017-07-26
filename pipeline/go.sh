@@ -141,6 +141,24 @@ function getmmodes {
     $JULIA -e "using Pipeline; @time Pipeline.MModes.getmmodes($spw, $dataset, $target)"
 }
 
+function getmmodes-odd {
+    title getmmodes-odd
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -e "using Pipeline; @time Pipeline.MModes.getmmodes_odd($spw, $dataset, $target)"
+}
+
+function getmmodes-even {
+    title getmmodes-even
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -e "using Pipeline; @time Pipeline.MModes.getmmodes_even($spw, $dataset, $target)"
+}
+
 function getalm {
     title getalm
     local spw=$1
@@ -254,6 +272,20 @@ do
         isbetween 55 && restore-and-image $spw $dataset 'Her A' 'hera'
         isbetween 56 && restore-and-image $spw $dataset 'Per B' 'perb'
         isbetween 57 && restore-and-image $spw $dataset '3C 353' '3c353'
+
+        isbetween 60 && getmmodes-odd  $spw $dataset "folded-rfi-restored-peeled"
+        isbetween 61 && getmmodes-odd  $spw $dataset "folded-rfi-subtracted-peeled"
+        isbetween 62 && getalm    $spw $dataset "mmodes-odd-rfi-restored-peeled"
+        isbetween 63 && getalm    $spw $dataset "mmodes-odd-rfi-subtracted-peeled"
+        isbetween 64 && wiener    $spw $dataset "alm-odd-rfi-restored-peeled" "alm-odd-rfi-subtracted-peeled"
+        isbetween 65 && makemap   $spw $dataset "alm-odd-wiener-filtered"
+
+        isbetween 70 && getmmodes-even $spw $dataset "folded-rfi-restored-peeled"
+        isbetween 71 && getmmodes-even $spw $dataset "folded-rfi-subtracted-peeled"
+        isbetween 72 && getalm    $spw $dataset "mmodes-even-rfi-restored-peeled"
+        isbetween 73 && getalm    $spw $dataset "mmodes-even-rfi-subtracted-peeled"
+        isbetween 74 && wiener    $spw $dataset "alm-even-rfi-restored-peeled" "alm-even-rfi-subtracted-peeled"
+        isbetween 75 && makemap   $spw $dataset "alm-even-wiener-filtered"
     done
 done
 
