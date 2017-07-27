@@ -1,3 +1,10 @@
+function fix_flux_scale(dataset)
+    fix_flux_scale("rainy")
+    for source in ("perb", "hyaa", "vira", "3c353", "cyga")
+        fix_flux_scale("rainy", "map-$source-peeled")
+    end
+end
+
 function fix_flux_scale(dataset, filename="map-wiener-filtered")
     spws = 4:2:18
     frequencies = getfrequencies(spws, dataset)
@@ -48,7 +55,7 @@ function fix_flux_scale(dataset, filename="map-wiener-filtered")
 
     meta = getmeta(4, "rainy")
     frame = TTCal.reference_frame(meta)
-    save(joinpath("../workspace", "source-fluxes-$filename.jld"), "calibrators", calibrators,
+    save(joinpath("../workspace/tmp", "source-fluxes-$filename.jld"), "calibrators", calibrators,
          "measured_fluxes", measured_fluxes, "perley_fluxes", perley_fluxes,
          "scaife_fluxes", scaife_fluxes, "baars_fluxes", baars_fluxes, "frame", frame)
 
