@@ -249,6 +249,11 @@ do
         isbetween 16 && subrfi    $spw $dataset "rfi-restored-peeled"
         isbetween 17 && smeared   $spw $dataset "rfi-subtracted-peeled"
 
+        #isbetween 21 && fold      $spw $dataset "test-rfi-subtracted-peeled"
+        #isbetween 23 && getmmodes $spw $dataset "folded-test-rfi-subtracted-peeled"
+        #isbetween 25 && getalm    $spw $dataset "mmodes-test-rfi-subtracted-peeled"
+        #isbetween 31 && makemap   $spw $dataset "alm-test-rfi-subtracted-peeled"
+
         isbetween 20 && fold      $spw $dataset "rfi-restored-peeled"
         isbetween 21 && fold      $spw $dataset "rfi-subtracted-peeled"
         isbetween 22 && getmmodes $spw $dataset "folded-rfi-restored-peeled"

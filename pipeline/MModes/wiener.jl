@@ -32,7 +32,14 @@ function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
         end
     end
 
-    save(joinpath(dir, "alm-wiener-filtered-$dataset.jld"),
+    if contains(rfi_restored_target, "odd")
+        target = "alm-odd-wiener-filtered"
+    elseif contains(rfi_restored_target, "even")
+        target = "alm-even-wiener-filtered"
+    else
+        target = "alm-wiener-filtered"
+    end
+    save(joinpath(dir, "$target-$dataset.jld"),
          "alm", output, "tolerance", tolerance,
          "mrange", mrange, "correction", correction, compress=true)
 end

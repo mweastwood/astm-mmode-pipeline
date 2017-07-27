@@ -1,12 +1,18 @@
-function glamour(spw, filename="map-rfi-subtracted-peeled-rainy-galactic.fits";
+function glamour(spw, filename="map-wiener-filtered-rainy-2048-galactic.fits";
                  min=0, max=0)
     dir = getdir(spw)
     map = readhealpix(joinpath(dir, filename))
     mask_the_map!(spw, map)
 
-    output = joinpath(dir, "glamour-shot-$(replace(filename, ".fits", "")).jld")
+    # Get to units of K
+    meta = getmeta(spw, "rainy")
+    ν = meta.channels[55]
+    map = map * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
+
+    str = @sprintf("spw%02d", spw)
+    output = joinpath(dir, "$str-glamour-shot-$(replace(filename, ".fits", "")).jld")
     image = mollweide(map)
-    save(output, "image", image)
+    save(output, "image", image, "frequency", ν)
 
     #output = joinpath(dir, "glamour-shot-$(replace(filename, ".fits", "")).png")
     #image = mollweide(map)

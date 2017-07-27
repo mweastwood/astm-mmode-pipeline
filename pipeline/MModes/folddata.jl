@@ -48,3 +48,37 @@ function apply_special_case_flags(spw, flags, dataset)
     myflags
 end
 
+# ODD INTEGRATIONS ONLY
+
+function fold_odd(spw, dataset, target)
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
+    fold_odd(spw, data, flags, dataset, target)
+end
+
+function fold_odd(spw, data, flags, dataset, target)
+    output_data, output_flags = _fold(spw, data, flags, dataset, target)
+    output_data = output_data[:, 1:2:end]
+    output_flags = output_flags[:, 1:2:end]
+    save(joinpath(getdir(spw), "odd-folded-$target-$dataset-visibilities.jld"),
+         "data", output_data, "flags", output_flags, compress=true)
+    output_data, output_flags
+end
+
+# EVEN INTEGRATIONS ONLY
+
+function fold_even(spw, dataset, target)
+    dir = getdir(spw)
+    data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
+    fold_even(spw, data, flags, dataset, target)
+end
+
+function fold_even(spw, data, flags, dataset, target)
+    output_data, output_flags = _fold(spw, data, flags, dataset, target)
+    output_data = output_data[:, 2:2:end]
+    output_flags = output_flags[:, 2:2:end]
+    save(joinpath(getdir(spw), "even-folded-$target-$dataset-visibilities.jld"),
+         "data", output_data, "flags", output_flags, compress=true)
+    output_data, output_flags
+end
+
