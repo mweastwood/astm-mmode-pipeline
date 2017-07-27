@@ -7,6 +7,9 @@ using JLD
 using LibHealpix
 using CasaCore.Measures
 using NLopt
+using FITSIO
+using BPJSpec
+using ProgressMeter
 
 "Create an image of the psf."
 function psf_image()
@@ -103,9 +106,88 @@ function psf_width()
     end
 end
 
+function compare_with_guzman()
+    fits = FITS("../workspace/comparison-maps/wlb45.fits")
+    img = read(fits[1])
+    ϕ = linspace(0, 2π, size(img, 1)+1)[1:end-1]
+    θ = linspace(0, π, size(img, 2))
+    guzman = HealpixMap(Float64, 256)
+    for pix = 1:length(guzman)
+        θ_, ϕ_ = LibHealpix.pix2ang_ring(nside(guzman), pix)
+        ϕ_ = mod2pi(π - ϕ_)
+        θ_ = π - θ_
+        idx = searchsortedlast(ϕ, ϕ_)
+        jdx = searchsortedlast(θ, θ_)
+        guzman[pix] = img[idx, jdx]
+    end
+
+    spw = 8
+    dir = Pipeline.Common.getdir(spw)
+    @time lwa = readhealpix(joinpath(dir, "map-wiener-filtered-rainy-2048-galactic.fits"))
+    meta = Pipeline.Common.getmeta(spw, "rainy")
+    ν = meta.channels[55]
+    @time lwa = lwa * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
+    @time lwa = smooth(lwa, 5, nside(guzman))
+
+    img1 = mollweide(guzman)
+    img2 = mollweide(lwa)
+
+    figure(1); clf()
+    subplot(211)
+    imshow(img1, vmin=4000, vmax=13000)
+    colorbar()
+    subplot(212)
+    imshow((img2-img1)./img1, vmin=-0.5, vmax=+0.5, cmap=get_cmap("RdBu_r"))
+    colorbar()
+    tight_layout()
+
+    save(joinpath(dir, "tmp", "comparison-with-guzman.jld"), "guzman", img1, "lwa", img2)
 
 
 
+end
+
+function compare_with_haslam()
+    haslam = readhealpix("../workspace/comparison-maps/haslam408_dsds_Remazeilles2014.fits")
+
+    ## 56 arcmin resolution => lmax ~ 386ish
+    #lwa = HealpixMap[]
+    #for spw = 4:2:18
+    #    dir = Pipeline.Common.getdir(spw)
+    #    map = readhealpix(joinpath(dir, "map-wiener-filtered-rainy-2048-galactic.fits"))
+    #    alm = map2alm(map, 1000, 1000, iterations=10)
+    #    for l = 387:1000, m = 0:l
+    #        alm[l, m] = 0
+    #    end
+    #    map = alm2map(alm, nside(haslam))
+    #    push!(lwa, map)
+    #    writehealpix("tmp/$spw.fits", map, replace=true)
+    #end
+
+end
+
+function smooth(map, width, output_nside=nside(map))
+    # spherical convolution: https://www.cs.jhu.edu/~misha/Spring15/17.pdf
+    σ = width/(2sqrt(2log(2)))
+    kernel = HealpixMap(Float64, output_nside)
+    for pix = 1:length(kernel)
+        θ, ϕ = LibHealpix.pix2ang_ring(nside(kernel), pix)
+        θ = rad2deg(θ)
+        kernel[pix] = exp(-θ^2/(2σ^2))
+    end
+    dΩ = 4π/length(kernel)
+    kernel = HealpixMap(kernel.pixels / (sum(kernel.pixels)*dΩ))
+
+    lmax = mmax = 1000
+    map_alm = map2alm(map, lmax, mmax, iterations=10)
+    kernel_alm = map2alm(kernel, lmax, mmax, iterations=10)
+    output_alm = Alm(Complex128, lmax, mmax)
+    for m = 0:mmax, l = m:lmax
+        output_alm[l, m] = sqrt((4π)/(2l+1))*map_alm[l, m]*kernel_alm[l, 0]
+    end
+
+    alm2map(output_alm, output_nside)
+end
 
 end
 
