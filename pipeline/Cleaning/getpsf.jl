@@ -27,10 +27,16 @@ function getpsf_alm(observation_matrix, θ, ϕ, lmax, mmax)
     output_alm
 end
 
+import GSL
 function pointsource_alm(θ, ϕ, lmax, mmax)
+    cosθ = cos(θ)
     alm = Alm(Complex128, lmax, mmax)
-    for m = 0:mmax, l = m:lmax
-        alm[l,m] = conj(BPJSpec.Y(l, m, θ, ϕ))
+    for m = 0:mmax
+        coeff = GSL.sf_legendre_sphPlm_array(lmax, m, cosθ)
+        cismϕ = cis(-m*ϕ)
+        for l = m:lmax
+            alm[l, m] = coeff[l-m+1]*cismϕ
+        end
     end
     alm
 end
