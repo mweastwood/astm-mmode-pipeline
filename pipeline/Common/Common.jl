@@ -72,6 +72,11 @@ function getmeta(spw, dataset)
     end
 end
 
+function getfreq(spw)
+    meta = getmeta(spw, "rainy")
+    meta.channels[55]
+end
+
 baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
 Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
