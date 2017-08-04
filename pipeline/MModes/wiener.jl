@@ -2,35 +2,17 @@ function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
     if dataset == "rainy"
         spw ==  4 && (mrange = 0:-1)
         spw ==  6 && (mrange = 0:-1)
-        spw ==  8 && (mrange = 0:2)
-        spw == 10 && (mrange = 0:2)
-        spw == 12 && (mrange = 0:2)
-        spw == 14 && (mrange = 0:2)
-        spw == 16 && (mrange = 0:3)
-        spw == 18 && (mrange = 0:2)
+        spw ==  8 && (mrange = 0:0)
+        spw == 10 && (mrange = 0:0)
+        spw == 12 && (mrange = 0:0)
+        spw == 14 && (mrange = 0:0)
+        spw == 16 && (mrange = 0:0)
+        spw == 18 && (mrange = 0:0)
     end
 
     dir = getdir(spw)
-    alm_rfi_restored = load(joinpath(dir, "$rfi_restored_target-$dataset.jld"), "alm")
-    alm_rfi_subtracted, tolerance = load(joinpath(dir, "$rfi_subtracted_target-$dataset.jld"),
-                                         "alm", "tolerance")
-    alm_rfi = alm_rfi_restored - alm_rfi_subtracted
-
-    output = deepcopy(alm_rfi_subtracted)
-    if length(mrange) == 0
-        # don't Wiener filter
-        correction = zeros(lmax(output)+1)
-    else
-        # do Wiener filter
-        signal = alm2Cl(alm_rfi_subtracted, mrange)
-        contamination = alm2Cl(alm_rfi, mrange)
-        correction = signal ./ (signal + contamination)
-        correction[isnan(correction)] = 0
-        apply_wiener_filter!(alm_rfi_restored, mrange, correction)
-        for m in mrange, l = m:lmax(output)
-            output[l, m] = alm_rfi_restored[l, m]
-        end
-    end
+    alm, tolerance = load(joinpath(dir, "$target-$dataset.jld"), "alm", "tolerance")
+    apply_wiener_filter!(alm, mrange)
 
     if contains(rfi_restored_target, "odd")
         target = "alm-odd-wiener-filtered"
@@ -40,13 +22,12 @@ function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
         target = "alm-wiener-filtered"
     end
     save(joinpath(dir, "$target-$dataset.jld"),
-         "alm", output, "tolerance", tolerance,
-         "mrange", mrange, "correction", correction, compress=true)
+         "alm", output, "tolerance", tolerance, compress=true)
 end
 
-function apply_wiener_filter!(alm, mrange, correction)
+function apply_wiener_filter!(alm, mrange)
     for m in mrange, l = m:lmax(alm)
-        alm[l, m] *= correction[l+1]
+        alm[l, m] = 0
     end
 end
 

@@ -11,7 +11,7 @@ function _lcurve(spw, input_filename)
 end
 
 function _lcurve(spw, transfermatrix, mmodes, mmode_flags)
-    trials  = logspace(2, -5, 50)
+    trials  = logspace(2, -5, 200)
     lsnorm_squared  = zeros(length(trials)) # the value of the least-squares norm squared
     regnorm_squared = zeros(length(trials)) # the value of the regularizing norm squared
 
