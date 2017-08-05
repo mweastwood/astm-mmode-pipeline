@@ -1,4 +1,4 @@
-function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
+function wiener(spw, dataset, target)
     if dataset == "rainy"
         spw ==  4 && (mrange = 0:-1)
         spw ==  6 && (mrange = 0:-1)
@@ -14,18 +14,19 @@ function wiener(spw, dataset, rfi_restored_target, rfi_subtracted_target)
     alm, tolerance = load(joinpath(dir, "$target-$dataset.jld"), "alm", "tolerance")
     apply_wiener_filter!(alm, mrange)
 
-    if contains(rfi_restored_target, "odd")
+    if contains(target, "odd")
         target = "alm-odd-wiener-filtered"
-    elseif contains(rfi_restored_target, "even")
+    elseif contains(target, "even")
         target = "alm-even-wiener-filtered"
     else
         target = "alm-wiener-filtered"
     end
     save(joinpath(dir, "$target-$dataset.jld"),
-         "alm", output, "tolerance", tolerance, compress=true)
+         "alm", alm, "tolerance", tolerance, compress=true)
 end
 
 function apply_wiener_filter!(alm, mrange)
+    alm[0, 0] = 0
     for m in mrange, l = m:lmax(alm)
         alm[l, m] = 0
     end

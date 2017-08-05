@@ -1,20 +1,20 @@
 function interpolate(spw, dataset, target, alm_target)
     dir = getdir(spw)
     data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
-    alm = load(joinpath(dir, "$alm_target-$dataset.jld"), "alm")
-    _interpolate(spw, dataset, target, data, flags, alm)
+    alm, tolerance = load(joinpath(dir, "$alm_target-$dataset.jld"), "alm", "tolerance")
+    _interpolate(spw, dataset, target, data, flags, alm, tolerance)
 end
 
-function _interpolate(spw, dataset, target, data, flags, alm)
+function _interpolate(spw, dataset, target, data, flags, alm, tolerance)
     mmodes = alm_to_mmodes(spw, alm)
     model_data = mmodes_to_visibilities(mmodes, size(data, 2))
     fill_in!(data, flags, model_data)
     mmodes′, mmode_flags′ = getmmodes_internal(model_data, flags)
-    alm′ = _getalm(spw, mmodes′, mmode_flags′)
+    alm′ = _getalm(spw, mmodes′, mmode_flags′, tolerance=tolerance)
 
     dir = getdir(spw)
     target = "alm-interpolated"
-    save(joinpath(dir, "$target-$dataset.jld"), "alm", alm′)
+    save(joinpath(dir, "$target-$dataset.jld"), "alm", alm′, "tolerance", tolerance)
 end
 
 function alm_to_mmodes(spw, alm)

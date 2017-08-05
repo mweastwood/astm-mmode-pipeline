@@ -2,16 +2,15 @@ function observation_matrix(spw, dataset, mmodes_target, alm_target)
     dir = getdir(spw)
     transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
     flags = load(joinpath(dir, "$mmodes_target-$dataset.jld"), "flags")
-    tolerance, mrange, correction = load(joinpath(dir, "$alm_target-$dataset.jld"),
-                                         "tolerance", "mrange", "correction")
+    tolerance, mrange = load(joinpath(dir, "$alm_target-$dataset.jld"), "tolerance", "mrange")
 
     blocks = observation_matrix(spw, transfermatrix, flags, tolerance)
-    account_for_wiener_filter!(blocks, mrange, correction)
+    account_for_wiener_filter!(blocks, mrange)
 
     save(joinpath(dir, "observation-matrix-$dataset.jld"),
          "blocks", blocks, "flags", flags, "tolerance", tolerance,
          "lmax", transfermatrix.lmax, "mmax", transfermatrix.mmax,
-         "mrange", mrange, "correction", correction, compress=true)
+         "mrange", mrange, compress=true)
 end
 
 function observation_matrix(spw, transfermatrix::TransferMatrix, flags, tolerance)
@@ -77,13 +76,12 @@ function observation_matrix_remote_processing_loop(input, output, transfermatrix
     end
 end
 
-function account_for_wiener_filter!(blocks, mrange, correction)
-    lmax = length(correction) - 1
+function account_for_wiener_filter!(blocks, mrange)
+    # discard the monopole
+    blocks[1][1,:] = 0
+    # zero the entire block
     for m in mrange
-        block = blocks[m+1]
-        for l = m:lmax
-            block[l-m+1,:] *= correction[l+1]
-        end
+        blocks[m+1][:] = 0
     end
 end
 
