@@ -22,7 +22,7 @@ function wiener(spw, dataset, target)
         target = "alm-wiener-filtered"
     end
     save(joinpath(dir, "$target-$dataset.jld"),
-         "alm", alm, "tolerance", tolerance, compress=true)
+         "alm", alm, "tolerance", tolerance, "mrange", mrange, compress=true)
 end
 
 function apply_wiener_filter!(alm, mrange)
