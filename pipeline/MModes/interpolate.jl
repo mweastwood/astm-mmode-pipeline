@@ -9,7 +9,7 @@ function _interpolate(spw, dataset, target, data, flags, alm, tolerance)
     mmodes = alm_to_mmodes(spw, alm)
     model_data = mmodes_to_visibilities(mmodes, size(data, 2))
     fill_in!(data, flags, model_data)
-    mmodes′, mmode_flags′ = getmmodes_internal(model_data, flags)
+    mmodes′, mmode_flags′ = getmmodes_internal(data, flags)
     alm′ = _getalm(spw, mmodes′, mmode_flags′, tolerance=tolerance)
 
     dir = getdir(spw)
