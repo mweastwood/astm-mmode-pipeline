@@ -1,11 +1,12 @@
-using PyPlot
+#using PyPlot
 
-function register(spw)
+function register(spw, dataset, target)
     dir = getdir(spw)
-    map = readhealpix(joinpath(dir, "map-wiener-filtered-rainy-2048-itrf.fits"))
+    map = readhealpix(joinpath(dir, "$target-$dataset-2048-itrf.fits"))
 
-    alm = map2alm(map, 1000, 1000)
-    map = alm2map(alm, 256)
+    # For testing (makes things run more quickly)
+    #alm = map2alm(map, 1000, 1000)
+    #map = alm2map(alm, 256)
 
     ra, dec, flux = read_vlssr_catalog()
     ra, dec, flux = flux_cutoff(ra, dec, flux, 30)
@@ -50,23 +51,25 @@ function register(spw)
     fix_ra(ra) = rad2deg(mod2pi.(ra + π)-π)/15
     fix_dec(dec) = rad2deg(dec)
 
-    figure(1); clf()
-    stretch = 50
-    for idx = 1:N
-        δra = measured_ra[idx] - ra[idx]
-        δdec = measured_dec[idx] - dec[idx]
-        plot(fix_ra([ra[idx], ra[idx]+stretch*δra]), fix_dec([dec[idx], dec[idx]+stretch*δdec]), "k-")
+    #figure(1); clf()
+    #stretch = 50
+    #for idx = 1:N
+    #    δra = measured_ra[idx] - ra[idx]
+    #    δdec = measured_dec[idx] - dec[idx]
+    #    plot(fix_ra([ra[idx], ra[idx]+stretch*δra]), fix_dec([dec[idx], dec[idx]+stretch*δdec]), "k-")
 
-        _dθ, _dϕ = vector_spherical_harmonics(coeff, θ[idx], ϕ[idx])
-        plot(fix_ra([ra[idx], ra[idx]+stretch*_dϕ]), fix_dec([dec[idx], dec[idx]-stretch*_dθ]), "r-")
+    #    _dθ, _dϕ = vector_spherical_harmonics(coeff, θ[idx], ϕ[idx])
+    #    plot(fix_ra([ra[idx], ra[idx]+stretch*_dϕ]), fix_dec([dec[idx], dec[idx]-stretch*_dθ]), "r-")
 
-        plot(fix_ra(ra[idx]), fix_dec(dec[idx]), "b.")
-    end
-    gca()[:invert_xaxis]()
+    #    plot(fix_ra(ra[idx]), fix_dec(dec[idx]), "b.")
+    #end
+    #gca()[:invert_xaxis]()
 
-    writehealpix(joinpath(dir, "tmp", "before.fits"), map, replace=true)
     map = dedistort(map, coeff)
-    writehealpix(joinpath(dir, "tmp", "after.fits"), map, replace=true)
+    alm = map2alm(map, 1000, 1000, iterations=10)
+    writehealpix(joinpath(dir, "map-registered-$dataset-2048-itrf.fits"), map, replace=true)
+    save(joinpath(dir, "alm-registered-$dataset.jld"), "alm", alm, "coeff", coeff,
+         "measured_ra", measured_ra, "measured_dec", measured_dec, "ra", ra, "dec", dec)
 
 end
 
