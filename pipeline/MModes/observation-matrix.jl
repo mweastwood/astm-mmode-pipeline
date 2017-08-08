@@ -5,9 +5,10 @@ function observation_matrix(spw, dataset, mmodes_target, alm_target)
     tolerance, mrange = load(joinpath(dir, "$alm_target-$dataset.jld"), "tolerance", "mrange")
 
     blocks = observation_matrix(spw, transfermatrix, flags, tolerance)
+    cholesky = [chol(block + tolerance*I) for block in blocks]
 
     save(joinpath(dir, "observation-matrix-$dataset.jld"),
-         "blocks", blocks, "flags", flags, "tolerance", tolerance,
+         "blocks", blocks, "cholesky", cholesky, "flags", flags, "tolerance", tolerance,
          "lmax", transfermatrix.lmax, "mmax", transfermatrix.mmax,
          "mrange", mrange, compress=true)
 end
