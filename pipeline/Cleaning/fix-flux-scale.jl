@@ -1,4 +1,4 @@
-function fix_flux_scale(dataset)
+function fix_flux_scale_all(dataset)
     fix_flux_scale("rainy")
     for source in ("perb", "hyaa", "vira", "3c353", "cyga")
         fix_flux_scale("rainy", "map-$source-peeled")
