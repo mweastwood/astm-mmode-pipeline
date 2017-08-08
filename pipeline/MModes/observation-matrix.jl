@@ -5,7 +5,6 @@ function observation_matrix(spw, dataset, mmodes_target, alm_target)
     tolerance, mrange = load(joinpath(dir, "$alm_target-$dataset.jld"), "tolerance", "mrange")
 
     blocks = observation_matrix(spw, transfermatrix, flags, tolerance)
-    account_for_wiener_filter!(blocks, mrange)
 
     save(joinpath(dir, "observation-matrix-$dataset.jld"),
          "blocks", blocks, "flags", flags, "tolerance", tolerance,
@@ -57,11 +56,8 @@ function observation_matrix_remote_processing_loop(input, output, transfermatrix
             B = transfermatrix[m, 1]
             f = flags[m+1]
             Bf = B[!f, :]
-            D = tolerance*I
             BB = Bf'*Bf
-            BBD = BB + D
-            block = BBD\BB
-            put!(output, block)
+            put!(output, BB)
         catch exception
             if isa(exception, RemoteException) || isa(exception, InvalidStateException)
                 # If this is a remote worker, we will see a RemoteException when the channel is
@@ -73,15 +69,6 @@ function observation_matrix_remote_processing_loop(input, output, transfermatrix
                 rethrow(exception)
             end
         end
-    end
-end
-
-function account_for_wiener_filter!(blocks, mrange)
-    # discard the monopole
-    blocks[1][1,:] = 0
-    # zero the entire block
-    for m in mrange
-        blocks[m+1][:] = 0
     end
 end
 
