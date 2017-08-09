@@ -1,100 +1,83 @@
-function clean(dataset)
+function clean(spw, dataset, target="map-wiener-filtered")
     println("Cleaning")
-    spws = 4:2:18
-    pool = classify_workers(spws)
-    io = start_workers(pool, spws, dataset)
-    try
-        psfs = loadpsf_peak(spws, dataset)
-        maps = readmaps(spws, dataset)
-        x, y, z = unit_vectors(nside(maps[1]))
-        clean(spws, dataset, pool, io, psfs, maps, x, y, z)
-    finally
-        close_worker_io(io)
-    end
+    dir = getdir(spw)
+    matrix = load(joinpath(dir, "observation-matrix-$dataset.jld"), "blocks")
+    psf = loadpsf_peak(spw, dataset)
+    map = readhealpix(joinpath(dir, "$target-$dataset-2048-itrf.fits"))
+    tolerance = load(joinpath(dir, "$(replace(target, "map", "alm"))-$dataset.jld"), "tolerance")
+    cholesky = cholesky_decomposition(matrix, tolerance)
+    x, y, z = unit_vectors(nside(map))
+    mask = create_mask(spw, dataset, x, y, z)
+    clean(spw, dataset, target, matrix, cholesky, psf, map, mask, x, y, z)
 end
 
-function clean(spws, dataset, pool, io, psfs, maps, x, y, z)
-    maxiter = 500
+function clean(spw, dataset, target, matrix, cholesky, psf, map, mask, x, y, z)
+    #maxiter = 1024
+    maxiter = 50
+    components = HealpixMap(Float64, nside(map))
     for iter = 1:maxiter
         println("================")
         @printf("Iteration #%05d\n", iter)
-        @time maps = clean_iteration(pool, io, psfs, maps, x, y, z)
-        if mod(iter, 50) == 0
+        @time map, components = clean_iteration(matrix, cholesky, psf, map, components, mask, x, y, z)
+        #if mod(iter, 128) == 0
+        if mod(iter, 1) == 0
             println("...writing maps...")
-            for (spw, map) in zip(spws, maps)
-                dir = getdir(spw)
-                iterstr = @sprintf("%05d", iter)
-                filename = "cleaned-map-$dataset-$iterstr.fits"
-                writehealpix(joinpath(dir, "tmp", filename), map, replace=true)
-            end
+            dir = getdir(spw)
+            iterstr = @sprintf("%05d", iter)
+            #filename = "cleaned-$target-$dataset-$iterstr.fits"
+            filename = "test-cleaned-$target-$dataset-$iterstr.fits"
+            #writehealpix(joinpath(dir, "tmp", filename), map, replace=true)
+            writehealpix(joinpath(dir, "tmp", filename), alm2map(map2alm(map, 1000, 1000), 512), replace=true)
+            ##filename = "clean-components-$target-$dataset-$iterstr.fits"
+            #filename = "test-clean-components-$target-$dataset-$iterstr.fits"
+            #writehealpix(joinpath(dir, "tmp", filename), components, replace=true)
         end
     end
 end
 
-function clean_iteration(pool, io, psfs, maps, x, y, z)
-    Npixels = 256
+function clean_iteration(matrix, cholesky, psf, map, components, mask, x, y, z)
+    #Npixels = 256
+    Npixels = 1
     println("* selecting pixels")
-    @time pixels = select_pixels(maps, x, y, z, Npixels)
+    @time pixels = select_pixels(map, mask, x, y, z, Npixels)
     println("* spherical harmonics")
-    @time model_alms = spherical_harmonics(pool, maps, psfs, pixels)
+    @time model_alm = spherical_harmonics(map, components, psf, pixels)
     println("* observing")
-    @time model_alms = observe(pool, io, model_alms)
-    println("* spherical harmonic transforms")
-    @time model_maps = spherical_harmonic_transforms(pool, model_alms, nside(maps[1]))
+    @time model_alm = observe(matrix, cholesky, model_alm)
+    println("* spherical harmonic transform")
+    @time model_map = alm2map(model_alm, nside(map))
     println("* subtracting model")
-    @time subtract_model(maps, model_maps, 0.25)
+    @time map = map - 0.15*model_map
+    map, components
 end
 
-function spherical_harmonics(pool, maps, psfs, pixels)
-    N = length(maps)
-    lmax = mmax = 1000
-    alms = Alm[Alm(Complex128, lmax, mmax) for map in maps]
-    function output(myalm, θ, ϕ, pixel)
-        for idx = 1:N
-            scale = maps[idx][pixel] / getpeak(psfs[idx], θ)
-            alms[idx].alm[:] += scale * myalm.alm
+function cholesky_decomposition(matrix, tolerance)
+    [chol(block + tolerance*I) for block in matrix]
+end
+
+function create_mask(spw, dataset, x, y, z)
+    N = length(x)
+    mask = Int[]
+    meta = getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    #per_a = measure(frame, Direction(dir"J2000", "03h19m48.16010s", "+41d30m42.1031s"), dir"ITRF")
+    _3c_134 = measure(frame, Direction(dir"J2000", "05h04m42.0s", "+38d06m02s"), dir"ITRF")
+    for pixel = 1:N
+        #dotproduct = x[pixel]*per_a.x + y[pixel]*per_a.y + z[pixel]*per_a.z
+        dotproduct = x[pixel]*_3c_134.x + y[pixel]*_3c_134.y + z[pixel]*_3c_134.z
+        distance = acosd(clamp(dotproduct, -1, 1))
+        if distance < 0.2
+            push!(mask, pixel)
         end
     end
-    not_done() = length(pixels) > 0
-    next_pixel() = pop!(pixels)
-    angles(pixel) = LibHealpix.pix2ang_ring(nside(maps[1]), pixel)
-    workers = [pool.spherical_harmonic_workers; pool.spherical_harmonic_transform_workers]
-    @sync for worker in workers
-        @async while not_done()
-            mypixel = next_pixel()
-            θ, ϕ = angles(mypixel)
-            myalm = remotecall_fetch(pointsource_alm, worker, θ, ϕ, lmax, mmax)
-            output(myalm, θ, ϕ, mypixel)
-        end
-    end
-    alms
+    @show length(mask)
+    mask
 end
 
-function observe(pool, io, alms)
-    N = length(alms)
-    for idx = 1:N
-        channel = io.observation_matrix_worker_input[idx]
-        put!(channel, alms[idx])
-    end
-    Alm[take!(channel) for channel in io.observation_matrix_worker_output]
-end
-
-function spherical_harmonic_transforms(pool, alms, nside)
-    sht(alm) = alm2map(alm, nside)
-    workers = pool.spherical_harmonic_transform_workers
-    futures = [remotecall(sht, worker, alm) for (worker, alm) in zip(workers, alms)]
-    HealpixMap[fetch(future) for future in futures]
-end
-
-function subtract_model(maps, models, λ)
-    [map - λ*model for (map, model) in zip(maps, models)]
-end
-
-function select_pixels(maps, x, y, z, N)
-    T = eltype(maps[1].pixels)
-    map = sum(maps)
-    abs_pixel_values = abs(map.pixels)::Vector{T}
-    sorted_pixels = sortperm(abs_pixel_values)::Vector{Int}
+function select_pixels(map, mask, x, y, z, N)
+    #sorted_pixels = sortperm(abs(map.pixels))
+    #sorted_pixels = sortperm(map.pixels)
+    sorted_pixels = mask[sortperm(map.pixels[mask])]
     selected_pixels = Int[]
     while length(selected_pixels) < N
         @label top
@@ -115,12 +98,63 @@ function select_pixels(maps, x, y, z, N)
     selected_pixels
 end
 
-function readmap(spw, dataset, target)
-    dir = getdir(spw)
-    readhealpix(joinpath(dir, "$target-$dataset-itrf.fits"))
+function spherical_harmonics(map, components, psf, pixels)
+    lmax = mmax = 1000
+    alm  = Alm(Complex128, lmax, mmax)
+    function output(myalm, θ, ϕ, pixel)
+        scale = map[pixel] / getpeak(psf, θ)
+        components[pixel] += scale
+        alm.alm[:] += scale * myalm.alm
+    end
+    not_done() = length(pixels) > 0
+    next_pixel() = pop!(pixels)
+    angles(pixel) = LibHealpix.pix2ang_ring(nside(map), pixel)
+    @sync for worker in workers()
+        @async while not_done()
+            mypixel = next_pixel()
+            θ, ϕ = angles(mypixel)
+            myalm = remotecall_fetch(pointsource_alm, worker, θ, ϕ, lmax, mmax)
+            output(myalm, θ, ϕ, mypixel)
+        end
+    end
+    alm
 end
 
-readmaps(spws, dataset, target) = HealpixMap[readmap(spw, dataset, target) for spw in spws]
+function observe(observation_matrix, cholesky, input_alm)
+    output_alm = Alm(Complex128, lmax(input_alm), mmax(input_alm))
+    for m = 0:mmax(input_alm)
+        #A = observation_matrix[m+1]
+        BB = observation_matrix[m+1]
+        U  = cholesky[m+1]
+        L  = U'
+
+        x = [input_alm[l, m] for l = m:lmax(input_alm)]
+        #y = A*x
+        y = U\(L\(BB*x))
+        for l = m:lmax(input_alm)
+            output_alm[l, m] = y[l-m+1]
+        end
+    end
+    output_alm
+end
+
+#function spherical_harmonic_transforms(pool, alms, nside)
+#    sht(alm) = alm2map(alm, nside)
+#    workers = pool.spherical_harmonic_transform_workers
+#    futures = [remotecall(sht, worker, alm) for (worker, alm) in zip(workers, alms)]
+#    HealpixMap[fetch(future) for future in futures]
+#end
+#
+#function subtract_model(maps, models, λ)
+#    [map - λ*model for (map, model) in zip(maps, models)]
+#end
+#
+#function readmap(spw, dataset, target)
+#    dir = getdir(spw)
+#    readhealpix(joinpath(dir, "$target-$dataset-2048-itrf.fits"))
+#end
+#
+#readmaps(spws, dataset, target) = HealpixMap[readmap(spw, dataset, target) for spw in spws]
 
 function unit_vectors(nside)
     npix = nside2npix(nside)
