@@ -2,7 +2,9 @@
 
 function register(spw, dataset, target)
     dir = getdir(spw)
-    map = readhealpix(joinpath(dir, "$target-$dataset-2048-itrf.fits"))
+    #map = readhealpix(joinpath(dir, "$target-$dataset-2048-itrf.fits"))
+    alm = load(joinpath(dir, "$target-$dataset.jld"), "alm")::Alm
+    map = alm2map(alm, 2048)::HealpixMap
 
     # For testing (makes things run more quickly)
     #alm = map2alm(map, 1000, 1000)
@@ -381,57 +383,34 @@ end
 
 function dedistort(map, coeff)
     @show coeff
-    idx = 1
-    N = length(map)
-    nextidx() = (idx′ = idx; idx += 1; idx′)
-    prg = Progress(N, "Progress: ")
-    lck = ReentrantLock()
-    increment_progress() = (lock(lck); next!(prg); unlock(lck))
-    newmap = zeros(N)
-    @sync for worker in workers()
+    Npixels  = length(map)
+    Nworkers = length(workers())
+    chunks = [idx:Nworkers:Npixels for idx = 1:Nworkers]
+
+    output = HealpixMap(Float64, nside(map))
+    @time @sync for worker in workers()
         @async begin
-            input  = RemoteChannel()
-            output = RemoteChannel()
-            try
-                remotecall(_dedistort_loop, worker, map, coeff, input, output)
-                while true
-                    idx′ = nextidx()
-                    idx′ ≤ N || break
-                    put!(input, idx′)
-                    newmap[idx′] = take!(output)
-                    increment_progress()
-                end
-            catch exception
-                println(exception)
-            finally
-                close(input)
-                close(output)
+            worker_pixels = pop!(chunks)
+            worker_output = remotecall_fetch(_dedistort, worker, map, coeff, worker_pixels)
+            for (idx, pixel) in enumerate(worker_pixels)
+                output[pixel] = worker_output[idx]
             end
         end
     end
-    HealpixMap(newmap)
+    output
 end
 
-function _dedistort_loop(map, coeff, input, output)
-    while true
-        try
-            pixel = take!(input)
-            put!(output, _dedistort(map, coeff, pixel))
-        catch exception
-            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
-                break
-            else
-                println(exception)
-                rethrow(exception)
-            end
-        end
+function _dedistort(map, coeff, pixels::AbstractVector)
+    output = zeros(length(pixels))
+    for (idx, pixel) in enumerate(pixels)
+        output[idx] = _dedistort(map, coeff, pixel)
     end
+    output
 end
 
-
-function _dedistort(map, coeff, pix)
+function _dedistort(map, coeff, pix::Integer)
     vec = LibHealpix.pix2vec_ring(nside(map), pix)
-    θ, ϕ = LibHealpix.pix2ang_ring(nside(map), pix)
+    θ, ϕ = LibHealpix.vec2ang(vec)
     dθ, dϕ = vector_spherical_harmonics(coeff, θ, ϕ)
 
     # Rotate the vector to the xz-plane
@@ -458,7 +437,7 @@ function _dedistort(map, coeff, pix)
          0        0       1]
     vec = R*vec
 
-    pix′ = LibHealpix.vec2pix_ring(nside(map), vec)
-    map[pix′]
+    θ, ϕ = LibHealpix.vec2ang(vec)
+    LibHealpix.interpolate(map, θ, ϕ)::Float64
 end
 
