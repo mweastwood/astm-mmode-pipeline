@@ -11,18 +11,13 @@ import GSL
 using ..Common
 import ..MModes
 
-#include("fix-flux-scale.jl")
-
 include("getpsf.jl")
 include("clean.jl")
-
+include("restore.jl")
 include("register.jl")
 
-#include("clean-worker.jl")
-#include("clean.jl")
+#include("fix-flux-scale.jl")
 #include("postage-stamp.jl")
-
-#include("clean-worker.jl")
 
 end
 
