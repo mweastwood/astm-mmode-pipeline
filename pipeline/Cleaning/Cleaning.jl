@@ -12,6 +12,8 @@ using ..Common
 import ..MModes
 
 include("getpsf.jl")
+include("getpsf_width.jl")
+
 include("clean.jl")
 include("restore.jl")
 include("register.jl")

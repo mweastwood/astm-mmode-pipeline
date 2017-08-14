@@ -147,8 +147,3 @@ function observe_block(observation_matrix, cholesky_decomposition, input_alm)
     output_alm
 end
 
-#function getpeak(psfpeaks::PSFPeakValues, θ)
-#    idx = searchsortedlast(psfpeaks.θ, θ)
-#    psfpeaks.values[idx]
-#end
-
