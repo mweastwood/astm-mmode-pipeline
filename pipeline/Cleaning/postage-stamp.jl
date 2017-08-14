@@ -16,17 +16,14 @@ function postage_stamp(map, xgrid, ygrid, direction)
     north = [0, 0, 1] - up*direction.z
     north /= norm(north)
     east = cross(north, up)
-    θlist = Float64[]
-    ϕlist = Float64[]
-    for y in ygrid, x in xgrid
+    output = zeros(length(ygrid), length(xgrid))
+    for (idx, x) in enumerate(xgrid), (jdx, y) in enumerate(ygrid)
         vector = up + x*east + y*north
         vector /= norm(vector)
         θ = acos(vector[3])
-        ϕ = atan2(vector[2], vector[1])
-        push!(θlist, θ)
-        push!(ϕlist, ϕ)
+        ϕ = mod2pi(atan2(vector[2], vector[1]))
+        output[jdx, idx] = LibHealpix.interpolate(map, θ, ϕ)
     end
-    image = LibHealpix.interpolate(map, θlist, ϕlist)
-    reshape(image, length(xgrid), length(ygrid))
+    output
 end
 

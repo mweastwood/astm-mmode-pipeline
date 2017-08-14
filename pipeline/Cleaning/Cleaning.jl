@@ -19,7 +19,7 @@ include("restore.jl")
 include("register.jl")
 
 #include("fix-flux-scale.jl")
-#include("postage-stamp.jl")
+include("postage-stamp.jl")
 
 end
 
