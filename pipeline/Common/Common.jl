@@ -5,7 +5,7 @@ This module includes functions for working with certain OVRO LWA datasets on the
 """
 module Common
 
-export getdir, getmeta
+export getdir, getmeta, getfreq
 export listdadas
 export baseline_index, Nbase2Nant, Nant2Nbase
 
