@@ -22,14 +22,13 @@ function makemap(spw, alm::Alm, dataset, target, nside)
     zvec = [z_.x, z_.y, z_.z]
     xvec = [x_.x, x_.y, x_.z]
     yvec = cross(zvec, xvec)
-    θ = zeros(length(map))
-    ϕ = zeros(length(map))
+    pixels = zeros(length(map))
     for idx = 1:length(map)
         vec = LibHealpix.pix2vec_ring(nside, idx)
-        θ[idx] = acos(dot(vec, zvec))
-        ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
+        θ = acos(dot(vec, zvec))
+        ϕ = atan2(dot(vec, yvec), dot(vec, xvec))
+        pixels[idx] = LibHealpix.interpolate(map, θ, ϕ)
     end
-    pixels = LibHealpix.interpolate(map, θ, ϕ)
     galactic = HealpixMap(pixels)
 
     # rotate the map to Galactic coordinates
@@ -41,14 +40,13 @@ function makemap(spw, alm::Alm, dataset, target, nside)
     zvec = [z_.x, z_.y, z_.z]
     xvec = [x_.x, x_.y, x_.z]
     yvec = cross(zvec, xvec)
-    θ = zeros(length(map))
-    ϕ = zeros(length(map))
+    pixels = zeros(length(map))
     for idx = 1:length(map)
         vec = LibHealpix.pix2vec_ring(nside, idx)
-        θ[idx] = acos(dot(vec, zvec))
-        ϕ[idx] = atan2(dot(vec, yvec), dot(vec, xvec))
+        θ = acos(dot(vec, zvec))
+        ϕ = atan2(dot(vec, yvec), dot(vec, xvec))
+        pixels[idx] = LibHealpix.interpolate(map, θ, ϕ)
     end
-    pixels = LibHealpix.interpolate(map, θ, ϕ)
     j2000 = HealpixMap(pixels)
 
     output = replace(target, "alm", "map")*"-$dataset"
