@@ -1,8 +1,8 @@
 function wiener(spw, dataset, target)
     if dataset == "rainy"
-        spw ==  4 && (mrange = 0:-1)
-        spw ==  6 && (mrange = 0:-1)
-        spw ==  8 && (mrange = 0:0)
+        spw ==  4 && (mrange = 0:1)
+        spw ==  6 && (mrange = 0:1)
+        spw ==  8 && (mrange = 0:1)
         spw == 10 && (mrange = 0:1)
         spw == 12 && (mrange = 0:1)
         spw == 14 && (mrange = 0:1)
@@ -27,8 +27,16 @@ end
 
 function apply_wiener_filter!(alm, mrange)
     alm[0, 0] = 0
-    for m in mrange, l = m:lmax(alm)
-        alm[l, m] = 0
+    for m in mrange
+        if m == 0
+            for l = 1:lmax(alm)
+                alm[l, m] = 0
+            end
+        else
+            for l = max(m, 100):lmax(alm)
+                alm[l, m] = 0
+            end
+        end
     end
 end
 
