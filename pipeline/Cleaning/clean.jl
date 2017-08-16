@@ -1,3 +1,11 @@
+immutable FullPSF
+    pixels :: Vector{Int}
+    amplitudes :: Vector{Float64}
+    major_σ :: Vector{Float64}
+    minor_σ :: Vector{Float64}
+    position_angle :: Vector{Float64}
+end
+
 immutable CleanState
     lmax :: Int
     mmax :: Int
@@ -24,7 +32,10 @@ function clean(spw, dataset, target)
     output_directory = joinpath(getdir(spw), "cleaning", target)
     isdir(output_directory) || mkdir(output_directory)
 
-    @time psf = load(joinpath(getdir(spw), "psf", "psf.jld"), "psf")
+    @time _psf = load(joinpath(getdir(spw), "psf", "psf.jld"), "psf")
+    major_σ, minor_σ, angle = load(joinpath(directory, "gaussian.jld"), "major", "minor", "angle")
+    psf = FullPSF(_psf.pixels, _psf.amplitudes, major_σ, minor_σ, angle)
+
     @time residual_alm, wiener_mrange =
         load(joinpath(getdir(spw), "$target-$dataset.jld"), "alm", "mrange")
     observation_matrix_path = joinpath(getdir(spw), "observation-matrix-$dataset.jld")
