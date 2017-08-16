@@ -1,81 +1,98 @@
-function clean(spw, dataset, target)
-    output_directory = joinpath(getdir(spw), "cleaning")
-    isdir(output_directory) || mkdir(output_directory)
-
-    psf = load(joinpath(getdir(spw), "psf", "psf.jld"), "psf")
-    residual_alm, mrange =
-        load(joinpath(getdir(spw), "$target-$dataset.jld"), "alm", "mrange")
-    observation_matrix_path = joinpath(getdir(spw), "observation-matrix-$dataset.jld")
-    observation_matrix, cholesky_decomposition =
-        load(observation_matrix_path, "blocks", "cholesky")
-    workload = distribute_workload(observation_matrix, cholesky_decomposition)
-
-    nside = 2048
-    x, y, z = unit_vectors(nside)
-    clean_mask = create_mask(spw, dataset, x, y, z)
-    clean_components = HealpixMap(Float64, nside)
-
-    maxiter = 2048
-    Npixels = 256
-
-    clean(spw, dataset, target, psf, residual_alm,
-          workload, clean_mask, clean_components, x, y, z,
-          maxiter, mrange, Npixels, output_directory)
+immutable CleanState
+    lmax :: Int
+    mmax :: Int
+    nside :: Int
+    # unit vectors
+    x :: Vector{Float64}
+    y :: Vector{Float64}
+    z :: Vector{Float64}
+    # residuals
+    residual_alm :: Alm
+    residual_map :: HealpixMap
+    degraded_alm :: Alm
+    # clean components
+    clean_components :: HealpixMap # current list of clean components
+    clean_mask :: Vector{Int}      # mask for selecting clean components
+    # information needed for cleaning
+    workload :: Dict{Int, Int} # which worker owns which block of the observation matrix
+    gaussian_kernel :: Alm     # convolution kernel for degrading the resolution
+    wiener_mrange :: UnitRange # describes the Wiener filter applied to the data
 end
 
-function clean(spw, dataset, target, psf, residual_alm,
-               workload, clean_mask, clean_components, x, y, z,
-               maxiter, mrange, Npixels, output_directory)
+function clean(spw, dataset, target)
+    println("Initializing...")
+    output_directory = joinpath(getdir(spw), "cleaning", target)
+    isdir(output_directory) || mkdir(output_directory)
 
-    residual_map = alm2map(residual_alm, nside(clean_components))
-    for iter = 1:maxiter
+    @time psf = load(joinpath(getdir(spw), "psf", "psf.jld"), "psf")
+    @time residual_alm, wiener_mrange =
+        load(joinpath(getdir(spw), "$target-$dataset.jld"), "alm", "mrange")
+    observation_matrix_path = joinpath(getdir(spw), "observation-matrix-$dataset.jld")
+    @time observation_matrix, cholesky_decomposition =
+        load(observation_matrix_path, "blocks", "cholesky")
+    @time workload = distribute_workload(observation_matrix, cholesky_decomposition)
+
+    nside = 2048
+    @time x, y, z = unit_vectors(nside)
+    @time clean_mask = create_mask(spw, dataset, x, y, z)
+    clean_components = HealpixMap(Float64, nside)
+
+    @time gaussian_kernel = gaussian_alm(1, lmax(residual_alm), mmax(residual_alm), 512)
+    @time degraded_alm = convolve(residual_alm, gaussian_kernel)
+    @time residual_alm.alm[:] -= degraded_alm.alm
+    @time residual_map = alm2map(residual_alm, nside)
+
+    state = CleanState(lmax(residual_alm), mmax(residual_alm), nside, x, y, z,
+                       residual_alm, residual_map, degraded_alm,
+                       clean_components, clean_mask,
+                       workload, gaussian_kernel, wiener_mrange)
+
+    println("Cleaning...")
+    major_iterations = 512 #2048
+    minor_iterations = 256
+    clean(state, psf, major_iterations, minor_iterations, output_directory)
+end
+
+function clean(state, psf, major_iterations, minor_iterations, output_directory)
+    for iter = 1:major_iterations
         println("================")
         @printf("Iteration #%05d\n", iter)
         println("time = ", now())
-        println("stddev = ", std(residual_map.pixels[clean_mask]))
-
-        @time residual_map = clean_iteration!(psf, residual_alm, residual_map,
-                                              workload, clean_mask, clean_components,
-                                              x, y, z, mrange, Npixels)
-
-        if mod(iter, 128) == 0
-            println("...writing maps...")
-            dir = getdir(spw)
-            iterstr = @sprintf("%05d", iter)
-            filename = "residual-map-$iterstr.fits"
-            writehealpix(joinpath(output_directory, filename), residual_map, replace=true)
-            filename = "clean-components-$iterstr.fits"
-            writehealpix(joinpath(output_directory, filename), clean_components, replace=true)
-        end
+        println("stddev = ", std(state.residual_map.pixels[state.clean_mask]))
+        major_iteration!(state, psf, minor_iterations)
+        mod(iter, 64) == 0 && in_progress_output(state, output_directory, iter)
     end
-
     save(joinpath(output_directory, "final.jld"),
-         "residual_alm", residual_alm.alm,
-         "residual_map", residual_map.pixels,
-         "clean_components", clean_components.pixels)
+         "residual_alm", state.residual_alm.alm, "residual_map", state.residual_map.pixels,
+         "degraded_alm", state.degraded_alm.alm, "clean_components", state.clean_components.pixels,
+         "clean_mask", state.clean_mask)
 end
 
-function clean_iteration!(psf, residual_alm, residual_map,
-                          workload, clean_mask, clean_components,
-                          x, y, z, mrange, Npixels)
+function in_progress_output(state, output_directory, iter)
+    println("...writing maps...")
+    iterstr = @sprintf("%05d", iter)
+    filename = "residual-map-$iterstr.fits"
+    writehealpix(joinpath(output_directory, filename), state.residual_map, replace=true)
+    filename = "clean-components-$iterstr.fits"
+    writehealpix(joinpath(output_directory, filename), state.clean_components, replace=true)
+    filename = "degraded-map-$iterstr.fits"
+    degraded_map = alm2map(state.degraded_alm, state.nside)
+    writehealpix(joinpath(output_directory, filename), degraded_map, replace=true)
+    save(joinpath(output_directory, "state-$iterstr.jld"),
+         "residual_alm", state.residual_alm.alm, "residual_map", state.residual_map.pixels,
+         "degraded_alm", state.degraded_alm.alm, "clean_components", state.clean_components.pixels,
+         "clean_mask", state.clean_mask)
+end
 
+function major_iteration!(state, psf, minor_iterations)
     println("* selecting pixels")
-    @time pixels = select_pixels(residual_map, clean_mask, x, y, z, Npixels)
-
+    @time pixels = select_pixels(state, minor_iterations)
     println("* computing spherical harmonics")
-    @time model_alm = compute_spherical_harmonics!(residual_alm, residual_map,
-                                                   clean_components, psf, pixels)
-
+    @time model_alm = compute_spherical_harmonics(state, psf, pixels)
     println("* corrupting spherical harmonics")
-    @time corrupt_spherical_harmonics!(model_alm, workload, mrange)
-
+    @time corrupted_alm = corrupt_spherical_harmonics(state, model_alm)
     println("* removing clean components")
-    @time residual_alm.alm[:] -= model_alm.alm
-
-    println("* creating new residual map")
-    @time residual_map = alm2map(residual_alm, nside(residual_map))
-
-    residual_map
+    @time remove_clean_components!(state, corrupted_alm)
 end
 
 function create_mask(spw, dataset, x, y, z)
@@ -96,10 +113,15 @@ function create_mask(spw, dataset, x, y, z)
     mask
 end
 
-function select_pixels(residual_map, clean_mask, x, y, z, Npixels)
-    sorted_pixels = clean_mask[sortperm(residual_map.pixels[clean_mask])]
+function select_pixels(state, minor_iterations)
+    select_pixels(state.residual_map, state.clean_mask,
+                  state.x, state.y, state.z, minor_iterations)
+end
+
+function select_pixels(residual_map, clean_mask, x, y, z, minor_iterations)
+    sorted_pixels = clean_mask[sortperm(abs2(residual_map.pixels[clean_mask]))]
     selected_pixels = Int[]
-    while length(selected_pixels) < Npixels
+    while length(selected_pixels) < minor_iterations
         @label top
         # take the pixel with the largest absolute value
         pixel = pop!(sorted_pixels)
@@ -118,8 +140,13 @@ function select_pixels(residual_map, clean_mask, x, y, z, Npixels)
     sort(selected_pixels)
 end
 
-function compute_spherical_harmonics!(residual_alm, residual_map,
-                                      clean_components, psf, pixels)
+function compute_spherical_harmonics(state, psf, pixels)
+    compute_spherical_harmonics(state.residual_alm, state.residual_map,
+                                state.clean_components, psf, pixels)
+end
+
+function compute_spherical_harmonics(residual_alm, residual_map,
+                                     clean_components, psf, pixels)
     L = lmax(residual_alm)
     M = mmax(residual_alm)
     N = nside(residual_map)
@@ -172,10 +199,15 @@ function distribute_workload(observation_matrix, cholesky_decomposition)
     workload
 end
 
-function corrupt_spherical_harmonics!(model_alm, workload, mrange)
+function corrupt_spherical_harmonics(state, model_alm)
+    corrupt_spherical_harmonics(model_alm, state.workload, state.wiener_mrange)
+end
+
+function corrupt_spherical_harmonics(model_alm, workload, wiener_mrange)
+    output_alm = Alm(Complex128, lmax(model_alm), mmax(model_alm))
     function output(corrupted_alm, m)
         for l = m:lmax(model_alm)
-            model_alm[l, m] = corrupted_alm[l-m+1]
+            output_alm[l, m] = corrupted_alm[l-m+1]
         end
     end
     @sync for m = 0:mmax(model_alm)
@@ -187,13 +219,30 @@ function corrupt_spherical_harmonics!(model_alm, workload, mrange)
             output(corrupted_alm, m)
         end
     end
-    MModes.apply_wiener_filter!(model_alm, mrange)
+    MModes.apply_wiener_filter!(output_alm, wiener_mrange)
+    output_alm
 end
 
 function corrupt_spherical_harmonics_block(input_alm, m)
     observe_block(CleanWorker.observation_matrix_blocks[m],
                   CleanWorker.cholesky_decomposition_blocks[m],
                   input_alm)
+end
+
+function remove_clean_components!(state, corrupted_alm)
+    remove_clean_components!(state.residual_alm, state.degraded_alm,
+                             state.gaussian_kernel, corrupted_alm,
+                             state.residual_map)
+end
+
+function remove_clean_components!(residual_alm, degraded_alm,
+                                  gaussian_kernel, corrupted_alm,
+                                  residual_map)
+    degraded_corrupted_alm = convolve(corrupted_alm, gaussian_kernel)
+    residual_corrupted_alm = corrupted_alm - degraded_corrupted_alm
+    residual_alm.alm[:] -= residual_corrupted_alm.alm
+    degraded_alm.alm[:] -= degraded_corrupted_alm.alm
+    residual_map.pixels[:] = alm2map(residual_alm, nside(residual_map)).pixels
 end
 
 function unit_vectors(nside)
@@ -217,5 +266,27 @@ function rotate_alm!(alm, dϕ)
             alm[l, m] *= cismdϕ
         end
     end
+end
+
+function gaussian_alm(fwhm, lmax=1000, mmax=1000, nside=512)
+    # note: fwhm in degrees
+    σ = fwhm/(2sqrt(2log(2)))
+    kernel = HealpixMap(Float64, nside)
+    for pix = 1:length(kernel)
+        θ, ϕ = LibHealpix.pix2ang_ring(nside, pix)
+        θ = rad2deg(θ)
+        kernel[pix] = exp(-θ^2/(2σ^2))
+    end
+    dΩ = 4π/length(kernel)
+    kernel = HealpixMap(kernel.pixels / (sum(kernel.pixels)*dΩ))
+    map2alm(kernel, lmax, mmax, iterations=10)
+end
+
+function convolve(alm1, alm2)
+    output_alm = Alm(Complex128, lmax(alm1), mmax(alm1))
+    for m = 0:mmax(alm1), l = m:lmax(alm1)
+        output_alm[l, m] = sqrt((4π)/(2l+1))*alm1[l, m]*alm2[l, 0]
+    end
+    output_alm
 end
 
