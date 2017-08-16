@@ -1,12 +1,15 @@
-function restore(spw)
+function restore(spw, target)
     directory = joinpath(getdir(spw), "psf")
     psf = load(joinpath(directory, "psf.jld"), "psf")
     major_σ, minor_σ, angle = load(joinpath(directory, "gaussian.jld"), "major", "minor", "angle")
 
-    directory = joinpath(getdir(spw), "cleaning")
-    residual_map, clean_components = load(joinpath(directory, "final.jld"),
-                                          "residual_map", "clean_components")
-    restored_map = HealpixMap(copy(residual_map))
+    directory = joinpath(getdir(spw), "cleaning", target)
+    residual_alm, degraded_alm, clean_components = load(joinpath(directory, "final.jld"),
+                                                        "residual_alm", "degraded_alm",
+                                                        "clean_components")
+
+    restored_alm = Alm(1000, 1000, residual_alm + degraded_alm)
+    restored_map = alm2map(restored_alm, 2048)
 
     restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
     writehealpix(joinpath(directory, "restored-test.fits"), restored_map, replace=true)
@@ -15,7 +18,6 @@ end
 function restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
     pixels = find(clean_components)
     N = length(pixels)
-    pixels = pixels[3N÷8:5N÷8]
     prg = Progress(length(pixels))
     for pixel in pixels
         ring = searchsortedlast(psf.pixels, pixel)
@@ -31,7 +33,7 @@ function restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle
             disc_vec = LibHealpix.pix2vec_ring(nside(restored_map), Int(disc_pixel))
             x = asind(dot(disc_vec, east)) * 60
             y = asind(dot(disc_vec, north)) * 60
-            value = gaussian(x, y, amplitude, major_σ[ring], minor_σ[ring], angle[ring])
+            value = gaussian(x, y, amplitude, major_σ[ring], minor_σ[ring], deg2rad(angle[ring]))
             restored_map[disc_pixel] += value
         end
         next!(prg)
