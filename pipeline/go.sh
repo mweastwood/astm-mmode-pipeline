@@ -169,16 +169,26 @@ function getalm {
         "using Pipeline; @time Pipeline.MModes.getalm($spw, $dataset, $target)"
 }
 
+function interpol {
+    title interpol
+    local spw=$1
+    local dataset=`quote $2`
+    local visibilities_target=`quote $3`
+    local alm_target=`quote $4`
+    echo "spw=$spw, dataset=$dataset"
+    echo "visibilities_target=$visibilities_target"
+    echo "alm_target=$alm_target"
+    $JULIA --machinefile $MACHINEFILE_ONE -e \
+        "using Pipeline; @time Pipeline.MModes.interpolate($spw, $dataset, $visibilities_target, $alm_target)"
+}
+
 function wiener {
     title wiener
     local spw=$1
     local dataset=`quote $2`
-    local rfi_restored_target=`quote $3`
-    local rfi_subtracted_target=`quote $4`
-    echo "spw=$spw, dataset=$dataset"
-    echo "rfi_restored_target=$rfi_restored_target"
-    echo "rfi_subtracted_target=$rfi_subtracted_target"
-    $JULIA -e "using Pipeline; @time Pipeline.MModes.wiener($spw, $dataset, $rfi_restored_target, $rfi_subtracted_target)"
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -e "using Pipeline; @time Pipeline.MModes.wiener($spw, $dataset, $target)"
 }
 
 function makemap {
@@ -187,7 +197,8 @@ function makemap {
     local dataset=`quote $2`
     local target=`quote $3`
     print_parameters $spw $dataset $target
-    $JULIA -e "using Pipeline; @time Pipeline.MModes.makemap($spw, $dataset, $target)"
+    $JULIA -e "using Pipeline; @time Pipeline.MModes.makemap($spw, $dataset, $target, 512)"
+    $JULIA -e "using Pipeline; @time Pipeline.MModes.makemap($spw, $dataset, $target, 2048)"
 }
 
 function observe {
@@ -203,12 +214,38 @@ function observe {
         "using Pipeline; @time Pipeline.MModes.observation_matrix($spw, $dataset, $mmodes_target, $alm_target)"
 }
 
-function peakpsf {
-    title peakpsf
+function getpsf {
+    title getpsf
     local spw=$1
     local dataset=`quote $2`
     echo "spw=$spw, dataset=$dataset"
-    $JULIA -e "using Pipeline; @time Pipeline.Cleaning.getpsf_peak($spw, $dataset)"
+    $JULIA --machinefile $MACHINEFILE_ONE -e \
+        "using Pipeline; @time Pipeline.Cleaning.getpsf($spw, $dataset)"
+}
+
+function getpsf_w {
+    title getpsf_w
+    local spw=$1
+    echo "spw=$spw"
+    $JULIA -p 8 -e "using Pipeline; @time Pipeline.Cleaning.getpsf_width($spw)"
+}
+
+function register {
+    title register
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -p 16 -e "using Pipeline; @time Pipeline.Cleaning.register($spw, $dataset, $target)"
+}
+
+function clean {
+    title clean
+    local spw=$1
+    local dataset=`quote $2`
+    local target=`quote $3`
+    print_parameters $spw $dataset $target
+    $JULIA -p 8 -e "using Pipeline; @time Pipeline.Cleaning.clean($spw, $dataset, $target)"
 }
 
 function restore {
@@ -234,12 +271,14 @@ for dataset in $datasets
 do
     for spw in $spws
     do
+        # Calibration
         isbetween 00 && getdata   $spw $dataset
         isbetween 01 && flag      $spw $dataset "raw"
         isbetween 02 && smooth    $spw $dataset "flagged-raw"
         isbetween 03 && calibrate $spw $dataset "smoothed-flagged-raw"
         isbetween 04 && smeared   $spw $dataset "calibrated"
 
+        # Source Removal
         isbetween 10 && fitrfi    $spw $dataset "calibrated"
         isbetween 11 && subrfi    $spw $dataset "calibrated"
         isbetween 12 && peel      $spw $dataset "rfi-subtracted-calibrated"
@@ -249,48 +288,50 @@ do
         isbetween 16 && subrfi    $spw $dataset "rfi-restored-peeled"
         isbetween 17 && smeared   $spw $dataset "rfi-subtracted-peeled"
 
-        #isbetween 21 && fold      $spw $dataset "test-rfi-subtracted-peeled"
-        #isbetween 23 && getmmodes $spw $dataset "folded-test-rfi-subtracted-peeled"
-        #isbetween 25 && getalm    $spw $dataset "mmodes-test-rfi-subtracted-peeled"
-        #isbetween 31 && makemap   $spw $dataset "alm-test-rfi-subtracted-peeled"
+        # m-Mode Analysis
+        isbetween 20 && fold      $spw $dataset "rfi-subtracted-peeled"
+        isbetween 21 && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
+        isbetween 22 && getalm    $spw $dataset "mmodes-rfi-subtracted-peeled"
+        isbetween 23 && interpol  $spw $dataset "folded-rfi-subtracted-peeled" "alm-rfi-subtracted-peeled"
+        isbetween 24 && wiener    $spw $dataset "alm-interpolated"
+        isbetween 25 && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
+        isbetween 26 && makemap   $spw $dataset "alm-interpolated"
+        isbetween 27 && makemap   $spw $dataset "alm-wiener-filtered"
 
-        isbetween 20 && fold      $spw $dataset "rfi-restored-peeled"
-        isbetween 21 && fold      $spw $dataset "rfi-subtracted-peeled"
-        isbetween 22 && getmmodes $spw $dataset "folded-rfi-restored-peeled"
-        isbetween 23 && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
-        isbetween 24 && getalm    $spw $dataset "mmodes-rfi-restored-peeled"
-        isbetween 25 && getalm    $spw $dataset "mmodes-rfi-subtracted-peeled"
-        isbetween 26 && wiener    $spw $dataset "alm-rfi-restored-peeled" "alm-rfi-subtracted-peeled"
+        # Cleaning
+        isbetween 30 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "alm-wiener-filtered"
+        isbetween 31 && getpsf    $spw $dataset
+        isbetween 32 && getpsf_w  $spw
+        isbetween 33 && clean     $spw $dataset "alm-wiener-filtered"
 
-        isbetween 30 && makemap   $spw $dataset "alm-rfi-restored-peeled"
-        isbetween 31 && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
-        isbetween 32 && makemap   $spw $dataset "alm-wiener-filtered"
 
-        isbetween 40 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "alm-wiener-filtered"
-        isbetween 41 && peakpsf   $spw $dataset
+        #isbetween 32 && register  $spw $dataset "map-wiener-filtered"
+        #isbetween 33 && clean     $spw $dataset "map-registered"
 
-        isbetween 50 && restore-and-image $spw $dataset 'Cyg A' 'cyga'
-        isbetween 51 && restore-and-image $spw $dataset 'Cas A' 'casa'
-        isbetween 52 && restore-and-image $spw $dataset 'Tau A' 'taua'
-        isbetween 53 && restore-and-image $spw $dataset 'Vir A' 'vira'
-        isbetween 54 && restore-and-image $spw $dataset 'Hya A' 'hyaa'
-        isbetween 55 && restore-and-image $spw $dataset 'Her A' 'hera'
-        isbetween 56 && restore-and-image $spw $dataset 'Per B' 'perb'
-        isbetween 57 && restore-and-image $spw $dataset '3C 353' '3c353'
+        # Point Sources
+        isbetween 40 && restore-and-image $spw $dataset 'Cyg A' 'cyga'
+        isbetween 41 && restore-and-image $spw $dataset 'Cas A' 'casa'
+        isbetween 42 && restore-and-image $spw $dataset 'Tau A' 'taua'
+        isbetween 43 && restore-and-image $spw $dataset 'Vir A' 'vira'
+        isbetween 44 && restore-and-image $spw $dataset 'Hya A' 'hyaa'
+        isbetween 45 && restore-and-image $spw $dataset 'Her A' 'hera'
+        isbetween 46 && restore-and-image $spw $dataset 'Per B' 'perb'
+        isbetween 47 && restore-and-image $spw $dataset '3C 353' '3c353'
 
-        isbetween 60 && getmmodes-odd  $spw $dataset "folded-rfi-restored-peeled"
-        isbetween 61 && getmmodes-odd  $spw $dataset "folded-rfi-subtracted-peeled"
-        isbetween 62 && getalm    $spw $dataset "mmodes-odd-rfi-restored-peeled"
-        isbetween 63 && getalm    $spw $dataset "mmodes-odd-rfi-subtracted-peeled"
-        isbetween 64 && wiener    $spw $dataset "alm-odd-rfi-restored-peeled" "alm-odd-rfi-subtracted-peeled"
-        isbetween 65 && makemap   $spw $dataset "alm-odd-wiener-filtered"
+        # Jackknife
+        isbetween 50 && getmmodes-odd  $spw $dataset "folded-rfi-restored-peeled"
+        isbetween 51 && getmmodes-odd  $spw $dataset "folded-rfi-subtracted-peeled"
+        isbetween 52 && getalm    $spw $dataset "mmodes-odd-rfi-restored-peeled"
+        isbetween 53 && getalm    $spw $dataset "mmodes-odd-rfi-subtracted-peeled"
+        isbetween 54 && wiener    $spw $dataset "alm-odd-rfi-restored-peeled" "alm-odd-rfi-subtracted-peeled"
+        isbetween 55 && makemap   $spw $dataset "alm-odd-wiener-filtered"
 
-        isbetween 70 && getmmodes-even $spw $dataset "folded-rfi-restored-peeled"
-        isbetween 71 && getmmodes-even $spw $dataset "folded-rfi-subtracted-peeled"
-        isbetween 72 && getalm    $spw $dataset "mmodes-even-rfi-restored-peeled"
-        isbetween 73 && getalm    $spw $dataset "mmodes-even-rfi-subtracted-peeled"
-        isbetween 74 && wiener    $spw $dataset "alm-even-rfi-restored-peeled" "alm-even-rfi-subtracted-peeled"
-        isbetween 75 && makemap   $spw $dataset "alm-even-wiener-filtered"
+        isbetween 60 && getmmodes-even $spw $dataset "folded-rfi-restored-peeled"
+        isbetween 61 && getmmodes-even $spw $dataset "folded-rfi-subtracted-peeled"
+        isbetween 62 && getalm    $spw $dataset "mmodes-even-rfi-restored-peeled"
+        isbetween 63 && getalm    $spw $dataset "mmodes-even-rfi-subtracted-peeled"
+        isbetween 64 && wiener    $spw $dataset "alm-even-rfi-restored-peeled" "alm-even-rfi-subtracted-peeled"
+        isbetween 65 && makemap   $spw $dataset "alm-even-wiener-filtered"
     done
 done
 
