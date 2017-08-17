@@ -14,28 +14,23 @@ using ProgressMeter
 "Create an image of the psf."
 function psf_image()
     spw = 4
-    str = @sprintf("spw%02d", spw)
-    dataset = "rainy"
-    dir = Pipeline.Common.getdir(spw)
-    observation_matrix, lmax, mmax = load(joinpath(dir, "observation-matrix-$dataset.jld"),
-                                          "blocks", "lmax", "mmax")
-    nside = 2048
+    for spw in (4, 18)
+        str = @sprintf("spw%02d", spw)
+        psfdir = joinpath(Pipeline.Common.getdir(spw), "psf")
+        outputdir = joinpath(Pipeline.Common.getdir(spw), "tmp")
 
-    direction = Direction(dir"ITRF", 0degrees, 45degrees)
-    θ = π/2 - latitude(direction)
-    ϕ = longitude(direction)
-    alm = Pipeline.Cleaning.getpsf_alm(observation_matrix, θ, ϕ, lmax, mmax)
-    map = alm2map(alm, nside)
-    img = Pipeline.Cleaning.postage_stamp(map, direction)
-    save(joinpath(dir, "tmp", "$str-psf-45-degrees.jld"), "img", img)
+        nside = 2048
+        pixel = 7368961
+        θ, ϕ = LibHealpix.pix2ang_ring(nside, pixel)
 
-    direction = Direction(dir"ITRF", 0degrees, 0degrees)
-    θ = π/2 - latitude(direction)
-    ϕ = longitude(direction)
-    alm = Pipeline.Cleaning.getpsf_alm(observation_matrix, θ, ϕ, lmax, mmax)
-    map = alm2map(alm, nside)
-    img = Pipeline.Cleaning.postage_stamp(map, direction)
-    save(joinpath(dir, "tmp", "$str-psf-00-degrees.jld"), "img", img)
+        alm = load(joinpath(psfdir, "07368961.jld"), "alm")
+        map = alm2map(alm, nside)
+
+        direction = Direction(dir"ITRF", ϕ*radians, (π/2-θ)*radians)
+        img = Pipeline.Cleaning.postage_stamp(map, direction)
+        img /= maximum(img)
+        save(joinpath(outputdir, "$str-psf-+45-degrees.jld"), "img", img)
+    end
 end
 
 "Measure the width of the PSF."
