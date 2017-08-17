@@ -108,6 +108,7 @@ end
 
 function compare_with_guzman()
     fits = FITS("../workspace/comparison-maps/wlb45.fits")
+    # TODO is this in B1950 coordinates????
     img = read(fits[1])
     ϕ = linspace(0, 2π, size(img, 1)+1)[1:end-1]
     θ = linspace(0, π, size(img, 2))
