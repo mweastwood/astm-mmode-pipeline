@@ -13,7 +13,8 @@ function _interpolate(spw, dataset, target, data, flags, alm, tolerance)
     alm′ = _getalm(spw, mmodes′, mmode_flags′, tolerance=tolerance)
 
     dir = getdir(spw)
-    target = "alm-interpolated"
+    target = replace(target, "rfi-subtracted-peeled", "")
+    target = target*"-interpolated"
     save(joinpath(dir, "$target-$dataset.jld"), "alm", alm′, "tolerance", tolerance)
 end
 
