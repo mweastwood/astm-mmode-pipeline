@@ -261,10 +261,12 @@ function restore {
 
 function restore-and-image {
     restore   $1 $2 "peeled" "$3"
-    fold      $1 $2 "$4-peeled"
-    getmmodes $1 $2 "folded-$4-peeled"
-    getalm    $1 $2 "mmodes-$4-peeled"
-    makemap   $1 $2 "alm-$4-peeled"
+    fold      $1 $2 "$4-restored"
+    getmmodes $1 $2 "folded-$4-restored"
+    getalm    $1 $2 "mmodes-$4-restored"
+    interpol  $1 $2 "folded-$4-restored" "alm-$4-restored"
+    wiener    $1 $2 "alm-$4-restored-interpolated"
+    makemap   $1 $2 "alm-$4-restored-interpolated"
 }
 
 for dataset in $datasets
@@ -303,10 +305,7 @@ do
         isbetween 31 && getpsf    $spw $dataset
         isbetween 32 && getpsf_w  $spw
         isbetween 33 && clean     $spw $dataset "alm-wiener-filtered"
-
-
-        #isbetween 32 && register  $spw $dataset "map-wiener-filtered"
-        #isbetween 33 && clean     $spw $dataset "map-registered"
+        # TODO restore and register
 
         # Point Sources
         isbetween 40 && restore-and-image $spw $dataset 'Cyg A' 'cyga'
@@ -319,19 +318,20 @@ do
         isbetween 47 && restore-and-image $spw $dataset '3C 353' '3c353'
 
         # Jackknife
-        isbetween 50 && getmmodes-odd  $spw $dataset "folded-rfi-restored-peeled"
-        isbetween 51 && getmmodes-odd  $spw $dataset "folded-rfi-subtracted-peeled"
-        isbetween 52 && getalm    $spw $dataset "mmodes-odd-rfi-restored-peeled"
-        isbetween 53 && getalm    $spw $dataset "mmodes-odd-rfi-subtracted-peeled"
-        isbetween 54 && wiener    $spw $dataset "alm-odd-rfi-restored-peeled" "alm-odd-rfi-subtracted-peeled"
-        isbetween 55 && makemap   $spw $dataset "alm-odd-wiener-filtered"
+        # TODO jackknife
+        #isbetween 50 && getmmodes-odd  $spw $dataset "folded-rfi-restored-peeled"
+        #isbetween 51 && getmmodes-odd  $spw $dataset "folded-rfi-subtracted-peeled"
+        #isbetween 52 && getalm    $spw $dataset "mmodes-odd-rfi-restored-peeled"
+        #isbetween 53 && getalm    $spw $dataset "mmodes-odd-rfi-subtracted-peeled"
+        #isbetween 54 && wiener    $spw $dataset "alm-odd-rfi-restored-peeled" "alm-odd-rfi-subtracted-peeled"
+        #isbetween 55 && makemap   $spw $dataset "alm-odd-wiener-filtered"
 
-        isbetween 60 && getmmodes-even $spw $dataset "folded-rfi-restored-peeled"
-        isbetween 61 && getmmodes-even $spw $dataset "folded-rfi-subtracted-peeled"
-        isbetween 62 && getalm    $spw $dataset "mmodes-even-rfi-restored-peeled"
-        isbetween 63 && getalm    $spw $dataset "mmodes-even-rfi-subtracted-peeled"
-        isbetween 64 && wiener    $spw $dataset "alm-even-rfi-restored-peeled" "alm-even-rfi-subtracted-peeled"
-        isbetween 65 && makemap   $spw $dataset "alm-even-wiener-filtered"
+        #isbetween 60 && getmmodes-even $spw $dataset "folded-rfi-restored-peeled"
+        #isbetween 61 && getmmodes-even $spw $dataset "folded-rfi-subtracted-peeled"
+        #isbetween 62 && getalm    $spw $dataset "mmodes-even-rfi-restored-peeled"
+        #isbetween 63 && getalm    $spw $dataset "mmodes-even-rfi-subtracted-peeled"
+        #isbetween 64 && wiener    $spw $dataset "alm-even-rfi-restored-peeled" "alm-even-rfi-subtracted-peeled"
+        #isbetween 65 && makemap   $spw $dataset "alm-even-wiener-filtered"
     done
 done
 

@@ -43,7 +43,7 @@ function _removed_source_visibilities(spw, dataset, target, source_name, peeling
     end
 
     dir = getdir(spw)
-    filename = "$(lowercase(replace(source_name, " ", "")))-$target-$dataset-visibilities.jld"
+    filename = "$(lowercase(replace(source_name, " ", "")))-restored-$dataset-visibilities.jld"
     save(joinpath(dir, filename), "times", times, "data", data, "flags", flags, compress=true)
     data
 end
