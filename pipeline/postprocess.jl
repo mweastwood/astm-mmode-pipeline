@@ -7,24 +7,20 @@ function rfi_light_curves(spw)
     tmp = joinpath(dir, "tmp")
     files = readdir(tmp)
     filter!(files) do file
-        endswith(file, ".jld")
+        startswith(file, "2016-03-19") && endswith(file, ".jld")
     end
 
     N = length(files)
-    rfi_fluxes = Array{Vector{Float64}}(N)
-    p = Progress(N)
-    for idx = 1:N
-        rfi_fluxes[idx] = load(joinpath(tmp, files[idx]), "rfi_flux")
-        next!(p)
-    end
+    kernel(file) = load(joinpath(tmp, file), "rfi_flux") :: Vector{HermitianJonesMatrix}
+    rfi_fluxes = pmap(kernel, files)
 
     M = length(rfi_fluxes[1])
-    output = zeros(M, N)
+    output = zeros(HermitianJonesMatrix, M, N)
     for idx = 1:N, jdx = 1:M
         output[jdx, idx] = rfi_fluxes[idx][jdx]
     end
 
-    save(joinpath("rfi-light-curves.jld"), "light-curves", rfi)
+    save(joinpath(dir, "rfi-light-curves.jld"), "light-curves", output)
     output
 end
 
