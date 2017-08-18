@@ -8,6 +8,7 @@ using LibHealpix
 using CasaCore.Measures
 using NLopt
 using FITSIO
+using TTCal
 using BPJSpec
 using ProgressMeter
 
@@ -216,6 +217,101 @@ function smooth(map, width, output_nside=nside(map))
     end
 
     alm2map(output_alm, output_nside)
+end
+
+function ionosphere()
+    function read_gim_data(filename)
+        path = joinpath(dirname(@__FILE__), "..", "workspace", "ionosphere", filename)
+        raw = readdlm(path)
+        discard_row = [raw[idx, 1] == "Az" for idx = 1:size(raw, 1)]
+        convert(Matrix{Float64}, raw[!discard_row, :])
+    end
+    @time data1 = read_gim_data("17Feb2017partTEC.data")
+    @time data2 = read_gim_data("18Feb2017partTEC.data")
+    # add 24 hours to the time from the second day before concatenating the datasets
+    data2[:,5] += 24
+    data = [data1; data2]
+
+    az = data[:, 1]
+    el = data[:, 2]
+    lat = data[:, 3]
+    lon = data[:, 4]
+    utc = data[:, 5]
+    sobs = data[:, 6]
+    vobs = data[:, 7]
+
+    latlon2vec(lat, lon) = LibHealpix.ang2vec(deg2rad(90-lat), deg2rad(lon))
+
+    ovro_lat = 37.24025814219695
+    ovro_lon = -118.28221017095915
+    ovro_vec = latlon2vec(ovro_lat, ovro_lon)
+    Rearth = 6371 # km
+
+    utc_binned = collect(linspace(0, 48, 24*8+1))[1:24*8]
+    vobs_binned_list = [Vector{Float64}() for t in utc_binned]
+    north_vobs_binned_list = [Vector{Float64}() for t in utc_binned]
+    south_vobs_binned_list = [Vector{Float64}() for t in utc_binned]
+    @time for idx = 1:size(data, 1)
+        vec = latlon2vec(lat[idx], lon[idx])
+        distance = Rearth*acos(dot(vec, ovro_vec))
+        distance > 200 && continue
+
+        jdx = searchsortedlast(utc_binned, utc[idx])
+        push!(vobs_binned_list[jdx], vobs[idx])
+        if lat[idx] > ovro_lat
+            push!(north_vobs_binned_list[jdx], vobs[idx])
+        else
+            push!(south_vobs_binned_list[jdx], vobs[idx])
+        end
+    end
+    @time vobs_binned = [isempty(list) ? 0.0 : median(list) for list in vobs_binned_list]
+    @time north_vobs_binned = [isempty(list) ? 0.0 : median(list) for list in north_vobs_binned_list]
+    @time south_vobs_binned = [isempty(list) ? 0.0 : median(list) for list in south_vobs_binned_list]
+
+    path = joinpath(dirname(@__FILE__), "..", "workspace", "tmp", "ionosphere.jld")
+    save(path, "utc", utc_binned, "vobs", vobs_binned,
+         "north_vobs", north_vobs_binned,
+         "south_vobs", south_vobs_binned)
+end
+
+function scintillation()
+    directions = [Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"),
+                  Direction(dir"J2000", "23h23m24.000s", "+58d48m54.00s")]
+    for spw in (4, 18)
+        dir = Pipeline.Common.getdir(spw)
+        peeling_data = load(joinpath(dir, "peeled-rainy-visibilities.jld"), "peeling-data")
+
+        N = length(peeling_data)
+        t = zeros(N)
+        l = zeros(2, N)
+        m = zeros(2, N)
+        I = zeros(2, N)
+        flags = zeros(Bool, 2, N)
+
+        meta = Pipeline.Common.getmeta(spw, "rainy")
+        frame = TTCal.reference_frame(meta)
+
+        for idx = 1:N
+            data = peeling_data[idx]
+            set!(frame, Epoch(epoch"UTC", data.time*seconds))
+
+            t[idx] = data.time
+            for s = 1:2
+                if data.I[s] == data.Q[s] == 0
+                    flags[s, idx] = true
+                    continue
+                end
+                azel = measure(frame, directions[s], dir"AZEL")
+                az = longitude(azel)
+                el =  latitude(azel)
+                l[s, idx] = sin(az) * cos(el)
+                m[s, idx] = cos(az) * cos(el)
+                I[s, idx] = data.I[s]
+            end
+        end
+        save(joinpath(dir, "tmp", "scintillation.jld"),
+             "t", t, "l", l, "m", m, "I", I, "flags", flags)
+    end
 end
 
 end
