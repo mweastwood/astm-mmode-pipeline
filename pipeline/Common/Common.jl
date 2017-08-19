@@ -21,7 +21,6 @@ function getdir(spw)
     dir
 end
 
-
 """
     listdadas(spw, dataset)
 
@@ -76,6 +75,8 @@ function getfreq(spw)
     meta = getmeta(spw, "rainy")
     meta.channels[55]
 end
+
+getfrequencies(spws, dataset) = [getfreq(spw) for spw in spws]
 
 baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
