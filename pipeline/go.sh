@@ -253,20 +253,8 @@ function restore {
     local spw=$1
     local dataset=`quote $2`
     local target=`quote $3`
-    local src=`quote "$4"`
     print_parameters $spw $dataset $target
-    echo "source=$src"
-    $JULIA -e "using Pipeline; Pipeline.Calibration.removed_source_visibilities($spw, $dataset, $target, $src)"
-}
-
-function restore-and-image {
-    restore   $1 $2 "peeled" "$3"
-    fold      $1 $2 "$4-restored"
-    getmmodes $1 $2 "folded-$4-restored"
-    getalm    $1 $2 "mmodes-$4-restored"
-    interpol  $1 $2 "folded-$4-restored" "alm-$4-restored"
-    wiener    $1 $2 "alm-$4-restored-interpolated"
-    makemap   $1 $2 "alm-$4-restored-interpolated"
+    $JULIA -e "using Pipeline; @time Pipeline.Cleaning.restore($spw, $dataset, $target)"
 }
 
 for dataset in $datasets
@@ -305,17 +293,8 @@ do
         isbetween 31 && getpsf    $spw $dataset
         isbetween 32 && getpsf_w  $spw
         isbetween 33 && clean     $spw $dataset "alm-wiener-filtered"
+        isbetween 34 && restore   $spw $dataset "alm-wiener-filtered"
         # TODO restore and register
-
-        # Point Sources
-        isbetween 40 && restore-and-image $spw $dataset 'Cyg A' 'cyga'
-        isbetween 41 && restore-and-image $spw $dataset 'Cas A' 'casa'
-        isbetween 42 && restore-and-image $spw $dataset 'Tau A' 'taua'
-        isbetween 43 && restore-and-image $spw $dataset 'Vir A' 'vira'
-        isbetween 44 && restore-and-image $spw $dataset 'Hya A' 'hyaa'
-        isbetween 45 && restore-and-image $spw $dataset 'Her A' 'hera'
-        isbetween 46 && restore-and-image $spw $dataset 'Per B' 'perb'
-        isbetween 47 && restore-and-image $spw $dataset '3C 353' '3c353'
 
         # Jackknife
         # TODO jackknife

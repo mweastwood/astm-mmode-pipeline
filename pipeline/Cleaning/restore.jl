@@ -1,4 +1,4 @@
-function restore(spw, target)
+function restore(spw, dataset, target)
     directory = joinpath(getdir(spw), "psf")
     psf = load(joinpath(directory, "psf.jld"), "psf")
     major_σ, minor_σ, angle = load(joinpath(directory, "gaussian.jld"), "major", "minor", "angle")
@@ -12,7 +12,8 @@ function restore(spw, target)
     restored_map = alm2map(restored_alm, 2048)
 
     restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
-    writehealpix(joinpath(directory, "restored-test.fits"), restored_map, replace=true)
+    save(joinpath(getdir(spw), "map-restored-$dataset.jld"), "map", restored_map.pixels)
+    writehealpix(joinpath(getdir(spw), "map-restored-$dataset.fits"), restored_map, replace=true)
 end
 
 function restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
