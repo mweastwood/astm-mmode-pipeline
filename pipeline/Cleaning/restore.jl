@@ -13,7 +13,12 @@ function restore(spw, dataset, target)
 
     restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
     save(joinpath(getdir(spw), "map-restored-$dataset.jld"), "map", restored_map.pixels)
-    writehealpix(joinpath(getdir(spw), "map-restored-$dataset.fits"), restored_map, replace=true)
+    writehealpix(joinpath(getdir(spw), "map-restored-$dataset-itrf.fits"),
+                 restored_map, replace=true)
+    writehealpix(joinpath(getdir(spw), "map-restored-$dataset-galactic.fits"),
+                 MModes.rotate_to_galactic(spw, dataset, restored_map), replace=true)
+    writehealpix(joinpath(getdir(spw), "map-restored-$dataset-j2000.fits"),
+                 MModes.rotate_to_j2000(spw, dataset, restored_map), replace=true)
 end
 
 function restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
