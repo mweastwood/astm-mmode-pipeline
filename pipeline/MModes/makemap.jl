@@ -13,7 +13,20 @@ function makemap(spw, alm::Alm, dataset, target, nside)
     #mmodes = MModes(joinpath(dir, "mmodes")) # read the frequency from the m-modes
     #map = map * (BPJSpec.Jy * (BPJSpec.c/mmodes.frequencies[1])^2 / (2*BPJSpec.k))
 
-    # rotate the map to Galactic coordinates
+    galactic = rotate_to_galactic(spw, dataset, map)
+    j2000 = rotate_to_j2000(spw, dataset, map)
+
+    output = replace(target, "alm", "map")*"-$dataset"
+    writehealpix(joinpath(dir, output*"-$nside-galactic.fits"), galactic, coordsys="G", replace=true)
+    writehealpix(joinpath(dir, output*"-$nside-j2000.fits"), j2000, coordsys="C", replace=true)
+    writehealpix(joinpath(dir, output*"-$nside-itrf.fits"), map, coordsys="C", replace=true)
+
+    nothing
+end
+
+function rotate_to_galactic(spw, dataset, map)
+    dir = getdir(spw)
+    meta = getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
     z = Direction(dir"ITRF", 0.0degrees, 90degrees)
     z_ = measure(frame, z, dir"GALACTIC")
@@ -24,14 +37,17 @@ function makemap(spw, alm::Alm, dataset, target, nside)
     yvec = cross(zvec, xvec)
     pixels = zeros(length(map))
     for idx = 1:length(map)
-        vec = LibHealpix.pix2vec_ring(nside, idx)
+        vec = LibHealpix.pix2vec_ring(nside(map), idx)
         θ = acos(dot(vec, zvec))
         ϕ = atan2(dot(vec, yvec), dot(vec, xvec))
         pixels[idx] = LibHealpix.interpolate(map, θ, ϕ)
     end
-    galactic = HealpixMap(pixels)
+    HealpixMap(pixels)
+end
 
-    # rotate the map to Galactic coordinates
+function rotate_to_j2000(spw, dataset, map)
+    dir = getdir(spw)
+    meta = getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
     z = Direction(dir"ITRF", 0.0degrees, 90degrees)
     z_ = measure(frame, z, dir"J2000")
@@ -42,18 +58,11 @@ function makemap(spw, alm::Alm, dataset, target, nside)
     yvec = cross(zvec, xvec)
     pixels = zeros(length(map))
     for idx = 1:length(map)
-        vec = LibHealpix.pix2vec_ring(nside, idx)
+        vec = LibHealpix.pix2vec_ring(nside(map), idx)
         θ = acos(dot(vec, zvec))
         ϕ = atan2(dot(vec, yvec), dot(vec, xvec))
         pixels[idx] = LibHealpix.interpolate(map, θ, ϕ)
     end
-    j2000 = HealpixMap(pixels)
-
-    output = replace(target, "alm", "map")*"-$dataset"
-    writehealpix(joinpath(dir, output*"-$nside-galactic.fits"), galactic, coordsys="G", replace=true)
-    writehealpix(joinpath(dir, output*"-$nside-j2000.fits"), j2000, coordsys="C", replace=true)
-    writehealpix(joinpath(dir, output*"-$nside-itrf.fits"), map, coordsys="C", replace=true)
-
-    nothing
+    HealpixMap(pixels)
 end
 

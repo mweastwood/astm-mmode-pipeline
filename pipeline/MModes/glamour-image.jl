@@ -1,7 +1,6 @@
-function glamour(spw, filename="map-wiener-filtered-rainy-2048-galactic.fits";
-                 min=0, max=0)
+function glamour(spw, dataset, target; min=0, max=0)
     dir = getdir(spw)
-    map = readhealpix(joinpath(dir, filename))
+    map = readhealpix(joinpath(dir, "$target-$dataset-galactic.fits"))
     mask_the_map!(spw, map)
 
     # Get to units of K
@@ -10,12 +9,11 @@ function glamour(spw, filename="map-wiener-filtered-rainy-2048-galactic.fits";
     map = map * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
 
     str = @sprintf("spw%02d", spw)
-    output = joinpath(dir, "$str-glamour-shot-$(replace(filename, ".fits", "")).jld")
-    image = mollweide(map)
-    save(output, "image", image, "frequency", ν)
+    output = joinpath(dir, "$target-$dataset-galactic.jld")
+    image = mollweide(map, (2048, 4096))
+    save(output, "image", image, "frequency", ν, compress=true)
 
-    #output = joinpath(dir, "glamour-shot-$(replace(filename, ".fits", "")).png")
-    #image = mollweide(map)
+    #output = joinpath(dir, "$target-$dataset-galactic.png")
     #@show maximum(image) minimum(image)
     #if min == max == 0
     #    image -= minimum(image)
