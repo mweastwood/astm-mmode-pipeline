@@ -122,6 +122,12 @@ end
 
 function fitrfi_mmodes_spw06(mmodes, mmode_flags, target)
     spw = 6
+    if target == "mmodes-peeled-rainy"
+        @fitrfi_mmodes_start 6 0
+        @fitrfi_construct_sources 1
+        @fitrfi_peel_sources
+        @fitrfi_mmodes_finish
+    end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
@@ -132,6 +138,11 @@ function fitrfi_mmodes_spw08(mmodes, mmode_flags, target)
         @fitrfi_construct_sources 2
         @fitrfi_peel_sources
         @fitrfi_mmodes_finish
+
+        #@fitrfi_mmodes_start 8 1
+        #@fitrfi_construct_sources 1
+        #@fitrfi_peel_sources
+        #@fitrfi_mmodes_finish
     end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
@@ -149,11 +160,19 @@ end
 
 function fitrfi_mmodes_spw12(mmodes, mmode_flags, target)
     spw = 12
+    if target == "mmodes-peeled-rainy"
+        @fitrfi_mmodes_start 12 0
+        @fitrfi_construct_sources 1
+        @fitrfi_peel_sources
+        @fitrfi_mmodes_finish
+    end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
 function fitrfi_mmodes_spw14(mmodes, mmode_flags, target)
     spw = 14
+    if target == "mmodes-peeled-rainy"
+    end
     save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
 end
 
@@ -176,16 +195,18 @@ end
 function fitrfi_mmodes_spw18(mmodes, mmode_flags, target)
     spw = 18
     if target == "mmodes-peeled-rainy"
-        @fitrfi_mmodes_start 18 1
+        @fitrfi_mmodes_start spw 0
         @fitrfi_construct_sources 1
         @fitrfi_peel_sources
         @fitrfi_mmodes_finish
-
-        @fitrfi_mmodes_start 18 -1
+    elseif target == "test"
+        @fitrfi_mmodes_start spw 1
         @fitrfi_construct_sources 1
         @fitrfi_peel_sources
         @fitrfi_mmodes_finish
     end
-    save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
+    if target != "test"
+        save(joinpath(getdir(spw), "mmodes-cleaned-rainy.jld"), "blocks", mmodes, "flags", mmode_flags)
+    end
 end
 
