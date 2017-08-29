@@ -4,21 +4,22 @@ function getmmodes(spw, dataset, target)
     getmmodes(spw, data, flags, dataset, target)
 end
 
-function getmmodes(spw, data, flags, dataset, target)
-    blocks, block_flags = getmmodes_internal(data, flags)
+function getmmodes(spw, data, flags, dataset, target, dϕ=0.0)
+    blocks, block_flags = getmmodes_internal(data, flags, dϕ)
+    mmax = length(blocks) - 1
     target = replace(target, "folded-", "")
     save(joinpath(getdir(spw), "mmodes-$target-$dataset.jld"),
          "blocks", blocks, "flags", block_flags, compress=true)
     blocks, block_flags
 end
 
-function getmmodes_internal(data, flags)
+function getmmodes_internal(data, flags, dϕ=0.0)
     mmax = 1000
     Nbase, Ntime = size(data)
     two(m) = ifelse(m != 0, 2, 1)
     blocks = [zeros(Complex128, two(m)*Nbase) for m = 0:mmax]
     fourier = do_fourier_transform(data)
-    pack_mmodes!(blocks, fourier, mmax)
+    pack_mmodes!(blocks, fourier, mmax, dϕ)
     block_flags = decide_on_baseline_flags(flags, mmax)
     blocks, block_flags
 end
@@ -32,7 +33,7 @@ function do_fourier_transform(data)
     permutedims(fourier, (2, 1)) # undo the previous transpose
 end
 
-function pack_mmodes!(blocks, fourier, mmax)
+function pack_mmodes!(blocks, fourier, mmax, dϕ)
     Nbase, Ntime = size(fourier)
     for m = 0:mmax
         block = blocks[m+1]
@@ -41,11 +42,12 @@ function pack_mmodes!(blocks, fourier, mmax)
                 block[α] = fourier[α, 1]
             end
         else
+            rotation = cis(m*dϕ)
             for α = 1:Nbase
                 α1 = 2α - 1 # positive m
                 α2 = 2α - 0 # negative m
-                block[α1] =      fourier[α, m+1]
-                block[α2] = conj(fourier[α, Ntime+1-m])
+                block[α1] =      fourier[α, m+1] * rotation
+                block[α2] = conj(fourier[α, Ntime+1-m] * rotation)
             end
         end
     end
@@ -91,6 +93,6 @@ function getmmodes_even(spw, dataset, target)
     data  =  data[:, 2:2:end]
     flags = flags[:, 2:2:end]
     target = "even-"*target
-    getmmodes(spw, data, flags, dataset, target)
+    getmmodes(spw, data, flags, dataset, target, -2π/6628)
 end
 

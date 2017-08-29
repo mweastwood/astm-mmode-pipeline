@@ -15,6 +15,8 @@ function _interpolate(spw, dataset, alm_target, data, flags, alm, tolerance)
     dir = getdir(spw)
     target = replace(alm_target, "rfi-subtracted-peeled", "")
     target = alm_target*"-interpolated"
+    save(joinpath(dir, "$(replace(target, "alm-", ""))-$dataset-visibilities.jld"),
+         "data", data, "flags", flags, compress=true)
     save(joinpath(dir, "$target-$dataset.jld"), "alm", alm′, "tolerance", tolerance)
 end
 
