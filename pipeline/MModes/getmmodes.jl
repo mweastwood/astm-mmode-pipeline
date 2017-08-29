@@ -47,7 +47,7 @@ function pack_mmodes!(blocks, fourier, mmax, dϕ)
                 α1 = 2α - 1 # positive m
                 α2 = 2α - 0 # negative m
                 block[α1] =      fourier[α, m+1] * rotation
-                block[α2] = conj(fourier[α, Ntime+1-m] * rotation)
+                block[α2] = conj(fourier[α, Ntime+1-m]) * rotation
             end
         end
     end
