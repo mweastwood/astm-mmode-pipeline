@@ -32,8 +32,10 @@ function clean(spw, dataset, target)
     output_directory = joinpath(getdir(spw), "cleaning", target)
     isdir(output_directory) || mkdir(output_directory)
 
-    @time _psf = load(joinpath(getdir(spw), "psf", "psf.jld"), "psf")
-    major_σ, minor_σ, angle = load(joinpath(directory, "gaussian.jld"), "major", "minor", "angle")
+    psf_directory = joinpath(getdir(spw), "psf")
+    @time _psf = load(joinpath(psf_directory, "psf.jld"), "psf")
+    major_σ, minor_σ, angle = load(joinpath(psf_directory, "gaussian.jld"),
+                                   "major", "minor", "angle")
     psf = FullPSF(_psf.pixels, _psf.amplitudes, major_σ, minor_σ, angle)
 
     @time residual_alm, wiener_mrange =

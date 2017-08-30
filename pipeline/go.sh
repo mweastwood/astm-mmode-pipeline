@@ -315,6 +315,12 @@ do
         isbetween 55 && wiener    $spw $dataset "alm-even-rfi-subtracted-peeled-interpolated"
         isbetween 56 && makemap   $spw $dataset "alm-odd-wiener-filtered"
         isbetween 57 && makemap   $spw $dataset "alm-even-wiener-filtered"
+
+        # Jackknife cleaning
+        isbetween 60 && clean     $spw $dataset "alm-odd-wiener-filtered"
+        isbetween 61 && restore   $spw $dataset "alm-odd-wiener-filtered"
+        isbetween 62 && clean     $spw $dataset "alm-even-wiener-filtered"
+        isbetween 63 && restore   $spw $dataset "alm-even-wiener-filtered"
     done
 done
 
