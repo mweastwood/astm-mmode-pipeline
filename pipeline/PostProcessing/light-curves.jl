@@ -75,14 +75,13 @@ function expected_light_curves(spw, dataset)
     expected_light_curves_kernel(spw, frame, peeling_data, spectra, sources, beam)
 end
 
-
 function expected_light_curves_kernel(spw, frame, peeling_data, spectra, sources, beam)
     names = ["Cyg A", "Cas A"]
 
     N  = length(peeling_data)
     t  = zeros(N)
-    I  = zeros(length(sources), N)
-    flags = zeros(Bool, length(sources), N)
+    I  = zeros(length(names), N)
+    flags = zeros(Bool, length(names), N)
 
     for idx = 1:N
         data = peeling_data[idx]
@@ -122,5 +121,59 @@ function expected_light_curves_kernel(spw, frame, peeling_data, spectra, sources
     end
 
     names, t, I, flags
+end
+
+function refraction_curves(dataset)
+    names = Dict{Int, Vector{String}}()
+    t     = Dict{Int, Vector{Float64}}()
+    δra   = Dict{Int, Matrix{Float64}}()
+    δdec  = Dict{Int, Matrix{Float64}}()
+    flags = Dict{Int, Matrix{Bool}}()
+    for spw = 4:2:18
+        @show spw
+        @time names[spw], t[spw], δra[spw], δdec[spw], flags[spw] = refraction_curves(spw, dataset)
+    end
+
+    save(joinpath(dirname(@__FILE__), "..", "..", "workspace", "refraction-curves-$dataset.jld"),
+         "names", names, "t", t, "dra", δra, "ddec", δdec, "flags", flags)
+end
+
+function refraction_curves(spw, dataset)
+    dir = getdir(spw)
+    peeling_data = load(joinpath(dir, "peeled-$dataset-visibilities.jld"), "peeling-data")
+    refraction_curves_kernel(spw, peeling_data)
+end
+
+function refraction_curves_kernel(spw, peeling_data)
+    names = ["Cyg A", "Cas A"]
+    directions = [Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"),
+                  Direction(dir"J2000", "23h23m24.000s", "+58d48m54.00s")]
+
+    N = length(peeling_data)
+    t = zeros(N)
+    δra  = zeros(length(names), N)
+    δdec = zeros(length(names), N)
+    flags = zeros(Bool, length(names), N)
+
+    for idx = 1:N
+        data = peeling_data[idx]
+        t[idx] = data.time
+
+        for jdx = 1:length(names)
+            _names = [source.name for source in data.sources]
+            s = first(find(_names .== names[jdx]))
+
+            if data.I[s] == data.Q[s] == 0
+                flags[jdx, idx] = true
+                continue
+            end
+
+            direction = data.directions[s]
+            δra[jdx, idx]  = longitude(direction) - longitude(directions[jdx])
+            δdec[jdx, idx] =  latitude(direction) -  latitude(directions[jdx])
+        end
+    end
+
+    names, t, δra, δdec, flags
 end
 
