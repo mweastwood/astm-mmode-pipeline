@@ -274,45 +274,5 @@ function ionosphere()
          "south_vobs", south_vobs_binned)
 end
 
-function scintillation()
-    directions = [Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"),
-                  Direction(dir"J2000", "23h23m24.000s", "+58d48m54.00s")]
-    for spw in (4, 18)
-        dir = Pipeline.Common.getdir(spw)
-        peeling_data = load(joinpath(dir, "peeled-rainy-visibilities.jld"), "peeling-data")
-
-        N = length(peeling_data)
-        t = zeros(N)
-        l = zeros(2, N)
-        m = zeros(2, N)
-        I = zeros(2, N)
-        flags = zeros(Bool, 2, N)
-
-        meta = Pipeline.Common.getmeta(spw, "rainy")
-        frame = TTCal.reference_frame(meta)
-
-        for idx = 1:N
-            data = peeling_data[idx]
-            set!(frame, Epoch(epoch"UTC", data.time*seconds))
-
-            t[idx] = data.time
-            for s = 1:2
-                if data.I[s] == data.Q[s] == 0
-                    flags[s, idx] = true
-                    continue
-                end
-                azel = measure(frame, directions[s], dir"AZEL")
-                az = longitude(azel)
-                el =  latitude(azel)
-                l[s, idx] = sin(az) * cos(el)
-                m[s, idx] = cos(az) * cos(el)
-                I[s, idx] = data.I[s]
-            end
-        end
-        save(joinpath(dir, "tmp", "scintillation.jld"),
-             "t", t, "l", l, "m", m, "I", I, "flags", flags)
-    end
-end
-
 end
 

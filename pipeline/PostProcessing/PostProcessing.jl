@@ -9,6 +9,7 @@ using TTCal
 using CasaCore.Measures
 using ProgressMeter
 
+include("light-curves.jl")
 include("measure-flux.jl")
 
 end
