@@ -1,12 +1,19 @@
 function measure_flux(dataset)
-    measurements = Dict{String, Vector{Float64}}()
+    everything = Dict{String, Vector{Float64}}()
+    odd = Dict{String, Vector{Float64}}()
+    even = Dict{String, Vector{Float64}}()
     for spw = 4:2:18
-        _measurements = measure_flux(spw, dataset)
-        for source in keys(_measurements)
-            if source in keys(measurements)
-                push!(measurements[source], _measurements[source])
+        @show spw
+        @time _everything, _odd, _even = measure_flux(spw, dataset)
+        for source in keys(_everything)
+            if source in keys(everything)
+                push!(everything[source], _everything[source])
+                push!(odd[source], _odd[source])
+                push!(even[source], _even[source])
             else
-                measurements[source] = [_measurements[source]]
+                everything[source] = [_everything[source]]
+                odd[source] = [_odd[source]]
+                even[source] = [_even[source]]
             end
         end
     end
@@ -17,20 +24,44 @@ function measure_flux(dataset)
     baars  = model_flux(frequencies,  baars_flux_calibrators())
 
     save(joinpath(dirname(@__FILE__), "..", "..", "workspace", "spectra.jld"),
-         "spectra", measurements, "perley", perley, "scaife", scaife, "baars", baars,
+         "everything", everything, "odd", odd, "even", even,
+         "perley", perley, "scaife", scaife, "baars", baars,
          "sources", source_direction)
 end
 
+using PyPlot
+
 function measure_flux(spw, dataset)
     dir = getdir(spw)
-    alm = load(joinpath(dir, "alm-interpolated-rainy.jld"), "alm")
-    map = alm2map(alm, 2048)
+    @time alm = load(joinpath(dir, "alm-wiener-filtered-$dataset.jld"), "alm")
+    @time map = alm2map(alm, 2048)
+
+    @time alm_odd = load(joinpath(dir, "alm-odd-wiener-filtered-$dataset.jld"), "alm")
+    @time map_odd = alm2map(alm_odd, 2048)
+    @time alm_even = load(joinpath(dir, "alm-even-wiener-filtered-$dataset.jld"), "alm")
+    @time map_even = alm2map(alm_even, 2048)
 
     path = joinpath(dir, "observation-matrix-$dataset.jld")
-    observation_matrix, cholesky_decomposition, mrange = load(path, "blocks", "cholesky", "mrange")
-    peeling_data = load(joinpath(dir, "peeled-rainy-visibilities.jld"), "peeling-data")
-    beam_coeff = load(joinpath(dir, "beam.jld"), "I-coeff")
+    @time observation_matrix, cholesky_decomposition, mrange =
+        load(path, "blocks", "cholesky", "mrange")
+    @time peeling_data = load(joinpath(dir, "peeled-$dataset-visibilities.jld"), "peeling-data")
+    @time beam_coeff = load(joinpath(dir, "beam.jld"), "I-coeff")
 
+    @time everything = measure_flux_kernel(spw, dataset, map, alm,
+                                     observation_matrix, cholesky_decomposition, mrange,
+                                     peeling_data, beam_coeff)
+    @time odd = measure_flux_kernel(spw, dataset, map_odd, alm_odd,
+                              observation_matrix, cholesky_decomposition, mrange,
+                              peeling_data[1:2:end], beam_coeff)
+    @time even = measure_flux_kernel(spw, dataset, map_even, alm_even,
+                               observation_matrix, cholesky_decomposition, mrange,
+                               peeling_data[2:2:end], beam_coeff)
+    everything, odd, even
+end
+
+function measure_flux_kernel(spw, dataset, map, alm,
+                             observation_matrix, cholesky_decomposition, mrange,
+                             peeling_data, beam_coeff)
     output = Dict{String, Float64}()
     for source in keys(source_direction)
         output[source] = measure_flux(spw, dataset, source, map, alm,
@@ -121,7 +152,7 @@ function get_flux_from_map(spw, dataset, map, alm,
 
     numerator = sum(map[pixel] for pixel in disc)
     denominator = sum(psf_map[pixel] for pixel in disc)
-    zeropoint = median(collect(map[pixel] for pixel in annulus))
+    zeropoint = median(collect(map[pixel] for pixel in annulus))*length(disc)
     flux = (numerator-zeropoint)/denominator
     flux
 end
