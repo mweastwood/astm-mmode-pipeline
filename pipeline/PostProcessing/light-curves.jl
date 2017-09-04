@@ -141,10 +141,12 @@ end
 function refraction_curves(spw, dataset)
     dir = getdir(spw)
     peeling_data = load(joinpath(dir, "peeled-$dataset-visibilities.jld"), "peeling-data")
-    refraction_curves_kernel(spw, peeling_data)
+    meta = getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    refraction_curves_kernel(spw, peeling_data, frame)
 end
 
-function refraction_curves_kernel(spw, peeling_data)
+function refraction_curves_kernel(spw, peeling_data, frame)
     names = ["Cyg A", "Cas A"]
     directions = [Direction(dir"J2000", "19h59m28.35663s", "+40d44m02.0970s"),
                   Direction(dir"J2000", "23h23m24.000s", "+58d48m54.00s")]
@@ -157,7 +159,9 @@ function refraction_curves_kernel(spw, peeling_data)
 
     for idx = 1:N
         data = peeling_data[idx]
+
         t[idx] = data.time
+        set!(frame, Epoch(epoch"UTC", data.time*seconds))
 
         for jdx = 1:length(names)
             _names = [source.name for source in data.sources]
@@ -168,9 +172,18 @@ function refraction_curves_kernel(spw, peeling_data)
                 continue
             end
 
+            azel = measure(frame, directions[jdx], dir"AZEL")
+            el =  latitude(azel)
+            if el < deg2rad(20)
+                flags[jdx, idx] = true
+                continue
+            end
+
             direction = data.directions[s]
             δra[jdx, idx]  = longitude(direction) - longitude(directions[jdx])
             δdec[jdx, idx] =  latitude(direction) -  latitude(directions[jdx])
+
+            δra[jdx, idx] *= cos(latitude(directions[jdx]))
         end
     end
 
