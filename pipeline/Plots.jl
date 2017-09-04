@@ -15,7 +15,7 @@ using ProgressMeter
 "Create an image of the psf."
 function psf_image()
     spw = 4
-    for spw in (4, 18)
+    for spw in (4, 10, 18)
         str = @sprintf("spw%02d", spw)
         psfdir = joinpath(Pipeline.Common.getdir(spw), "psf")
         outputdir = joinpath(Pipeline.Common.getdir(spw), "tmp")
