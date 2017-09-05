@@ -2,9 +2,8 @@
 
 function register(spw, dataset, target)
     dir = getdir(spw)
-    #map = readhealpix(joinpath(dir, "$target-$dataset-2048-itrf.fits"))
-    alm = load(joinpath(dir, "$target-$dataset.jld"), "alm")::Alm
-    map = alm2map(alm, 2048)::HealpixMap
+    pixels = load(joinpath(dir, "$target-$dataset.jld"), "map")
+    map = HealpixMap(pixels)::HealpixMap
 
     # For testing (makes things run more quickly)
     #alm = map2alm(map, 1000, 1000)
@@ -68,11 +67,8 @@ function register(spw, dataset, target)
     #gca()[:invert_xaxis]()
 
     map = dedistort(map, coeff)
-    alm = map2alm(map, 1000, 1000, iterations=10)
-    writehealpix(joinpath(dir, "map-registered-$dataset-2048-itrf.fits"), map, replace=true)
-    save(joinpath(dir, "alm-registered-$dataset.jld"), "alm", alm, "coeff", coeff,
-         "measured_ra", measured_ra, "measured_dec", measured_dec, "ra", ra, "dec", dec)
-
+    writehealpix(joinpath(dir, "$target-registered-$dataset-itrf.fits"), map, replace=true)
+    save(joinpath(dir, "$target-registered-$dataset.jld"), "map", map.pixels)
 end
 
 function read_vlssr_catalog()
