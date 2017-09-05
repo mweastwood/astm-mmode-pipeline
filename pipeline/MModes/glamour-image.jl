@@ -1,6 +1,7 @@
 function glamour(spw, dataset, target; min=0, max=0)
     dir = getdir(spw)
-    map = readhealpix(joinpath(dir, "$target-$dataset-galactic.fits"))
+    pixels = load(joinpath(dir, "$target-$dataset.jld"), "map")
+    map = rotate_to_galactic(spw, dataset, HealpixMap(pixels))
     mask_the_map!(spw, map)
 
     # Get to units of K
@@ -9,7 +10,7 @@ function glamour(spw, dataset, target; min=0, max=0)
     map = map * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
 
     str = @sprintf("spw%02d", spw)
-    output = joinpath(dir, "$target-$dataset-galactic.jld")
+    output = joinpath(dir, "glamour-$target-$dataset.jld")
     image = mollweide(map, (2048, 4096))
     save(output, "image", image, "frequency", ν, compress=true)
 
