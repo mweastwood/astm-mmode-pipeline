@@ -29,8 +29,6 @@ function measure_flux(dataset)
          "sources", source_direction)
 end
 
-using PyPlot
-
 function measure_flux(spw, dataset)
     dir = getdir(spw)
     @time alm = load(joinpath(dir, "alm-wiener-filtered-$dataset.jld"), "alm")
