@@ -3,184 +3,166 @@ module Driver
 using LibHealpix
 using CasaCore.Measures
 using TTCal
-using BPJSpec
 using ProgressMeter
 using JLD
-using Distributions
 
-function base_simulation()
-    meta = load("/lustre/mweastwood/mmode-analysis/workspace/spw18/metadata.jld", "metadata")
-    meta.channels = meta.channels[55:55]
-    times = load("/lustre/mweastwood/mmode-analysis/workspace/spw04/visibilities.jld", "times")
-    beam = SineBeam()
+include("../Pipeline.jl")
 
-    visibilities = zeros(Complex128, Nbase(meta), 6628)
-    model = PointSource("Point", Direction(dir"J2000", "0h", "0d"),
-                        PowerLaw(1, 0, 0, 0, 10e6, [0.0]))
+macro setup()
+    output = quote
+        spw = 4
+        dataset = "rainy"
+        dir = Pipeline.Common.getdir(spw)
+        workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
 
-    p = Progress(6628, "Progress: ")
-    for idx = 1:6628
+        meta = Pipeline.Common.getmeta(spw, dataset)
+        meta.channels = meta.channels[55:55]
+        meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+
+        times = load(joinpath(dir, "raw-rainy-visibilities.jld"), "times")
+        beam = SineBeam()
+        flags = zeros(Bool, Nbase(meta), length(times))
+
+        direction = Direction(dir"J2000", "23h23m24s", "+58d48m54s")
+        source = PointSource("Cas A", direction, PowerLaw(1, 0, 0, 0, 10e6, [0.0]))
+
+        _expected_light_curve = load(joinpath(workspace, "expected-light-curves-rainy.jld"), "I")
+        expected_light_curve = _expected_light_curve[spw][2, :]
+
+        _light_curve, _flags = load(joinpath(workspace, "light-curves-rainy.jld"), "I", "flags")
+        light_curve = _light_curve[spw][2, :]
+        light_curve_flags = _flags[spw][2, :]
+
+        _dra, _ddec, _flags = load(joinpath(workspace, "refraction-curves-rainy.jld"),
+                                   "dra", "ddec", "flags")
+        δra = _dra[spw][2, :]
+        δdec = _ddec[spw][2, :]
+        refraction_flags = _flags[spw][2, :]
+    end
+    esc(output)
+end
+
+macro image()
+    output = quote
+        visibilities, flags = Pipeline.MModes._fold(4, visibilities, flags, "simulation", "")
+        mmodes, mmode_flags = Pipeline.MModes.getmmodes_internal(visibilities, flags)
+        alm = Pipeline.MModes._getalm(spw, mmodes, mmode_flags, tolerance=0.01)
+        map = alm2map(alm, 2048)
+        img = Pipeline.Cleaning.postage_stamp(map, direction)
+    end
+    esc(output)
+end
+
+function base_simulation_visibilities(meta, source, times, light_curve)
+    N = length(times)
+    visibilities = zeros(Complex128, 2, Nbase(meta), N)
+    p = Progress(N)
+    for idx = 1:N
         meta.time = Epoch(epoch"UTC", times[idx]*seconds)
         frame = TTCal.reference_frame(meta)
-        if !TTCal.isabovehorizon(frame, model)
+        if !TTCal.isabovehorizon(frame, source)
             next!(p)
             continue
         end
-        meta.phase_center = measure(frame, Direction(dir"AZEL", 0degrees, 90degrees), dir"J2000")
-        model_visibilities = genvis(meta, beam, model).data
+        model_visibilities = genvis(meta, ConstantBeam(), source).data
         for α = 1:Nbase(meta)
-            visibilities[α, idx] = 0.5*(model_visibilities[α, 1].xx + model_visibilities[α, 1].yy)
+            visibilities[1, α, idx] = light_curve[idx]*model_visibilities[α, 1].xx
+            visibilities[2, α, idx] = light_curve[idx]*model_visibilities[α, 1].yy
         end
         next!(p)
     end
+    visibilities
+end
 
-    gridded = GriddedVisibilities("base-visibilities", Nbase(meta), 6628, meta.channels, 0.0)
-    gridded[1] = visibilities
-    mmodes = MModes("base-mmodes", gridded, 1000)
-    transfermatrix = TransferMatrix("/lustre/mweastwood/mmode-analysis/workspace/spw18/transfermatrix")
+function base_simulation()
+    @setup
+    #visibilities = base_simulation_visibilities(meta, source, times, expected_light_curve)
+    #@image
+    #writehealpix("base-map.fits", map, replace=true)
+    map = readhealpix("base-map.fits")
+    meta = Pipeline.Common.getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    img = Pipeline.Cleaning.postage_stamp(map, measure(frame, direction, dir"ITRF"))
+    save("base-image.jld", "img", img)
+end
 
-    alm = _getalm(transfermatrix, mmodes, 0.01)
-    map = alm2map(alm, 512)
-    writehealpix("base-map.fits", map, replace=true)
+function scintillation_simulation_visibilities(meta, source, times, light_curve,
+                                               expected_light_curve, light_curve_flags)
+    N = length(times)
+    frame = TTCal.reference_frame(meta)
+    visibilities = zeros(Complex128, 2, Nbase(meta), N)
+    p = Progress(N)
+    for idx = 1:N
+        meta.time = Epoch(epoch"UTC", times[idx]*seconds)
+        frame = TTCal.reference_frame(meta)
+        if !TTCal.isabovehorizon(frame, source)
+            next!(p)
+            continue
+        end
+        model_visibilities = genvis(meta, ConstantBeam(), source).data
+        flux = light_curve_flags[idx] ? expected_light_curve[idx] : light_curve[idx]
+        for α = 1:Nbase(meta)
+            visibilities[1, α, idx] = flux*model_visibilities[α, 1].xx
+            visibilities[2, α, idx] = flux*model_visibilities[α, 1].yy
+        end
+        next!(p)
+    end
+    visibilities
 end
 
 function scintillation_simulation()
-    meta = load("/lustre/mweastwood/mmode-analysis/workspace/spw18/metadata.jld", "metadata")
-    meta.channels = meta.channels[55:55]
-    times = load("/lustre/mweastwood/mmode-analysis/workspace/spw04/visibilities.jld", "times")
-    beam = SineBeam()
+    @setup
+    #visibilities = scintillation_simulation_visibilities(meta, source, times, light_curve,
+    #                                                     expected_light_curve, light_curve_flags)
+    #@image
+    #writehealpix("scintillation-map.fits", map, replace=true)
+    map = readhealpix("scintillation-map.fits")
+    meta = Pipeline.Common.getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    img = Pipeline.Cleaning.postage_stamp(map, measure(frame, direction, dir"ITRF"))
+    save("scintillation-flux.jld", "img", img)
+end
 
-    visibilities = zeros(Complex128, Nbase(meta), 6628)
-    model = PointSource("Point", Direction(dir"J2000", "0h", "0d"),
-                        PowerLaw(1, 0, 0, 0, 10e6, [0.0]))
-    c = Cauchy(1.0, 0.3)
-    fluxes = rand(c, 6628)
-    fluxes = clamp(fluxes, 0.01, 10)
-    elevations = zeros(6628)
-
-    p = Progress(6628, "Progress: ")
-    for idx = 1:6628
+function refraction_simulation_visibilities(meta, source, times, light_curve,
+                                            δra, δdec, refraction_flags)
+    N = length(times)
+    frame = TTCal.reference_frame(meta)
+    visibilities = zeros(Complex128, 2, Nbase(meta), N)
+    p = Progress(N)
+    for idx = 1:N
         meta.time = Epoch(epoch"UTC", times[idx]*seconds)
         frame = TTCal.reference_frame(meta)
-        if !TTCal.isabovehorizon(frame, model)
+        if !TTCal.isabovehorizon(frame, source)
             next!(p)
             continue
         end
-        meta.phase_center = measure(frame, Direction(dir"AZEL", 0degrees, 90degrees), dir"J2000")
-        model.spectrum = PowerLaw(fluxes[idx], 0, 0, 0, 10e6, [0.0])
-        elevations[idx] = latitude(measure(frame, model.direction, dir"AZEL"))
-        model_visibilities = genvis(meta, beam, model).data
+        mysource = deepcopy(source)
+        if !refraction_flags[idx]
+            ra = longitude(mysource.direction) + deg2rad(δra[idx]*60)
+            dec = latitude(mysource.direction) + deg2rad(δdec[idx]*60)
+            mysource.direction = Direction(dir"J2000", ra*radians, dec*radians)
+        end
+        model_visibilities = genvis(meta, ConstantBeam(), mysource).data
         for α = 1:Nbase(meta)
-            visibilities[α, idx] = 0.5*(model_visibilities[α, 1].xx + model_visibilities[α, 1].yy)
+            visibilities[1, α, idx] = light_curve[idx]*model_visibilities[α, 1].xx
+            visibilities[2, α, idx] = light_curve[idx]*model_visibilities[α, 1].yy
         end
         next!(p)
     end
-
-    @show any(isnan(visibilities))
-
-    gridded = GriddedVisibilities("scintillation-visibilities", Nbase(meta), 6628, meta.channels, 0.0)
-    gridded[1] = visibilities
-    mmodes = MModes("scintillation-mmodes", gridded, 1000)
-    transfermatrix = TransferMatrix("/lustre/mweastwood/mmode-analysis/workspace/spw18/transfermatrix")
-
-    alm = _getalm(transfermatrix, mmodes, 0.01)
-    map = alm2map(alm, 512)
-    writehealpix("scintillation-map.fits", map, replace=true)
-
-    save("scintillation-flux.jld", "flux", fluxes, "time", times, "elevation", elevations)
+    visibilities
 end
 
 function refraction_simulation()
-    meta = load("/lustre/mweastwood/mmode-analysis/workspace/spw18/metadata.jld", "metadata")
-    meta.channels = meta.channels[55:55]
-    times = load("/lustre/mweastwood/mmode-analysis/workspace/spw04/visibilities.jld", "times")
-    beam = SineBeam()
-
-    visibilities = zeros(Complex128, Nbase(meta), 6628)
-    model = PointSource("Point", Direction(dir"J2000", "0h", "0d"),
-                        PowerLaw(1, 0, 0, 0, 10e6, [0.0]))
-    δy = deg2rad(30/60)*randn(6628)
-    δz = deg2rad(30/60)*randn(6628)
-    fy = rfft(δy)
-    fz = rfft(δz)
-    fy[end-3000:end] = 0
-    fz[end-3000:end] = 0
-    δy = irfft(fy, 6628)
-    δz = irfft(fz, 6628)
-    save("refraction-position.jld", "dy", δy, "dz", δz)
-
-    p = Progress(6628, "Progress: ")
-    for idx = 1:6628
-        meta.time = Epoch(epoch"UTC", times[idx]*seconds)
-        frame = TTCal.reference_frame(meta)
-        meta.phase_center = measure(frame, Direction(dir"AZEL", 0degrees, 90degrees), dir"J2000")
-        x = sqrt(1 - δy[idx]^2 - δz[idx]^2)
-        model.direction = Direction(dir"J2000", x, δy[idx], δz[idx])
-        if !TTCal.isabovehorizon(frame, model)
-            next!(p)
-            continue
-        end
-        model_visibilities = genvis(meta, beam, model).data
-        for α = 1:Nbase(meta)
-            visibilities[α, idx] = 0.5*(model_visibilities[α, 1].xx + model_visibilities[α, 1].yy)
-        end
-        next!(p)
-    end
-
-    gridded = GriddedVisibilities("refraction-visibilities", Nbase(meta), 6628, meta.channels, 0.0)
-    gridded[1] = visibilities
-    mmodes = MModes("refraction-mmodes", gridded, 1000)
-    transfermatrix = TransferMatrix("/lustre/mweastwood/mmode-analysis/workspace/spw18/transfermatrix")
-
-    alm = _getalm(transfermatrix, mmodes, 0.01)
-    map = alm2map(alm, 512)
-    writehealpix("refraction-map.fits", map, replace=true)
-end
-
-function _getalm(transfermatrix::TransferMatrix, mmodes, tolerance)
-    lmax = transfermatrix.lmax
-    mmax = transfermatrix.mmax
-    alm = Alm(Complex128, lmax, mmax)
-    m = 0
-    nextm() = (m′ = m; m += 1; m′)
-    prg = Progress(mmax+1, "Progress: ")
-    lck = ReentrantLock()
-    increment_progress() = (lock(lck); next!(prg); unlock(lck))
-    @sync for worker in workers()
-        @async begin
-            input_channel  = RemoteChannel()
-            output_channel = RemoteChannel()
-            try
-                remotecall(getalm_remote_processing_loop, worker, input_channel, output_channel, transfermatrix, mmodes, tolerance)
-                while true
-                    m′ = nextm()
-                    m′ ≤ mmax || break
-                    put!(input_channel, m′)
-                    block = take!(output_channel)
-                    for l = m′:lmax
-                        alm[l,m′] = block[l-m′+1]
-                    end
-                    increment_progress()
-                end
-            finally
-                close(input_channel)
-                close(output_channel)
-            end
-        end
-    end
-    alm
-end
-
-function getalm_remote_processing_loop(input, output, transfermatrix, mmodes, tolerance)
-    BLAS.set_num_threads(16) # compensate for a bug in `addprocs`
-    while true
-        m = take!(input)
-        A = transfermatrix[m,1]
-        b = mmodes[m,1]
-        BPJSpec.account_for_flags!(A, b)
-        x = tikhonov(A, b, tolerance)
-        put!(output, x)
-    end
+    @setup
+    #visibilities = refraction_simulation_visibilities(meta, source, times, light_curve,
+    #                                                  δra, δdec, refraction_flags)
+    #@image
+    #writehealpix("refraction-map.fits", map, replace=true)
+    map = readhealpix("refraction-map.fits")
+    meta = Pipeline.Common.getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    img = Pipeline.Cleaning.postage_stamp(map, measure(frame, direction, dir"ITRF"))
+    save("refraction-position.jld", "img", img)
 end
 
 end
