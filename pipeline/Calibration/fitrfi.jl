@@ -702,7 +702,7 @@ function fitrfi_spw14(times, data, flags, dataset, target)
 
         elseif target == "rfi-restored-peeled"
             # Smeared
-            @fitrfi 1:7756 3 :select=>1:3
+            @fitrfi 1:7756 3 :select=>1:3 :test=>true
 
         else
             error("unknown target")

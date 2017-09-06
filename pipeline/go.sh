@@ -325,6 +325,12 @@ do
         isbetween 65 && register  $spw $dataset "map-even-restored"
         isbetween 66 && glamour   $spw $dataset "map-odd-restored-registered"
         isbetween 67 && glamour   $spw $dataset "map-even-restored-registered"
+
+        # RFI
+        isbetween 70 && fold      $spw $dataset "rfi-restored-peeled"
+        isbetween 71 && getmmodes $spw $dataset "folded-rfi-restored-peeled"
+        isbetween 72 && getalm    $spw $dataset "mmodes-rfi-restored-peeled"
+        isbetween 73 && makemap   $spw $dataset "alm-rfi-restored-peeled"
     done
 done
 
