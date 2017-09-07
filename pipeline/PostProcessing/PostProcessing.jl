@@ -14,6 +14,7 @@ include("light-curves.jl")
 include("measure-flux.jl")
 include("measure-thermal-noise.jl")
 include("measure-beam-width.jl")
+include("singular-values.jl")
 
 end
 
