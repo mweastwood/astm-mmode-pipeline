@@ -102,45 +102,6 @@ function psf_width()
     end
 end
 
-function compare_with_guzman()
-    fits = FITS("../workspace/comparison-maps/wlb45.fits")
-    # TODO is this in B1950 coordinates????
-    img = read(fits[1])
-    ϕ = linspace(0, 2π, size(img, 1)+1)[1:end-1]
-    θ = linspace(0, π, size(img, 2))
-    guzman = HealpixMap(Float64, 256)
-    for pix = 1:length(guzman)
-        θ_, ϕ_ = LibHealpix.pix2ang_ring(nside(guzman), pix)
-        ϕ_ = mod2pi(π - ϕ_)
-        θ_ = π - θ_
-        idx = searchsortedlast(ϕ, ϕ_)
-        jdx = searchsortedlast(θ, θ_)
-        guzman[pix] = img[idx, jdx]
-    end
-
-    spw = 8
-    dir = Pipeline.Common.getdir(spw)
-    @time lwa = readhealpix(joinpath(dir, "map-wiener-filtered-rainy-2048-galactic.fits"))
-    meta = Pipeline.Common.getmeta(spw, "rainy")
-    ν = meta.channels[55]
-    @time lwa = lwa * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
-    @time lwa = smooth(lwa, 5, nside(guzman))
-
-    img1 = mollweide(guzman)
-    img2 = mollweide(lwa)
-
-    figure(1); clf()
-    subplot(211)
-    imshow(img1, vmin=4000, vmax=13000)
-    colorbar()
-    subplot(212)
-    imshow((img2-img1)./img1, vmin=-0.5, vmax=+0.5, cmap=get_cmap("RdBu_r"))
-    colorbar()
-    tight_layout()
-
-    save(joinpath(dir, "tmp", "comparison-with-guzman.jld"), "guzman", img1, "lwa", img2)
-end
-
 function compare_with_haslam()
     haslam = readhealpix("../workspace/comparison-maps/haslam408_dsds_Remazeilles2014.fits")
     haslam_freq = 408e6
