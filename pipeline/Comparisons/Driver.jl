@@ -183,33 +183,42 @@ function internal_comparison()
 end
 
 function fit_plane(filename1, filename2, filename3; width=5)
-    println("Preparing 1...")
-    ν1 = Pipeline.Common.getfreq(4)
-    @time map1 = readhealpix(joinpath(Pipeline.Common.getdir(4), filename1))
-    @time map1 = map1 * (BPJSpec.Jy * (BPJSpec.c/ν1)^2 / (2*BPJSpec.k))
-    @time map1 = Pipeline.MModes.rotate_to_galactic(4, "rainy", map1)
-    @time map1 = degrade(map1, 512)
+    #println("Preparing 1...")
+    #ν1 = Pipeline.Common.getfreq(4)
+    #@time map1 = readhealpix(joinpath(Pipeline.Common.getdir(4), filename1))
+    #@time map1 = map1 * (BPJSpec.Jy * (BPJSpec.c/ν1)^2 / (2*BPJSpec.k))
+    #@time map1 = Pipeline.MModes.rotate_to_galactic(4, "rainy", map1)
+    #@time map1 = degrade(map1, 512)
 
-    println("Preparing 2...")
-    ν2 = Pipeline.Common.getfreq(10)
-    @time map2 = readhealpix(joinpath(Pipeline.Common.getdir(10), filename2))
-    @time map2 = map2 * (BPJSpec.Jy * (BPJSpec.c/ν2)^2 / (2*BPJSpec.k))
-    @time map2 = Pipeline.MModes.rotate_to_galactic(4, "rainy", map2)
-    @time map2 = degrade(map2, 512)
+    #println("Preparing 2...")
+    #ν2 = Pipeline.Common.getfreq(10)
+    #@time map2 = readhealpix(joinpath(Pipeline.Common.getdir(10), filename2))
+    #@time map2 = map2 * (BPJSpec.Jy * (BPJSpec.c/ν2)^2 / (2*BPJSpec.k))
+    #@time map2 = Pipeline.MModes.rotate_to_galactic(4, "rainy", map2)
+    #@time map2 = degrade(map2, 512)
 
-    println("Preparing 3...")
-    ν3 = Pipeline.Common.getfreq(18)
-    @time map3 = readhealpix(joinpath(Pipeline.Common.getdir(18), filename1))
-    @time map3 = map3 * (BPJSpec.Jy * (BPJSpec.c/ν3)^2 / (2*BPJSpec.k))
-    @time map2 = Pipeline.MModes.rotate_to_galactic(4, "rainy", map2)
-    @time map3 = degrade(map3, 512)
+    #println("Preparing 3...")
+    #ν3 = Pipeline.Common.getfreq(18)
+    #@time map3 = readhealpix(joinpath(Pipeline.Common.getdir(18), filename1))
+    #@time map3 = map3 * (BPJSpec.Jy * (BPJSpec.c/ν3)^2 / (2*BPJSpec.k))
+    #@time map3 = Pipeline.MModes.rotate_to_galactic(4, "rainy", map3)
+    #@time map3 = degrade(map3, 512)
+
+    #save("internal-spectra-checkpoint.jld",
+    #     "map1", map1.pixels, "map2", map2.pixels, "map3", map3.pixels)
+
+    map1_pixels, map2_pixels, map3_pixels =
+        load("internal-spectra-checkpoint.jld", "map1", "map2", "map3")
+    map1 = HealpixMap(map1_pixels)
+    map2 = HealpixMap(map2_pixels)
+    map3 = HealpixMap(map3_pixels)
 
     println("Fitting...")
     @time _fit_plane(map1, map2, map3, width)
 end
 
 function _fit_plane(map1, map2, map3, width)
-    output_nside = 128
+    output_nside = 256
     output_npix  = nside2npix(output_nside)
     line_slope     = zeros(output_npix) # slope of a linear fit between map1 and map3
     plane_slope_1  = zeros(output_npix) # slope of a planar fit between map3 and map1
@@ -221,7 +230,7 @@ function _fit_plane(map1, map2, map3, width)
     frame = TTCal.reference_frame(meta)
     for idx = 1:output_npix
         θ, ϕ = LibHealpix.pix2ang_ring(output_nside, idx)
-        galactic = Direction(dir"GALACTIC", (π/2-θ)*radians, ϕ*radians)
+        galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
         itrf = measure(frame, galactic, dir"ITRF")
         dec = latitude(itrf) |> rad2deg
         dec < -30 && continue
@@ -252,7 +261,7 @@ function _disc_weights(map, θ, ϕ, width)
     disc, weights
 end
 
-using PyPlot
+#using PyPlot
 
 function _fit_plane(map1, map2, map3, disc, weights)
     e = ones(length(disc))
@@ -273,15 +282,56 @@ function _fit_plane(map1, map2, map3, disc, weights)
     z_ = m_plane[1]*x + m_plane[2]*y + m_plane[3]
     residual_plane = sqrt(sum(abs2(z-z_)))
 
+    # Wow, the line fit is shitty, let's fit two lines
+    # Note: I'm doing this because I can't figure out how to reliably turn the parameters of the
+    #       plane into a spectral index. There isn't an algebraic relation to do it.
+    if abs(residual_line-residual_plane)/abs(residual_plane) > 0.5
+        function objective(p, _)
+            res1 = abs2(z - (p[1]*x + p[2]))
+            res2 = abs2(z - (p[3]*x + p[4]))
+            output = 0.0
+            for idx = 1:length(z)
+                output += weights[idx]*min(res1[idx], res2[idx])
+            end
+            output
+        end
+
+        opt = Opt(:LN_SBPLX, 4)
+        ftol_rel!(opt, 1e-10)
+        min_objective!(opt, objective)
+        minf, params, ret = optimize(opt, [m_line[1], m_line[2], m_line[1], m_line[2]])
+
+        #figure(1); clf()
+        #scatter(x, z, c=y, s=weights, vmin=minimum(z), vmax=maximum(z))
+        #x_ = [minimum(x), maximum(x)]
+        #z_ = m_line[1]*x_ + m_line[2]
+        #plot(x_, z_, "k-")
+        #z_ = params[1]*x_ + params[2]
+        #plot(x_, z_, "r-")
+        #z_ = params[3]*x_ + params[4]
+        #plot(x_, z_, "r-")
+        #xlim(minimum(x), maximum(x))
+        #ylim(minimum(z), maximum(z))
+
+        funky_slope_1 = max(params[1], params[3])
+        funky_slope_2 = min(params[1], params[3])
+    else
+        funky_slope_1 = 0.0
+        funky_slope_2 = 0.0
+    end
+
     #figure(1); clf()
-    #scatter(x, y, c=z, s=weights, vmin=minimum(z), vmax=maximum(z))
+    #scatter(x, z, c=y, s=weights, vmin=minimum(z), vmax=maximum(z))
     #colorbar()
+    #x_ = [minimum(x), maximum(x)]
+    #z_ = m_line[1]*x_ + m_line[2]
+    #plot(x_, z_, "k-")
     #xlim(minimum(x), maximum(x))
-    #ylim(minimum(y), maximum(y))
+    #ylim(minimum(z), maximum(z))
     #@show m_line m_plane
     #@show residual_line residual_plane
 
-    m_line[1], m_plane[1], m_plane[2], residual_line, residual_plane
+    m_line[1], funky_slope_1, funky_slope_2, residual_line, residual_plane
 end
 
 #function compare_with_haslam()
