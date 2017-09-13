@@ -1,13 +1,86 @@
+function better_internal_comparison()
+    freq = [Pipeline.Common.getfreq(spw) for spw = 4:2:18]
+    #maps = [prepare_lwa_map(spw, "map-restored-registered-rainy-itrf.fits") for spw = 4:2:18]
+    #save("better-internal-spectra-checkpoint.jld", "maps", getfield.(maps, 1))
+    maps = HealpixMap.(load("better-internal-spectra-checkpoint.jld", "maps"))
+    spectral_index, amplitude = power_law_fit(freq, maps)
+    save("better-spectral-index.jld", "spectral_index", spectral_index, "amplitude", amplitude)
+end
+
+function power_law_fit(freq, maps)
+    Npix = length(maps[1])
+    Nworkers = length(workers())
+
+    spectral_index = zeros(Npix)
+    amplitude = zeros(Npix)
+
+    futures = [remotecall(power_law_fit, worker, freq, maps, idx:Nworkers:Npix)
+               for (idx, worker) in enumerate(workers())]
+    for future in futures
+        _spectral_index, _amplitude, pixels = fetch(future)
+        spectral_index[pixels] = _spectral_index[pixels]
+        amplitude[pixels] = _amplitude[pixels]
+    end
+    spectral_index, amplitude
+end
+
+function power_law_fit(freq, maps, pixels)
+    N = length(maps[1])
+    spectral_index = zeros(N)
+    amplitude = zeros(N)
+    meta = Pipeline.Common.getmeta(4, "rainy")
+    frame = TTCal.reference_frame(meta)
+    @time for pixel in pixels
+        θ, ϕ = LibHealpix.pix2ang_ring(nside(maps[1]), pixel)
+        galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
+        itrf = measure(frame, galactic, dir"ITRF")
+        dec = latitude(itrf) |> rad2deg
+        dec < -30 && continue
+
+        disc1 = LibHealpix.query_disc(maps[1], θ, ϕ, deg2rad(2))
+        disc2 = LibHealpix.query_disc(maps[1], θ, ϕ, deg2rad(5))
+        annulus = setdiff(disc2, disc1)
+        flux = [map[pixel] - median(map[annulus]) for map in maps]
+        if all(flux .> 0)
+            spectral_index[pixel], amplitude[pixel] = _power_law_fit(freq, flux)
+        else
+            spectral_index[pixel] = NaN
+            amplitude[pixel] = NaN
+        end
+    end
+    spectral_index, amplitude, pixels
+end
+
+function _power_law_fit(freq, flux)
+    x = log(freq)
+    y = log(flux)
+    e = ones(length(freq))
+    A = [x e]
+    coeff = A\y
+    spectral_index = coeff[1]
+    amplitude = exp(coeff[2])
+    spectral_index, amplitude
+end
+
+function prepare_lwa_map(spw, filename)
+    ν = Pipeline.Common.getfreq(spw)
+    map = readhealpix(joinpath(Pipeline.Common.getdir(spw), filename))
+    map = map * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
+    map = Pipeline.MModes.rotate_to_galactic(spw, "rainy", map)
+    map = degrade(map, 512)
+    map
+end
+
+
 function internal_comparison()
-    widths = [4, 2, 1, 0.5]
-    slope = Dict{Int, Vector{Float64}}()
-    Δresidual = Dict{Int, Vector{Float64}}()
-    jackknives = Dict{Int, Vector{Vector{Float64}}}()
+    widths = [20.0]
+    slope = Dict{Float64, Vector{Float64}}()
+    Δresidual = Dict{Float64, Vector{Float64}}()
+    jackknives = Dict{Float64, Vector{Vector{Float64}}}()
     for width in widths
-        @show width
         m, Δres = fit_plane_with_jackknife(width)
         slope[width] = m[1]
-        Δresidual[width] = Δresidual[1]
+        Δresidual[width] = Δres[1]
         jackknives[width] = m[2:end]
     end
     save("internal-spectral-index-adaptive.jld",
@@ -25,16 +98,16 @@ function fit_plane_with_jackknife(width)
               (filename, filename, filename_even),
               (filename_odd, filename,  filename),
               (filename_even, filename, filename)]
-    futures = [remotecall(fit_plane, 1, trials[1]...)]
+    futures = [remotecall(fit_plane, idx+1, trials[idx]..., width) for idx = 1:length(trials)]
     for future in futures
         tmp = fetch(future)
         push!(slopes, tmp[1])
-        push!(Δresiudal,  tmp[2])
+        push!(Δresidual,  tmp[2])
     end
     slopes, Δresidual
 end
 
-function fit_plane(filename1, filename2, filename3; width=5)
+function fit_plane(filename1, filename2, filename3, width)
     #println("Preparing 1...")
     #ν1 = Pipeline.Common.getfreq(4)
     #@time map1 = readhealpix(joinpath(Pipeline.Common.getdir(4), filename1))
@@ -70,28 +143,24 @@ function fit_plane(filename1, filename2, filename3; width=5)
 end
 
 function _fit_plane(map1, map2, map3, width)
-    output_nside = 128
+    output_nside = 256
     output_npix  = nside2npix(output_nside)
     line_slope = zeros(output_npix) # slope of a linear fit between map1 and map3
     Δresidual  = zeros(output_npix) # change in residual between linear fit and planar fit
 
     meta = Pipeline.Common.getmeta(4, "rainy")
     frame = TTCal.reference_frame(meta)
-    #prg = Progress(output_npix)
     for idx = 1:output_npix
         θ, ϕ = LibHealpix.pix2ang_ring(output_nside, idx)
         galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
         itrf = measure(frame, galactic, dir"ITRF")
         dec = latitude(itrf) |> rad2deg
-        dec < -30 && @goto skip
+        dec < -30 && continue
 
         disc, weights = _disc_weights(map1, θ, ϕ, width)
-        m, Δres = _fit_plane(map1, map2, map3, disc, weights)
+        m, Δres = _fit_plane(idx, map1, map2, map3, disc, weights)
         line_slope[idx] = m
         Δresidual[idx] = Δres
-
-        @label skip
-        #next!(prg)
     end
     line_slope, Δresidual
 end
@@ -110,81 +179,86 @@ function _disc_weights(map, θ, ϕ, width)
     distance = distance/width
     weights   = exp.(-0.5.*(distance./0.2).^2)
     weights .*= (1.+distance).^2 .* (1.-distance).^2 # truncates the Gaussian smoothly
-    #weights = (cos(π*distance/width)+1)/2
     disc, weights
 end
 
-#using PyPlot
-
-function _fit_plane(map1, map2, map3, disc, weights)
-    e = ones(length(disc))
+function _fit_plane(idx, map1, map2, map3, disc, weights)
+    #@show idx
     x = [map1[pixel] for pixel in disc]
     y = [map2[pixel] for pixel in disc]
     z = [map3[pixel] for pixel in disc]
-    W = Diagonal(weights)
+
+    # Discard extreme points (to reduce sensitivty to point sources)
+    N = length(z)
+    amplitude = hypot.(x, y, z)
+    perm = sortperm(amplitude)
+    perm = perm[1:round(Int, 0.9N)]
+    x = x[perm]
+    y = y[perm]
+    z = z[perm]
+    weights = weights[perm]
+
+    #μx = mean(x)
+    #μz = mean(z)
+    #σx = std(x)
+    #σz = std(z)
+    #σxz = mean((x-μx).*(z-μz))
+    #ρ = σxz/(σx*σz)
+
+    #weights[:] = 1
 
     # Fit a line
+    e = ones(length(x))
     A = [x e]
+    W = Diagonal(weights)
     m_line = (A'*W*A)\(A'*(W*z))
     z_ = m_line[1]*x + m_line[2]
-    residual_line = sqrt(sum(abs2(z-z_)))
+    weight_norm = sqrt(sum(weights))
+    residual_norm = sqrt(sum(weights.*abs2(z-z_)))
+    data_norm = sqrt(sum(weights.*abs2(z)))
 
-    # Fit a plane
-    A = [x y e]
-    m_plane = (A'*W*A)\(A'*(W*z))
-    z_ = m_plane[1]*x + m_plane[2]*y + m_plane[3]
-    residual_plane = sqrt(sum(abs2(z-z_)))
-
-    ## Wow, the line fit is shitty, let's fit two lines
-    ## Note: I'm doing this because I can't figure out how to reliably turn the parameters of the
-    ##       plane into a spectral index. There isn't an algebraic relation to do it.
-    #if abs(residual_line-residual_plane)/abs(residual_plane) > 0.5
+    ###if residual_norm > 0.5
+    #if m_line[1] < 0
+    #    @show idx
     #    function objective(p, _)
     #        res1 = abs2(z - (p[1]*x + p[2]))
     #        res2 = abs2(z - (p[3]*x + p[4]))
     #        output = 0.0
-    #        for idx = 1:length(z)
-    #            output += weights[idx]*min(res1[idx], res2[idx])
+    #        for jdx = 1:length(z)
+    #            output += weights[jdx]*min(res1[jdx], res2[jdx])
     #        end
+    #        @show p, output
     #        output
     #    end
 
     #    opt = Opt(:LN_SBPLX, 4)
-    #    xtol_rel!(opt, 1e-5)
+    #    ftol_rel!(opt, 1e-5)
     #    min_objective!(opt, objective)
     #    minf, params, ret = optimize(opt, [m_line[1], m_line[2], m_line[1], m_line[2]])
 
-    #    #figure(1); clf()
-    #    #scatter(x, z, c=y, s=weights, vmin=minimum(z), vmax=maximum(z))
-    #    #x_ = [minimum(x), maximum(x)]
-    #    #z_ = m_line[1]*x_ + m_line[2]
-    #    #plot(x_, z_, "k-")
-    #    #z_ = params[1]*x_ + params[2]
-    #    #plot(x_, z_, "r-")
-    #    #z_ = params[3]*x_ + params[4]
-    #    #plot(x_, z_, "r-")
-    #    #xlim(minimum(x), maximum(x))
-    #    #ylim(minimum(z), maximum(z))
+    #    @show idx
+    #    @show N
+    #    @show m_line
+    #    #@show params
+    #    @show residual_norm data_norm weight_norm
+    #    
+    #    figure(1); clf()
+    #    scatter(x, z, c=y, s=10weights, vmin=minimum(z), vmax=maximum(z))
+    #    x_ = [minimum(x), maximum(x)]
+    #    z_ = m_line[1]*x_ + m_line[2]
+    #    plot(x_, z_, "k-")
+    #    z_ = params[1]*x_ + params[2]
+    #    plot(x_, z_, "r-")
+    #    z_ = params[3]*x_ + params[4]
+    #    plot(x_, z_, "r-")
+    #    xlim(minimum(x), maximum(x))
+    #    ylim(minimum(z), maximum(z))
 
-    #    funky_slope_1 = max(params[1], params[3])
-    #    funky_slope_2 = min(params[1], params[3])
-    #else
-    #    funky_slope_1 = 0.0
-    #    funky_slope_2 = 0.0
+    #    print("Continue? ")
+    #    inp = chomp(readline())
+    #    inp == "q" && error("stop")
     #end
 
-    #figure(1); clf()
-    #scatter(x, z, c=y, s=weights, vmin=minimum(z), vmax=maximum(z))
-    #colorbar()
-    #x_ = [minimum(x), maximum(x)]
-    #z_ = m_line[1]*x_ + m_line[2]
-    #plot(x_, z_, "k-")
-    #xlim(minimum(x), maximum(x))
-    #ylim(minimum(z), maximum(z))
-    #@show m_line m_plane
-    #@show residual_line residual_plane
-
-    Δresidual = abs(residual_line-residual_plane)/abs(residual_plane)
-    m_line[1], Δresidual
+    m_line[1], residual_norm/data_norm
 end
 
