@@ -1,90 +1,13 @@
-function better_internal_comparison()
-    freq = [Pipeline.Common.getfreq(spw) for spw = 4:2:18]
-    #maps = [prepare_lwa_map(spw, "map-restored-registered-rainy-itrf.fits") for spw = 4:2:18]
-    #save("better-internal-spectra-checkpoint.jld", "maps", getfield.(maps, 1))
-    maps = HealpixMap.(load("better-internal-spectra-checkpoint.jld", "maps"))
-    spectral_index, amplitude = power_law_fit(freq, maps)
-    save("better-spectral-index.jld", "spectral_index", spectral_index, "amplitude", amplitude)
-end
-
-function power_law_fit(freq, maps)
-    Npix = length(maps[1])
-    Nworkers = length(workers())
-
-    spectral_index = zeros(Npix)
-    amplitude = zeros(Npix)
-
-    futures = [remotecall(power_law_fit, worker, freq, maps, idx:Nworkers:Npix)
-               for (idx, worker) in enumerate(workers())]
-    for future in futures
-        _spectral_index, _amplitude, pixels = fetch(future)
-        spectral_index[pixels] = _spectral_index[pixels]
-        amplitude[pixels] = _amplitude[pixels]
-    end
-    spectral_index, amplitude
-end
-
-function power_law_fit(freq, maps, pixels)
-    N = length(maps[1])
-    spectral_index = zeros(N)
-    amplitude = zeros(N)
-    meta = Pipeline.Common.getmeta(4, "rainy")
-    frame = TTCal.reference_frame(meta)
-    @time for pixel in pixels
-        θ, ϕ = LibHealpix.pix2ang_ring(nside(maps[1]), pixel)
-        galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
-        itrf = measure(frame, galactic, dir"ITRF")
-        dec = latitude(itrf) |> rad2deg
-        dec < -30 && continue
-
-        disc1 = LibHealpix.query_disc(maps[1], θ, ϕ, deg2rad(2))
-        disc2 = LibHealpix.query_disc(maps[1], θ, ϕ, deg2rad(5))
-        annulus = setdiff(disc2, disc1)
-        flux = [map[pixel] - median(map[annulus]) for map in maps]
-        if all(flux .> 0)
-            spectral_index[pixel], amplitude[pixel] = _power_law_fit(freq, flux)
-        else
-            spectral_index[pixel] = NaN
-            amplitude[pixel] = NaN
-        end
-    end
-    spectral_index, amplitude, pixels
-end
-
-function _power_law_fit(freq, flux)
-    x = log(freq)
-    y = log(flux)
-    e = ones(length(freq))
-    A = [x e]
-    coeff = A\y
-    spectral_index = coeff[1]
-    amplitude = exp(coeff[2])
-    spectral_index, amplitude
-end
-
-function prepare_lwa_map(spw, filename)
-    ν = Pipeline.Common.getfreq(spw)
-    map = readhealpix(joinpath(Pipeline.Common.getdir(spw), filename))
-    map = map * (BPJSpec.Jy * (BPJSpec.c/ν)^2 / (2*BPJSpec.k))
-    map = Pipeline.MModes.rotate_to_galactic(spw, "rainy", map)
-    map = degrade(map, 512)
-    map
-end
-
-
 function internal_comparison()
-    widths = [20.0]
-    slope = Dict{Float64, Vector{Float64}}()
-    Δresidual = Dict{Float64, Vector{Float64}}()
-    jackknives = Dict{Float64, Vector{Vector{Float64}}}()
-    for width in widths
-        m, Δres = fit_plane_with_jackknife(width)
-        slope[width] = m[1]
-        Δresidual[width] = Δres[1]
-        jackknives[width] = m[2:end]
-    end
-    save("internal-spectral-index-adaptive.jld",
-         "slope", slope, "jackknives", jackknives, "delta_residual", Δresidual)
+    width = 20.0
+    m, res, masks = fit_plane_with_jackknife(width)
+    slope = m[1]
+    residual = res[1]
+    jackknives = m[2:end]
+
+    save("internal-spectral-index.jld",
+         "slope", slope, "jackknives", jackknives, "residual", residual,
+         "masks", masks)
 end
 
 function fit_plane_with_jackknife(width)
@@ -92,7 +15,8 @@ function fit_plane_with_jackknife(width)
     filename_odd  = "map-odd-restored-registered-rainy-itrf.fits"
     filename_even = "map-even-restored-registered-rainy-itrf.fits"
     slopes = Vector{Float64}[]
-    Δresidual = Vector{Float64}[]
+    residual = Vector{Float64}[]
+    masks = Vector{Bool}[]
     trials = [(filename, filename, filename),
               (filename, filename, filename_odd ),
               (filename, filename, filename_even),
@@ -102,9 +26,10 @@ function fit_plane_with_jackknife(width)
     for future in futures
         tmp = fetch(future)
         push!(slopes, tmp[1])
-        push!(Δresidual,  tmp[2])
+        push!(residual,  tmp[2])
+        push!(masks,  tmp[3])
     end
-    slopes, Δresidual
+    slopes, residual, masks
 end
 
 function fit_plane(filename1, filename2, filename3, width)
@@ -138,47 +63,78 @@ function fit_plane(filename1, filename2, filename3, width)
     map2 = HealpixMap(map2_pixels)
     map3 = HealpixMap(map3_pixels)
 
+    println("Constructing mask...")
+    mask = _construct_mask(nside(map1))
+
     println("Fitting...")
-    @time _fit_plane(map1, map2, map3, width)
+    @time _fit_plane(map1, map2, map3, mask, width)
 end
 
-function _fit_plane(map1, map2, map3, width)
+function _construct_mask(nside)
+    Npix = nside2npix(nside)
+    mask = zeros(Bool, Npix)
+
+    meta = Pipeline.Common.getmeta(4, "rainy")
+    frame = TTCal.reference_frame(meta)
+    sun = measure(frame, Direction(dir"SUN"), dir"GALACTIC")
+    sun_vec = [sun.x, sun.y, sun.z]
+
+    for pix = 1:Npix
+        vec = LibHealpix.pix2vec_ring(nside, pix)
+        θ, ϕ = LibHealpix.vec2ang(vec)
+        latitude = π/2-θ
+
+        if abs(latitude) < deg2rad(5)
+            mask[pix] = true
+        elseif dot(vec, sun_vec) > cosd(2)
+            mask[pix] = true
+        end
+    end
+    mask
+end
+
+function _fit_plane(map1, map2, map3, mask, width)
     output_nside = 256
     output_npix  = nside2npix(output_nside)
     line_slope = zeros(output_npix) # slope of a linear fit between map1 and map3
-    Δresidual  = zeros(output_npix) # change in residual between linear fit and planar fit
+    residual  = zeros(output_npix) # change in residual between linear fit and planar fit
 
     meta = Pipeline.Common.getmeta(4, "rainy")
     frame = TTCal.reference_frame(meta)
     for idx = 1:output_npix
+        mask[idx] && continue
+
         θ, ϕ = LibHealpix.pix2ang_ring(output_nside, idx)
         galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
         itrf = measure(frame, galactic, dir"ITRF")
         dec = latitude(itrf) |> rad2deg
         dec < -30 && continue
 
-        disc, weights = _disc_weights(map1, θ, ϕ, width)
-        m, Δres = _fit_plane(idx, map1, map2, map3, disc, weights)
+        disc, weights = _disc_weights(map1, mask, θ, ϕ, width)
+        m, res = _fit_plane(idx, map1, map2, map3, disc, weights)
         line_slope[idx] = m
-        Δresidual[idx] = Δres
+        residual[idx] = res
     end
-    line_slope, Δresidual
+    line_slope, residual, mask
 end
 
-function _disc_weights(map, θ, ϕ, width)
+function _disc_weights(map, mask, θ, ϕ, width)
     vec = LibHealpix.ang2vec(θ, ϕ)
     disc = LibHealpix.query_disc(map, θ, ϕ, deg2rad(width), inclusive=false)
-    distance = Float64[]
+    weights = Float64[]
     for jdx in disc
-        vec′ = LibHealpix.pix2vec_ring(nside(map), Int(jdx))
-        push!(distance, acosd(clamp(dot(vec, vec′), -1, 1)))
+        if mask[jdx]
+            push!(weights, 0)
+        else
+            vec′ = LibHealpix.pix2vec_ring(nside(map), Int(jdx))
+            distance = acosd(clamp(dot(vec, vec′), -1, 1))
+            distance = clamp(distance, 0, width)
+            distance = distance/width
+            weight   = exp(-0.5*(distance/0.2)^2)
+            weight  *= (1+distance)^2 * (1-distance)^2 # truncates the Gaussian smoothly
+            push!(weights, weight)
+        end
     end
-    # we want a weighting function whose value and first derivative goes to exactly zero at
-    # the boundary
-    distance = clamp(distance, 0, width)
-    distance = distance/width
-    weights   = exp.(-0.5.*(distance./0.2).^2)
-    weights .*= (1.+distance).^2 .* (1.-distance).^2 # truncates the Gaussian smoothly
     disc, weights
 end
 
