@@ -8,6 +8,57 @@ using JLD
 
 include("../Pipeline.jl")
 
+function print()
+    spw = 18
+    dataset = "rainy"
+    dir = Pipeline.Common.getdir(spw)
+    workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
+
+    meta = Pipeline.Common.getmeta(spw, dataset)
+    meta.channels = meta.channels[55:55]
+    meta.phase_center = Direction(dir"AZEL", 0degrees, 90degrees)
+
+    times = load(joinpath(dir, "raw-rainy-visibilities.jld"), "times")
+    coeff_I, coeff_Q = load(joinpath(dir, "beam.jld"), "I-coeff", "Q-coeff")
+    direction = Direction(dir"J2000", "23h23m24s", "+58d48m54s")
+
+    N = length(times)
+    leakage = zeros(N)
+    elevation = zeros(N)
+    for idx = 1:N
+        meta.time = Epoch(epoch"UTC", times[idx]*seconds)
+        frame = TTCal.reference_frame(meta)
+        azel = measure(frame, direction, dir"AZEL")
+        az = longitude(azel)
+        el =  latitude(azel)
+        elevation[idx] = el
+        if el < 0
+            next!(p)
+            continue
+        end
+
+        ρ = cos(el)
+        θ = az
+        stokes_I_beam = (coeff_I[1]*TTCal.zernike(0, 0, ρ, θ)
+                        + coeff_I[2]*TTCal.zernike(2, 0, ρ, θ)
+                        + coeff_I[3]*TTCal.zernike(4, 0, ρ, θ)
+                        + coeff_I[4]*TTCal.zernike(4, 4, ρ, θ)
+                        + coeff_I[5]*TTCal.zernike(6, 0, ρ, θ)
+                        + coeff_I[6]*TTCal.zernike(6, 4, ρ, θ)
+                        + coeff_I[7]*TTCal.zernike(8, 0, ρ, θ)
+                        + coeff_I[8]*TTCal.zernike(8, 4, ρ, θ)
+                        + coeff_I[9]*TTCal.zernike(8, 8, ρ, θ))
+        stokes_Q_beam = (coeff_Q[1]*TTCal.zernike(2, 2, ρ, θ)
+                        + coeff_Q[2]*TTCal.zernike(4, 2, ρ, θ)
+                        + coeff_Q[3]*TTCal.zernike(6, 2, ρ, θ)
+                        + coeff_Q[4]*TTCal.zernike(6, 6, ρ, θ)
+                        + coeff_Q[5]*TTCal.zernike(8, 2, ρ, θ)
+                        + coeff_Q[6]*TTCal.zernike(8, 6, ρ, θ))
+        leakage[idx] = stokes_Q_beam/stokes_I_beam
+    end
+    leakage, elevation
+end
+
 function go(; I=1.0, Q=0.1)
     spw = 18
     dataset = "rainy"
