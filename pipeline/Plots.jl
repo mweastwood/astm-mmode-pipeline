@@ -14,23 +14,24 @@ using ProgressMeter
 
 "Create an image of the psf."
 function psf_image()
-    spw = 4
     for spw in (4, 10, 18)
         str = @sprintf("spw%02d", spw)
-        psfdir = joinpath(Pipeline.Common.getdir(spw), "psf")
-        outputdir = joinpath(Pipeline.Common.getdir(spw), "tmp")
+        for (pixel, decstr) in ((7368961, "+45"), (856741, "+75"), (25169921, "+0"))
+            @show str, decstr
+            psfdir = joinpath(Pipeline.Common.getdir(spw), "psf")
+            outputdir = joinpath(Pipeline.Common.getdir(spw), "tmp")
 
-        nside = 2048
-        pixel = 7368961
-        θ, ϕ = LibHealpix.pix2ang_ring(nside, pixel)
+            nside = 2048
+            θ, ϕ = LibHealpix.pix2ang_ring(nside, pixel)
 
-        alm = load(joinpath(psfdir, "07368961.jld"), "alm")
-        map = alm2map(alm, nside)
+            alm = load(joinpath(psfdir, @sprintf("%08d.jld", pixel)), "alm")
+            map = alm2map(alm, nside)
 
-        direction = Direction(dir"ITRF", ϕ*radians, (π/2-θ)*radians)
-        img = Pipeline.Cleaning.postage_stamp(map, direction)
-        img /= maximum(img)
-        save(joinpath(outputdir, "$str-psf-+45-degrees.jld"), "img", img)
+            direction = Direction(dir"ITRF", ϕ*radians, (π/2-θ)*radians)
+            img = Pipeline.Cleaning.postage_stamp(map, direction)
+            img /= maximum(img)
+            save(joinpath(outputdir, "$str-psf-$decstr-degrees.jld"), "img", img)
+        end
     end
 end
 
