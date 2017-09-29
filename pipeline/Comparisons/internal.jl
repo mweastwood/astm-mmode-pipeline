@@ -79,12 +79,16 @@ function _construct_mask(nside)
     sun = measure(frame, Direction(dir"SUN"), dir"GALACTIC")
     sun_vec = [sun.x, sun.y, sun.z]
 
+    ncp = measure(frame, Direction(dir"ITRF", 0, 0, 1), dir"GALACTIC")
+    ncp_vec = [ncp.x, ncp.y, ncp.z]
+
     for pix = 1:Npix
         vec = LibHealpix.pix2vec_ring(nside, pix)
         θ, ϕ = LibHealpix.vec2ang(vec)
-        latitude = π/2-θ
-
-        if abs(latitude) < deg2rad(5)
+        galactic_latitude = π/2-θ
+        if abs(galactic_latitude) < deg2rad(5)
+            mask[pix] = true
+        elseif dot(vec, ncp_vec) < cosd(120)
             mask[pix] = true
         elseif dot(vec, sun_vec) > cosd(2)
             mask[pix] = true
@@ -95,21 +99,19 @@ end
 
 function _fit_plane(map1, map2, map3, mask, width)
     output_nside = 256
+    #output_nside = 32
     output_npix  = nside2npix(output_nside)
+    input_nside = nside(map1)
+    input_npix  = nside2npix(input_nside)
     line_slope = zeros(output_npix) # slope of a linear fit between map1 and map3
     residual  = zeros(output_npix) # change in residual between linear fit and planar fit
 
     meta = Pipeline.Common.getmeta(4, "rainy")
     frame = TTCal.reference_frame(meta)
     for idx = 1:output_npix
-        mask[idx] && continue
-
         θ, ϕ = LibHealpix.pix2ang_ring(output_nside, idx)
-        galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
-        itrf = measure(frame, galactic, dir"ITRF")
-        dec = latitude(itrf) |> rad2deg
-        dec < -30 && continue
-
+        jdx = LibHealpix.ang2pix_ring(input_nside, θ, ϕ)
+        mask[jdx] && continue
         disc, weights = _disc_weights(map1, mask, θ, ϕ, width)
         m, res = _fit_plane(idx, map1, map2, map3, disc, weights)
         line_slope[idx] = m
