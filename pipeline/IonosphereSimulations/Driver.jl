@@ -10,7 +10,6 @@ include("../Pipeline.jl")
 
 macro setup()
     output = quote
-        spw = 4
         dataset = "rainy"
         dir = Pipeline.Common.getdir(spw)
         workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
@@ -74,16 +73,16 @@ function base_simulation_visibilities(meta, source, times, light_curve)
     visibilities
 end
 
-function base_simulation()
+function base_simulation(spw=4)
     @setup
-    #visibilities = base_simulation_visibilities(meta, source, times, expected_light_curve)
-    #@image
+    visibilities = base_simulation_visibilities(meta, source, times, expected_light_curve)
+    @image
     #writehealpix("base-map.fits", map, replace=true)
-    map = readhealpix("base-map.fits")
+    #map = readhealpix("base-map.fits")
     meta = Pipeline.Common.getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
     img = Pipeline.Cleaning.postage_stamp(map, measure(frame, direction, dir"ITRF"))
-    save("base-image.jld", "img", img)
+    save("base-image-$spw.jld", "img", img)
 end
 
 function scintillation_simulation_visibilities(meta, source, times, light_curve,
@@ -110,17 +109,17 @@ function scintillation_simulation_visibilities(meta, source, times, light_curve,
     visibilities
 end
 
-function scintillation_simulation()
+function scintillation_simulation(spw=4)
     @setup
-    #visibilities = scintillation_simulation_visibilities(meta, source, times, light_curve,
-    #                                                     expected_light_curve, light_curve_flags)
-    #@image
+    visibilities = scintillation_simulation_visibilities(meta, source, times, light_curve,
+                                                         expected_light_curve, light_curve_flags)
+    @image
     #writehealpix("scintillation-map.fits", map, replace=true)
-    map = readhealpix("scintillation-map.fits")
+    #map = readhealpix("scintillation-map.fits")
     meta = Pipeline.Common.getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
     img = Pipeline.Cleaning.postage_stamp(map, measure(frame, direction, dir"ITRF"))
-    save("scintillation-flux.jld", "img", img)
+    save("scintillation-flux-$spw.jld", "img", img)
 end
 
 function refraction_simulation_visibilities(meta, source, times, light_curve,
@@ -152,17 +151,17 @@ function refraction_simulation_visibilities(meta, source, times, light_curve,
     visibilities
 end
 
-function refraction_simulation()
+function refraction_simulation(spw=4)
     @setup
-    #visibilities = refraction_simulation_visibilities(meta, source, times, light_curve,
-    #                                                  δra, δdec, refraction_flags)
-    #@image
+    visibilities = refraction_simulation_visibilities(meta, source, times, light_curve,
+                                                      δra, δdec, refraction_flags)
+    @image
     #writehealpix("refraction-map.fits", map, replace=true)
-    map = readhealpix("refraction-map.fits")
+    #map = readhealpix("refraction-map.fits")
     meta = Pipeline.Common.getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
     img = Pipeline.Cleaning.postage_stamp(map, measure(frame, direction, dir"ITRF"))
-    save("refraction-position.jld", "img", img)
+    save("refraction-position-$spw.jld", "img", img)
 end
 
 end
