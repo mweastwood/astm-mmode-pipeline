@@ -1,78 +1,35 @@
-function compare_with_haslam()
-    spw = 18
-    haslam_freq = 408e6
-    lwa_freq = Pipeline.Common.getfreq(spw)
-    ν = [lwa_freq; haslam_freq]
+function haslam()
+    width = 20.0
+    @time slope, R², mask = haslam(width, "map-restored-registered-rainy-itrf.fits")
+    filename = "haslam-spectral-index-updated"
+    save(filename*".jld", "slope", slope, "coefficient-of-determination", R², "mask", mask)
+end
 
+function haslam(width, filename)
+    #println("Preparing Haslam...")
     #haslam = readhealpix(joinpath(workspace, "comparison-maps",
     #                              "haslam408_dsds_Remazeilles2014.fits"))
-    #dir = Pipeline.Common.getdir(spw)
-    #lwa = readhealpix(joinpath(dir, "map-restored-registered-rainy-itrf.fits"))
-    #lwa = lwa * (BPJSpec.Jy * (BPJSpec.c/lwa_freq)^2 / (2*BPJSpec.k))
-    #@time lwa = Pipeline.MModes.rotate_to_galactic(spw, "rainy", lwa)
-    #@time lwa = smooth(lwa, 56/60, nside(haslam))
-    #maps = [lwa; haslam]
-    #save("haslam-checkpoint.jld", "maps", getfield.(maps, 1))
-    maps = HealpixMap.(load("haslam-checkpoint.jld", "maps"))
+
+    #println("Preparing 3...")
+    #ν3 = Pipeline.Common.getfreq(18)
+    #@time map3 = readhealpix(joinpath(Pipeline.Common.getdir(18), filename))
+    #@time map3 = map3 * (BPJSpec.Jy * (BPJSpec.c/ν3)^2 / (2*BPJSpec.k))
+    #@time map3 = Pipeline.MModes.rotate_to_galactic(18, "rainy", map3)
+    #@time map3 = smooth(map3, 56/60, nside(haslam))
+
+    #save("haslam-checkpoint.jld",
+    #     "map3", map3.pixels, "haslam", haslam.pixels)
+
+    map3_pixels, haslam_pixels =
+        load("haslam-checkpoint.jld", "map3", "haslam")
+    map3 = HealpixMap(map3_pixels)
+    haslam = HealpixMap(haslam_pixels)
 
     println("Constructing mask...")
-    mask = haslam_construct_mask(nside(maps[1]))
+    mask = haslam_construct_mask(nside(map3))
 
     println("Fitting...")
-    @time slope, residual = haslam_fit_line(maps[1], maps[2], mask, 20)
-
-    println("Saving...")
-    save("haslam-spectral-index.jld", "slope", slope, "residual", residual, "mask", mask)
-end
-
-function haslam_fit_line(map1, map2, mask, width)
-    output_nside = 256
-    #output_nside = 32
-    output_npix  = nside2npix(output_nside)
-    input_nside = nside(map1)
-    input_npix  = nside2npix(input_nside)
-    line_slope = zeros(output_npix)
-    residual   = zeros(output_npix)
-
-    meta = Pipeline.Common.getmeta(4, "rainy")
-    frame = TTCal.reference_frame(meta)
-    for idx = 1:output_npix
-        θ, ϕ = LibHealpix.pix2ang_ring(output_nside, idx)
-        jdx = LibHealpix.ang2pix_ring(input_nside, θ, ϕ)
-        mask[jdx] && continue
-        disc, weights = _disc_weights(map1, mask, θ, ϕ, width)
-        m, res = haslam_fit_line(idx, map1, map2, disc, weights)
-        line_slope[idx] = m
-        residual[idx] = res
-    end
-    line_slope, residual
-end
-
-function haslam_fit_line(idx, map1, map2, disc, weights)
-    x = [map1[pixel] for pixel in disc]
-    z = [map2[pixel] for pixel in disc]
-
-    ## Discard extreme points (to reduce sensitivty to point sources)
-    #N = length(z)
-    #amplitude = hypot.(x, y, z)
-    #perm = sortperm(amplitude)
-    #perm = perm[1:round(Int, 0.9N)]
-    #x = x[perm]
-    #y = y[perm]
-    #z = z[perm]
-    #weights = weights[perm]
-
-    # Fit a line
-    e = ones(length(x))
-    A = [x e]
-    W = Diagonal(weights)
-    m_line = (A'*W*A)\(A'*(W*z))
-    z_ = m_line[1]*x + m_line[2]
-    weight_norm = sqrt(sum(weights))
-    residual_norm = sqrt(sum(weights.*abs2(z-z_)))
-    data_norm = sqrt(sum(weights.*abs2(z)))
-
-    m_line[1], residual_norm/data_norm
+    _internal_powerlaw_fit(map3, haslam, mask, width, output_nside=256)
 end
 
 function haslam_construct_mask(nside)

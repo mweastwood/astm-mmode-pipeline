@@ -2,7 +2,7 @@ module Driver
 
 include("../Pipeline.jl")
 
-using PyPlot
+#using PyPlot
 using JLD
 using LibHealpix
 using CasaCore.Measures
