@@ -186,7 +186,7 @@ function output_healpix(spw, dataset, coeff)
     north  = north - dot(north, zenith)*zenith
     north  = north / norm(north)
     east   = cross(north, zenith)
-    nside = 1024
+    nside = 2048
     map = HealpixMap(Float64, nside)
     for pix = 1:length(map)
         vec = LibHealpix.pix2vec_ring(nside, pix)
@@ -212,7 +212,7 @@ function output_healpix(spw, dataset, coeff)
         end
     end
 
-    output = joinpath(getdir(spw), "beam.fits")
+    output = joinpath(getdir(spw), "beam-$nside.fits")
     writehealpix(output, map, replace=true)
 
     nothing
