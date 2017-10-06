@@ -236,5 +236,21 @@ function ionosphere()
          "south_vobs", south_vobs_binned)
 end
 
+function postage_stamps()
+    for spw in (4, 10, 18)
+        dir = Pipeline.Common.getdir(spw)
+        meta = Pipeline.Common.getmeta(spw, "rainy")
+        frame = TTCal.reference_frame(meta)
+        map = readhealpix(joinpath(dir, "map-restored-registered-rainy-itrf.fits"))
+
+        # 3C 134
+        j2000 = Direction(dir"J2000", "05h04m42.0s", "+38d06m02s")
+        itrf = measure(frame, j2000, dir"ITRF")
+        img = Pipeline.Cleaning.postage_stamp(map, itrf)
+        save(joinpath(dir, "postage-stamp-3C134.jld"), "img", img)
+
+    end
+end
+
 end
 
