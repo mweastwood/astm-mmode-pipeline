@@ -87,3 +87,24 @@ function rotate_to_j2000(spw, dataset, map)
     HealpixMap(pixels)
 end
 
+function rotate_from_j2000(spw, dataset, map)
+    dir = getdir(spw)
+    meta = getmeta(spw, dataset)
+    frame = TTCal.reference_frame(meta)
+    z = Direction(dir"J2000", 0.0degrees, 90degrees)
+    z_ = measure(frame, z, dir"ITRF")
+    x = Direction(dir"J2000", 0.0degrees, 0.0degrees)
+    x_ = measure(frame, x, dir"ITRF")
+    zvec = [z_.x, z_.y, z_.z]
+    xvec = [x_.x, x_.y, x_.z]
+    yvec = cross(zvec, xvec)
+    pixels = zeros(length(map))
+    for idx = 1:length(map)
+        vec = LibHealpix.pix2vec_ring(nside(map), idx)
+        θ = acos(dot(vec, zvec))
+        ϕ = atan2(dot(vec, yvec), dot(vec, xvec))
+        pixels[idx] = LibHealpix.interpolate(map, θ, ϕ)
+    end
+    HealpixMap(pixels)
+end
+
