@@ -12,7 +12,7 @@ function glamour(spw, dataset, target; min=0, max=0)
     str = @sprintf("spw%02d", spw)
     output = joinpath(dir, "glamour-$target-$dataset.jld")
     image = mollweide(map, (2048, 4096))
-    save(output, "image", image, "frequency", ν, compress=true)
+    save(output, "image", image, "frequency", ν, "map", map.pixels, compress=true)
 
     #output = joinpath(dir, "$target-$dataset-galactic.png")
     #@show maximum(image) minimum(image)
