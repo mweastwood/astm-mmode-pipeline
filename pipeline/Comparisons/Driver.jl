@@ -15,6 +15,8 @@ using ProgressMeter
 
 const workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
 
+include("lwa1.jl")
+include("drao.jl")
 include("guzman.jl")
 include("haslam.jl")
 include("internal.jl")
