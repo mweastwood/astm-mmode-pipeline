@@ -105,6 +105,7 @@ function lwa1_comparison(ν, filename, resolution)
     alm = map2alm(Pipeline.MModes.rotate_from_j2000(4, "rainy", lwa1), 500, 500)
     Pipeline.MModes.apply_wiener_filter!(alm, 0:0)
     lwa1 = Pipeline.MModes.rotate_to_galactic(4, "rainy", alm2map(alm, nside(lwa1)))
+    writehealpix(filename, lwa1, replace=true)
 
     # Load the two nearest OVRO-LWA maps and interpolate to the right frequency
     ovro_ν = [36.528e6, 41.760e6, 46.992e6, 52.224e6, 57.456e6, 62.688e6, 67.920e6, 73.152e6]

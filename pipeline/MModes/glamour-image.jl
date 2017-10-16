@@ -13,6 +13,10 @@ function glamour(spw, dataset, target; min=0, max=0)
     output = joinpath(dir, "glamour-$target-$dataset.jld")
     image = mollweide(map, (2048, 4096))
     save(output, "image", image, "frequency", ν, "map", map.pixels, compress=true)
+    if contains(target, "new")
+        writehealpix(@sprintf("ovro-lwa-sky-map-%6.3fMHz-improved-resolution.fits", ν/1e6), map,
+                     replace=true, coordsys="G")
+    end
 
     #output = joinpath(dir, "$target-$dataset-galactic.png")
     #@show maximum(image) minimum(image)

@@ -19,7 +19,11 @@ function wiener(spw, dataset, target)
     elseif contains(target, "even")
         target = "alm-even-wiener-filtered"
     else
-        target = "alm-wiener-filtered"
+        if contains(target, "new")
+            target = "new-alm-wiener-filtered"
+        else
+            target = "alm-wiener-filtered"
+        end
     end
     save(joinpath(dir, "$target-$dataset.jld"),
          "alm", alm, "tolerance", tolerance, "mrange", mrange, compress=true)

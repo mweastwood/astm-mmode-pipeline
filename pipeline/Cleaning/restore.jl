@@ -8,23 +8,27 @@ function restore(spw, dataset, target)
                                                         "residual_alm", "degraded_alm",
                                                         "clean_components")
 
-    restored_alm = Alm(1000, 1000, residual_alm + degraded_alm)
+    restored_alm = Alm(1500, 1500, residual_alm + degraded_alm)
     restored_map = alm2map(restored_alm, 2048)
 
     restore!(restored_map, clean_components, psf, major_σ, minor_σ, angle)
     if contains(target, "odd")
-        target = "odd-restored"
+        target = "map-odd-restored"
     elseif contains(target, "even")
-        target = "even-restored"
+        target = "map-even-restored"
     else
-        target = "restored"
+        if contains(target, "new")
+            target = "new-map-restored"
+        else
+            target = "map-restored"
+        end
     end
-    save(joinpath(getdir(spw), "map-$target-$dataset.jld"), "map", restored_map.pixels)
-    writehealpix(joinpath(getdir(spw), "map-$target-$dataset-itrf.fits"),
+    save(joinpath(getdir(spw), "$target-$dataset.jld"), "map", restored_map.pixels)
+    writehealpix(joinpath(getdir(spw), "$target-$dataset-itrf.fits"),
                  restored_map, replace=true)
-    writehealpix(joinpath(getdir(spw), "map-$target-$dataset-galactic.fits"),
+    writehealpix(joinpath(getdir(spw), "$target-$dataset-galactic.fits"),
                  MModes.rotate_to_galactic(spw, dataset, restored_map), replace=true)
-    writehealpix(joinpath(getdir(spw), "map-$target-$dataset-j2000.fits"),
+    writehealpix(joinpath(getdir(spw), "$target-$dataset-j2000.fits"),
                  MModes.rotate_to_j2000(spw, dataset, restored_map), replace=true)
 end
 

@@ -9,12 +9,11 @@ function _interpolate(spw, dataset, alm_target, data, flags, alm, tolerance)
     mmodes = alm_to_mmodes(spw, alm)
     model_data = mmodes_to_visibilities(mmodes, size(data, 2))
     fill_in!(data, flags, model_data)
-    mmodes′, mmode_flags′ = getmmodes_internal(data, flags)
+    mmodes′, mmode_flags′ = getmmodes_internal(data, flags, mmax=length(mmodes)-1)
     alm′ = _getalm(spw, mmodes′, mmode_flags′, tolerance=tolerance)
 
     dir = getdir(spw)
-    target = replace(alm_target, "rfi-subtracted-peeled", "")
-    target = alm_target*"-interpolated"
+    target = replace(alm_target, "rfi-subtracted-peeled", "") * "-interpolated"
     save(joinpath(dir, "$(replace(target, "alm-", ""))-$dataset-visibilities.jld"),
          "data", data, "flags", flags, compress=true)
     save(joinpath(dir, "$target-$dataset.jld"), "alm", alm′, "tolerance", tolerance)
@@ -22,7 +21,11 @@ end
 
 function alm_to_mmodes(spw, alm)
     dir = getdir(spw)
-    transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    if spw == 18
+        transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix-1500-1500"))
+    else
+        transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    end
     _alm_to_mmodes(transfermatrix, alm)
 end
 
@@ -80,7 +83,7 @@ function alm_to_mmodes_remote_processing_loop(input, output, transfermatrix, alm
                 # workers) then this will be an InvalidStateException. This is kind of messy...
                 break
             else
-                println(exception)
+                #println(exception)
                 rethrow(exception)
             end
         end

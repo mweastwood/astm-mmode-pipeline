@@ -1,20 +1,18 @@
-function getmmodes(spw, dataset, target)
+function getmmodes(spw, dataset, target; mmax=1000)
     dir = getdir(spw)
     data, flags = load(joinpath(dir, "$target-$dataset-visibilities.jld"), "data", "flags")
-    getmmodes(spw, data, flags, dataset, target)
+    getmmodes(spw, data, flags, dataset, target, mmax=mmax)
 end
 
-function getmmodes(spw, data, flags, dataset, target, dϕ=0.0)
-    blocks, block_flags = getmmodes_internal(data, flags, dϕ)
-    mmax = length(blocks) - 1
+function getmmodes(spw, data, flags, dataset, target, dϕ=0.0; mmax=1000)
+    blocks, block_flags = getmmodes_internal(data, flags, dϕ, mmax=mmax)
     target = replace(target, "folded-", "")
     save(joinpath(getdir(spw), "mmodes-$target-$dataset.jld"),
          "blocks", blocks, "flags", block_flags, compress=true)
     blocks, block_flags
 end
 
-function getmmodes_internal(data, flags, dϕ=0.0)
-    mmax = 1000
+function getmmodes_internal(data, flags, dϕ=0.0; mmax=1000)
     Nbase, Ntime = size(data)
     two(m) = ifelse(m != 0, 2, 1)
     blocks = [zeros(Complex128, two(m)*Nbase) for m = 0:mmax]

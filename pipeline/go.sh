@@ -138,7 +138,7 @@ function getmmodes {
     local dataset=`quote $2`
     local target=`quote $3`
     print_parameters $spw $dataset $target
-    $JULIA -e "using Pipeline; @time Pipeline.MModes.getmmodes($spw, $dataset, $target)"
+    $JULIA -e "using Pipeline; @time Pipeline.MModes.getmmodes($spw, $dataset, $target, mmax=1500)"
 }
 
 function getmmodes-odd {
@@ -291,20 +291,20 @@ do
         isbetween 20 && fold      $spw $dataset "rfi-subtracted-peeled"
         isbetween 21 && getmmodes $spw $dataset "folded-rfi-subtracted-peeled"
         isbetween 22 && getalm    $spw $dataset "mmodes-rfi-subtracted-peeled"
-        isbetween 23 && interpol  $spw $dataset "folded-rfi-subtracted-peeled" "alm-rfi-subtracted-peeled"
-        isbetween 24 && wiener    $spw $dataset "alm-interpolated"
-        isbetween 25 && makemap   $spw $dataset "alm-rfi-subtracted-peeled"
-        isbetween 26 && makemap   $spw $dataset "alm-interpolated"
-        isbetween 27 && makemap   $spw $dataset "alm-wiener-filtered"
+        isbetween 23 && interpol  $spw $dataset "folded-rfi-subtracted-peeled" "new-alm-rfi-subtracted-peeled"
+        isbetween 24 && wiener    $spw $dataset "new-alm-interpolated"
+        isbetween 25 && makemap   $spw $dataset "new-alm-rfi-subtracted-peeled"
+        isbetween 26 && makemap   $spw $dataset "new-alm-interpolated"
+        isbetween 27 && makemap   $spw $dataset "new-alm-wiener-filtered"
 
         # Cleaning
-        isbetween 30 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "alm-wiener-filtered"
+        isbetween 30 && observe   $spw $dataset "mmodes-rfi-subtracted-peeled" "new-alm-wiener-filtered"
         isbetween 31 && getpsf    $spw $dataset
         isbetween 32 && getpsf_w  $spw
-        isbetween 33 && clean     $spw $dataset "alm-wiener-filtered"
-        isbetween 34 && restore   $spw $dataset "alm-wiener-filtered"
-        isbetween 35 && register  $spw $dataset "map-restored"
-        isbetween 36 && glamour   $spw $dataset "map-restored-registered"
+        isbetween 33 && clean     $spw $dataset "new-alm-wiener-filtered"
+        isbetween 34 && restore   $spw $dataset "new-alm-wiener-filtered"
+        isbetween 35 && register  $spw $dataset "new-map-restored"
+        isbetween 36 && glamour   $spw $dataset "new-map-restored-registered"
 
         # Jackknife
         isbetween 50 && getmmodes-odd  $spw $dataset "rfi-subtracted-peeled-interpolated"

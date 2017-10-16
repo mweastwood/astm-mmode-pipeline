@@ -1,6 +1,10 @@
 function observation_matrix(spw, dataset, mmodes_target, alm_target)
     dir = getdir(spw)
-    transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    if spw == 18
+        transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix-1500-1500"))
+    else
+        transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    end
     flags = load(joinpath(dir, "$mmodes_target-$dataset.jld"), "flags")
     tolerance, mrange = load(joinpath(dir, "$alm_target-$dataset.jld"), "tolerance", "mrange")
 

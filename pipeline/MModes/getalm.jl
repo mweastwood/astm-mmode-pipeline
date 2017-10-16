@@ -78,13 +78,17 @@ function getalm(spw, mmodes, mmode_flags, dataset, target; tolerance=0.01)
     dir = getdir(spw)
     alm = _getalm(spw, mmodes, mmode_flags, tolerance=tolerance)
     target = replace(target, "mmodes", "alm")
-    save(joinpath(dir, "$target-$dataset.jld"), "alm", alm, "tolerance", tolerance)
+    save(joinpath(dir, "new-$target-$dataset.jld"), "alm", alm, "tolerance", tolerance)
     alm
 end
 
 function _getalm(spw::Int, mmodes, mmode_flags; tolerance=0.01)
     dir = getdir(spw)
-    transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    if spw == 18
+        transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix-1500-1500"))
+    else
+        transfermatrix = TransferMatrix(joinpath(dir, "transfermatrix"))
+    end
     _getalm(transfermatrix, mmodes, mmode_flags, tolerance)
 end
 
