@@ -298,11 +298,11 @@ function residual(coeff, θ, ϕ, dθ, dϕ)
     output
 end
 
-function vector_spherical_harmonics(coeff, θ, ϕ)
+function vector_spherical_harmonics(coeff, θ, ϕ, lmax=3)
     dθ = 0.0
     dϕ = 0.0
     count = 1
-    for l = 1:3, m = -l:l
+    for l = 1:lmax, m = -l:l
         δθ, δϕ = Ψ(l, m, θ, ϕ)
         dθ += coeff[count]*δθ
         dϕ += coeff[count]*δϕ
@@ -377,7 +377,7 @@ function Φ(l, m, θ, ϕ)
     dθ, dϕ
 end
 
-function dedistort(map, coeff)
+function dedistort(map, coeff, lmax=3)
     @show coeff
     Npixels  = length(map)
     Nworkers = length(workers())
@@ -387,7 +387,7 @@ function dedistort(map, coeff)
     @time @sync for worker in workers()
         @async begin
             worker_pixels = pop!(chunks)
-            worker_output = remotecall_fetch(_dedistort, worker, map, coeff, worker_pixels)
+            worker_output = remotecall_fetch(_dedistort, worker, map, coeff, worker_pixels, lmax)
             for (idx, pixel) in enumerate(worker_pixels)
                 output[pixel] = worker_output[idx]
             end
@@ -396,18 +396,18 @@ function dedistort(map, coeff)
     output
 end
 
-function _dedistort(map, coeff, pixels::AbstractVector)
+function _dedistort(map, coeff, pixels::AbstractVector, lmax)
     output = zeros(length(pixels))
     for (idx, pixel) in enumerate(pixels)
-        output[idx] = _dedistort(map, coeff, pixel)
+        output[idx] = _dedistort(map, coeff, pixel, lmax)
     end
     output
 end
 
-function _dedistort(map, coeff, pix::Integer)
+function _dedistort(map, coeff, pix::Integer, lmax)
     vec = LibHealpix.pix2vec_ring(nside(map), pix)
     θ, ϕ = LibHealpix.vec2ang(vec)
-    dθ, dϕ = vector_spherical_harmonics(coeff, θ, ϕ)
+    dθ, dϕ = vector_spherical_harmonics(coeff, θ, ϕ, lmax)
 
     # Rotate the vector to the xz-plane
     R = [cos(-ϕ) -sin(-ϕ) 0
