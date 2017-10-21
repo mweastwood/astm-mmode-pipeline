@@ -15,15 +15,29 @@ function lwa1()
         push!(ovro_lwa, result[3])
         push!(masks, result[4])
     end
-    #save("lwa1-comparison.jld", "lwa1-original", lwa1_original, "lwa1", lwa1, "ovro", ovro_lwa,
-    #     "masks", masks)
+    save("lwa1-comparison.jld", "lwa1-original", lwa1_original, "lwa1", lwa1, "ovro", ovro_lwa,
+         "masks", masks)
 end
 
 function lwa1_comparison(ν, filename, resolution)
     lwa1 = readhealpix(joinpath(workspace, "comparison-maps", filename))
     lwa1.pixels[lwa1.pixels .== -1.6375f30] = 0
-    N = length(lwa1)
 
+    mask, lwa1 = mask_and_subtract(lwa1, resolution)
+
+    lwa1_original = deepcopy(lwa1)
+    #lwa1_original = Pipeline.MModes.rotate_from_j2000(4, "rainy", lwa1_original)
+    #lwa1_original = Pipeline.MModes.rotate_to_galactic(4, "rainy", lwa1_original)
+
+    lwa1 = filter_the_spherical_harmonics(lwa1)
+    ovro_lwa = load_ovro_lwa_comparison(lwa1, ν, resolution)
+    lwa1_original, lwa1 = fix_lwa1_rotation(lwa1_original, lwa1, ovro_lwa, mask)
+
+    lwa1_original.pixels, lwa1.pixels, ovro_lwa.pixels, mask
+end
+
+function mask_and_subtract(lwa1, resolution)
+    N = length(lwa1)
     mask = ones(Bool, N)
     frame = ReferenceFrame()
     sources = [Direction(dir"J2000", "19h59m28s", "+40d44m02s"), # Cyg A
@@ -32,10 +46,13 @@ function lwa1_comparison(ν, filename, resolution)
                Direction(dir"J2000", "05h34m32s", "+22d00m52s")] # Tau A
     for pix = 1:N
         θ, ϕ = LibHealpix.pix2ang_ring(nside(lwa1), pix)
-        galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
-        j2000 = measure(frame, galactic, dir"J2000")
-        ra = longitude(j2000)
-        dec = latitude(j2000)
+        #galactic = Direction(dir"GALACTIC", ϕ*radians, (π/2-θ)*radians)
+        #j2000 = measure(frame, galactic, dir"J2000")
+        #ra = longitude(j2000)
+        #dec = latitude(j2000)
+        ra = ϕ
+        dec = π/2-θ
+        j2000 = Direction(dir"J2000", ra*radians, dec*radians)
         if dec < deg2rad(-30)
             mask[pix] = false
         end
@@ -97,17 +114,17 @@ function lwa1_comparison(ν, filename, resolution)
         remove(disc, x, y, params)
     end
 
-    lwa1_original = deepcopy(lwa1)
-    lwa1_original = Pipeline.MModes.rotate_from_j2000(4, "rainy", lwa1_original)
-    lwa1_original = Pipeline.MModes.rotate_to_galactic(4, "rainy", lwa1_original)
+    mask, lwa1
+end
 
+function filter_the_spherical_harmonics(lwa1)
     # Filter the LWA1 map in the same way the OVRO-LWA maps are filtered
     alm = map2alm(Pipeline.MModes.rotate_from_j2000(4, "rainy", lwa1), 500, 500)
     Pipeline.MModes.apply_wiener_filter!(alm, 0:0)
-    #lwa1 = Pipeline.MModes.rotate_to_galactic(4, "rainy", alm2map(alm, nside(lwa1)))
-    lwa1 = Pipeline.MModes.rotate_to_j2000(4, "rainy", alm2map(alm, nside(lwa1)))
-    writehealpix(filename, lwa1, replace=true)
+    Pipeline.MModes.rotate_to_j2000(4, "rainy", alm2map(alm, nside(lwa1)))
+end
 
+function load_ovro_lwa_comparison(lwa1, ν, resolution)
     # Load the two nearest OVRO-LWA maps and interpolate to the right frequency
     ovro_ν = [36.528e6, 41.760e6, 46.992e6, 52.224e6, 57.456e6, 62.688e6, 67.920e6, 73.152e6]
     idx = searchsortedlast(ovro_ν, ν)
@@ -123,77 +140,31 @@ function lwa1_comparison(ν, filename, resolution)
     map1 = map1 * (BPJSpec.Jy * (BPJSpec.c/ovro_ν[idx])^2 / (2*BPJSpec.k))
     map2 = map2 * (BPJSpec.Jy * (BPJSpec.c/ovro_ν[idx+1])^2 / (2*BPJSpec.k))
     ovro_lwa = wgt1*map1 + wgt2*map2
-    #ovro_lwa = Pipeline.MModes.rotate_to_galactic(4, "rainy", ovro_lwa)
     ovro_lwa = Pipeline.MModes.rotate_to_j2000(4, "rainy", ovro_lwa)
-    ovro_lwa = smooth(ovro_lwa, resolution, nside(lwa1))
-    writehealpix("ovro-"*filename, ovro_lwa, replace=true)
-
-    lwa1_original.pixels, lwa1.pixels, ovro_lwa.pixels, mask
+    smooth(ovro_lwa, resolution, nside(lwa1))
 end
 
-function try_to_characterize_the_difference(N=70)
-    lwa1 = readhealpix("healpix-all-sky-rav-wsclean-map-$N.fits")
-    ovro = readhealpix("ovro-healpix-all-sky-rav-wsclean-map-$N.fits")
-    @show length(lwa1) length(ovro) nside(lwa1) nside(ovro)
-
-    cyga = [0.3773630019077748, -0.6570993051844916, 0.6525470618409153]
-    casa = [0.5112142271244855, -0.0823408807062806, 0.8554998500000037]
-
-    frame = ReferenceFrame()
-    mask = zeros(Bool, length(lwa1))
-    for idx = 1:length(mask)
-        vec = LibHealpix.pix2vec_ring(nside(lwa1), idx)
-        θ, ϕ = LibHealpix.vec2ang(vec)
-        dec = rad2deg(π/2-θ)
-        if dec > -30
-            if dot(vec, cyga) > cosd(5)
-                mask[idx] = false
-            elseif dot(vec, casa) > cosd(5)
-                mask[idx] = false
-            else
-                mask[idx] = true
-            end
-        else
-            mask[idx] = false
-        end
-    end
-
+function fix_lwa1_rotation(lwa1_original, lwa1, ovro_lwa, mask)
     function residual(coeff)
-        #@time tmp = Pipeline.Cleaning.dedistort(lwa1, coeff, 2)
-        @time tmp = rotate(lwa1, coeff[1])
-        res = vecnorm(ovro.pixels[mask] - tmp.pixels[mask])
-        @show coeff, res
+        tmp = rotate(lwa1, coeff[1])
+        res = vecnorm(ovro_lwa.pixels[mask] - tmp.pixels[mask])
         res
     end
 
-    #coeff = zeros(30)
-    #coeff = [0.0133703,-0.00855679,0.000133067,-0.00582849,-0.0010597,0.00791435]
-    #coeff = [0.00682099,-0.00841493,-0.000297064,-0.00441661,0.00301816,0.00631889]
-    #coeff = [coeff; zeros(10)]
-    #coeff = [0.0]
     coeff = [0.0128784]
-    xmin  = -1ones(length(coeff))
-    xmax  = +1ones(length(coeff))
+    xmin  = -0.1ones(length(coeff))
+    xmax  = +0.1ones(length(coeff))
 
     opt = Opt(:LN_SBPLX, length(coeff))
     ftol_rel!(opt, 1e-5)
     min_objective!(opt, (x, g)->residual(x))
     lower_bounds!(opt, xmin)
     upper_bounds!(opt, xmax)
-    minf, coeff, ret = optimize(opt, coeff)
-    @show minf coeff ret
+    @time minf, coeff, ret = optimize(opt, coeff)
+    θ = 60rad2deg(coeff[1])
+    @show θ
 
-    #dedistorted = Pipeline.Cleaning.dedistort(lwa1, coeff, 2)
-    dedistorted = rotate(lwa1, coeff[1])
-    dedistorted.pixels[!mask] = 0
-    writehealpix("dedistorted.fits", dedistorted, replace=true)
-
-    @show 60rad2deg(coeff[1])
-
-    lwa1[!mask] = 0
-    ovro[!mask] = 0
-    save("comparison-images.jld", "lwa1", mollweide(lwa1), "ovro", mollweide(ovro),
-         "dedistorted", mollweide(dedistorted))
+    rotate(lwa1_original, coeff[1]), rotate(lwa1, coeff[1])
 end
 
 function rotate(map, dϕ)
