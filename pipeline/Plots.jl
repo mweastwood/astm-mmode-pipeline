@@ -14,15 +14,24 @@ using ProgressMeter
 
 "Create an image of the psf."
 function psf_image()
-    for spw in (4, 10, 18)
+    for spw = 4:2:18
         str = @sprintf("spw%02d", spw)
-        for (pixel, decstr) in ((7368961, "+45"), (856741, "+75"), (25169921, "+0"))
+        for (pixel, decstr) in ((25169921, "+0"), (7368961, "+45"), (856741, "+75"))
+            println("====")
             @show str, decstr
             psfdir = joinpath(Pipeline.Common.getdir(spw), "psf")
             outputdir = joinpath(Pipeline.Common.getdir(spw), "tmp")
 
             nside = 2048
             θ, ϕ = LibHealpix.pix2ang_ring(nside, pixel)
+
+            psf = load(joinpath(psfdir, "psf.jld"), "psf")
+            major, minor = load(joinpath(psfdir, "gaussian.jld"), "major", "minor")
+            idx = searchsortedlast(psf.pixels, pixel)
+            factor = 2*sqrt(2*log(2))
+            fwhm_major = round(factor*major[idx], 1)
+            fwhm_minor = round(factor*minor[idx], 1)
+            @show fwhm_major, fwhm_minor
 
             alm = load(joinpath(psfdir, @sprintf("%08d.jld", pixel)), "alm")
             map = alm2map(alm, nside)
