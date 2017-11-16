@@ -21,7 +21,7 @@ end
 function dada2ms(dada, dataset)
     path = joinpath(tempdir, replace(basename(dada), "dada", "ms"))
     dada2ms_core(dada, path, dataset)
-    Table(ascii(path)), path
+    Tables.open(ascii(path)), path
 end
 
 function dada2ms(spw::Int, dada, dataset)
@@ -29,6 +29,6 @@ function dada2ms(spw::Int, dada, dataset)
     output = @sprintf("spw%02d-%s", spw, output)
     path = joinpath(tempdir, output)
     dada2ms_core(dada, path, dataset)
-    Table(ascii(path)), path
+    Tables.open(ascii(path)), path
 end
 

@@ -9,7 +9,7 @@ export getdir, getmeta, getfreq
 export listdadas
 export baseline_index, Nbase2Nant, Nant2Nbase
 
-using JLD
+using FileIO, JLD2
 using TTCal
 using ..Utility
 
@@ -56,7 +56,7 @@ fix_spw_offset(spw, dataset) = dataset == "rainy"? spw - 1 : spw
 
 function getmeta(spw, dataset)
     dir = getdir(spw)
-    file = joinpath(dir, "metadata-$dataset.jld")
+    file = joinpath(dir, "metadata-$dataset.jld2")
     if isfile(file)
         meta = load(file, "metadata")
         return meta::Metadata

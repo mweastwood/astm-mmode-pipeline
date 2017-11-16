@@ -1,6 +1,8 @@
 module MModes
 
 using JLD
+using StaticArrays
+using Unitful, UnitfulAstro
 using ProgressMeter
 using CasaCore.Measures
 using LibHealpix
