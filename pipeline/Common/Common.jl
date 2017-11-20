@@ -8,12 +8,13 @@ module Common
 export getdir, getmeta, getfreq
 export listdadas
 export baseline_index, Nbase2Nant, Nant2Nbase
+export launch_maximum_workers
 
 using FileIO, JLD2
 using TTCal
 using ..Utility
 
-const workspace = joinpath(dirname(@__FILE__), "..", "..", "workspace")
+const workspace = joinpath(@__DIR__, "..", "..", "workspace")
 
 function getdir(spw)
     dir = joinpath(workspace, @sprintf("spw%02d", spw))
@@ -53,7 +54,6 @@ end
 # The rainy data is offset from the 100 hour run by one spectral window.
 fix_spw_offset(spw, dataset) = dataset == "rainy"? spw - 1 : spw
 
-
 function getmeta(spw, dataset)
     dir = getdir(spw)
     file = joinpath(dir, "metadata-$dataset.jld2")
@@ -81,6 +81,39 @@ getfrequencies(spws, dataset) = [getfreq(spw) for spw in spws]
 baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
 Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
+
+function get_workers()
+    futures = [remotecall(() -> chomp(readstring(`hostname`)), worker) for worker in workers()]
+    workers_dict = Dict{String, Vector{Int}}()
+    for (future, worker) in zip(futures, workers())
+        hostname = fetch(future)
+        if haskey(workers_dict, hostname)
+            push!(workers_dict[hostname], worker)
+        else
+            workers_dict[hostname] = [worker]
+        end
+    end
+    workers_dict
+end
+
+function launch_maximum_workers()
+    workers  = get_workers()
+    machines = ("astm04", "astm05", "astm06", "astm07", "astm08", "astm09", "astm10", "astm11")
+    funky = ("astm07",) # behaving poorly at the moment
+    list = Tuple{String, Int}[]
+    for machine in machines
+        machine in funky && continue
+        if haskey(workers, machine)
+            N = length(workers)
+            if N < 8
+                push!(list, (machine, N-1))
+            end
+        else
+            push!(list, (machine, 8))
+        end
+    end
+    addprocs(list)
+end
 
 end
 

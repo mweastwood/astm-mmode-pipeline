@@ -3,7 +3,8 @@
 set -eu
 cd `dirname $0`
 
-JULIA=julia-0.5.0
+OMP_NUM_THREADS=1
+JULIA=julia-0.6.0
 MACHINEFILE_ONE=../workspace/machine-files/one-process-each.machinefile
 MACHINEFILE_MAX=../workspace/machine-files/max-processes-each.machinefile
 
@@ -43,8 +44,8 @@ function getdata {
     local spw=$1
     local dataset=`quote $2`
     echo "spw=$1, dataset=$2"
-    $JULIA --machinefile $MACHINEFILE_MAX -e \
-        "using Pipeline; @time Pipeline.Calibration.getdata($spw, $dataset)"
+    $JULIA -p 16 -e \
+        "using Pipeline; @time Pipeline.Calibration.getdata_defaults($spw, $dataset)"
 }
 
 function flag {

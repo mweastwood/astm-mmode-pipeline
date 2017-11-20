@@ -1,88 +1,70 @@
-function getdata(spw, dataset="100hr")
+function getdata_defaults(spw, dataset)
     dadas = listdadas(spw, dataset)
-    getdata(spw, 1:length(dadas), dataset)
+    getdata(spw, 50:60, 1:length(dadas), dataset)
 end
 
-function getdata(spw, range, dataset)
+function getdata_middle_channel(spw, dataset)
+    dadas = listdadas(spw, dataset)
+    getdata(spw, 55:55, 1:length(dadas), dataset)
+end
+
+function getdata(spw, channels, range, dataset)
     dadas = listdadas(spw, dataset)[range]
     Ntime = length(range)
-    meta = getmeta(spw, dataset)
+    Nfreq = length(channels)
+    meta  = getmeta(spw, dataset)
+    meta.channels = meta.channels[channels]
 
-    idx = 1
-    nextidx() = (myidx = idx; idx += 1; myidx)
+    pool  = CachingPool(workers())
+    queue = collect(1:Ntime)
 
-    p = Progress(Ntime)
-    l = ReentrantLock()
-    increment_progress() = (lock(l); next!(p); unlock(l))
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
 
-    times = zeros(Ntime)
-    data = zeros(Complex128, 2, Nbase(meta), Ntime)
-
-    @sync for worker in workers()
-        @async begin
-            input = RemoteChannel()
-            output = RemoteChannel()
-            remotecall(getdata_worker_loop, worker, dataset, dadas, input, output)
-            while true
-                myidx = nextidx()
-                myidx ≤ Ntime || break
-                put!(input, myidx)
-                times[myidx], data[:, :, myidx] = take!(output)
-                increment_progress()
+    path = joinpath(getdir(spw), dataset)
+    isdir(path) || mkpath(path)
+    @show path
+    jldopen(joinpath(path, "raw-visibilities.jld2"), "w") do file
+        file["metadata"] = meta
+        times = zeros(Ntime)
+        @sync for worker in workers()
+            @async while length(queue) > 0
+                integration = pop!(queue)
+                dada = dadas[integration]
+                time, data = remotecall_fetch(getdata_do_the_work, pool, dataset, dada, channels)
+                getdata_write_to_disk(file, integration, data)
+                times[integration] = time
+                increment()
             end
-            close(input)
-            close(output)
         end
+        file["times"] = times
     end
-
-    dir = getdir(spw)
-    output_file = joinpath(dir, "raw-$dataset-visibilities.jld")
-    save(output_file, "times", times, "data", data, "dataset", dataset, compress=true)
-
     nothing
 end
 
-function getdata_worker_loop(dataset, dadas, input, output)
-    while true
-        try
-            idx = take!(input)
-            time, data = getdata_do_the_work(dataset, dadas[idx])
-            put!(output, (time, data))
-        catch exception
-            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
-                break
-            else
-                println(exception)
-                rethrow(exception)
-            end
-        end
-    end
+function getdata_write_to_disk(file, integration, data)
+    objectname = @sprintf("%06d", integration)
+    file[objectname] = data
 end
 
-function getdata_do_the_work(dataset, dada)
+function getdata_do_the_work(dataset, dada, channels)
     local time, output
     try
         ms, path = dada2ms(dada, dataset)
         data = ms["DATA"] :: Array{Complex64, 3}
         time = ms["TIME", 1] :: Float64
-
         # discard the xy and yx correlations because we don't really have the information to
         # calibrate them (no polarization calibration)
         keep = [true; false; false; true]
-
-        # discard all channels except the single channel we are interested in
-        channel = 55
-
-        output = data[keep, channel, :]
-        finalize(ms)
-        rm(path, recursive=true)
+        output = data[keep, channels, :]
+        Tables.delete(ms)
     catch exception
+        # oops, something broke
         println(dada)
         println(exception)
-        # we will indicate that this integration should be flagged by setting the time to something
-        # absurd (ie. negative)
-        output = zeros(Complex64, 2, Nant2Nbase(256))
-        time = -1.0
+        time   = NaN
+        output = nothing
     end
     time, output
 end
