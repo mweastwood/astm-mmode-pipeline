@@ -10,7 +10,7 @@ include("../lib/DADA2MS.jl"); using .DADA2MS
 
 function getdata(spw, dataset)
     dadas = listdadas(spw, dataset)
-    getdata(spw, 50:60, 1:length(dadas), dataset)
+    getdata(spw, 53:57, 1:length(dadas), dataset)
 end
 
 function getdata_middle_channel(spw, dataset)
@@ -42,6 +42,8 @@ function getdata(spw, channels, range, dataset)
                 increment()
             end
         end
+        file["Ntime"] = Ntime
+        file["Nfreq"] = Nfreq
     end
     nothing
 end

@@ -4,6 +4,7 @@ spw = parse(Int, ARGS[1])
 dataset = ARGS[2]
 
 addprocs(16)
-@everywhere include("Driver.jl")
+include("Driver.jl")
+Base.require(:Driver)
 Driver.getdata(spw, dataset)
 
