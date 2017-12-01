@@ -8,77 +8,42 @@ using Unitful
 
 include("../lib/Common.jl"); using .Common
 
-function calibrate(spw, dataset)
-    path = getdir(spw, dataset)
-    local calibration
-    jldopen(joinpath(path, "raw-visibilities.jld2"), "r") do file
-        baseline_flags = file["baseline-flags"]
-        calibration = solve_for_gain_calibration(spw, dataset, file, baseline_flags)
-        jldopen(joinpath(path, "calibrated-visibilities.jld2"), "w") do output_file
-            apply_the_calibration(calibration, file, output_file)
-        end
-    end
-    #jldopen(joinpath(path, "calibration.jld2"), "w") do file
-        #file["calibration"] = calibration
-    #end
+function calibrate(spw, name)
+    beam  = getbeam(spw, name)
+    sky   = readsky(joinpath(Common.workspace, "source-lists", "calibration-sky-model.json"))
+    range = 1600:1700
+    calibration = solve_for_the_calibration(spw, name, beam, sky, range)
+    apply_the_calibration(spw, name, calibration)
 end
 
-function solve_for_gain_calibration(spw, dataset, file, baseline_flags)
-    @time measured = create_dataset_all_time(file, baseline_flags, 1600:1700)
-    @time model = model_visibilities(spw, dataset, measured.metadata)
-    @time calibration = TTCal.calibrate(measured, model)
+function solve_for_the_calibration(spw, name, beam, sky, range)
+    measured = read_raw_visibilities(spw, name, range)
+    model    = model_visibilities(measured.metadata, beam, sky)
+    Common.flag!(spw, name, measured)
+    calibration = TTCal.calibrate(measured, model)
     calibration
 end
 
-function create_dataset_all_time(file, baseline_flags, indices)
-    dataset = create_dataset_one_time(file, baseline_flags, indices[1])
-    for index in indices[2:end]
-        new_dataset = create_dataset_one_time(file, baseline_flags, index)
-        TTCal.merge!(dataset, new_dataset, axis=:time)
-    end
-    dataset
-end
-
-function create_dataset_one_time(file, baseline_flags, index)
-    data     = file[@sprintf("%06d",          index)]
-    metadata = file[@sprintf("%06d-metadata", index)]
-    dataset  = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-    for frequency = 1:Nfreq(dataset)
-        visibilities = dataset[frequency, 1]
-        for ant1 = 1:Nant(dataset), ant2 = ant1:Nant(dataset)
-            α = baseline_index(ant1, ant2)
-            if !baseline_flags[α]
-                J = TTCal.DiagonalJonesMatrix(data[1, frequency, α], data[2, frequency, α])
-                visibilities[ant1, ant2] = J
-            end
+function read_raw_visibilities(spw, name, indices)
+    local dataset
+    objname(i) = @sprintf("%06d", i)
+    metadata = getmeta(spw, name)
+    jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "r") do file
+        frequencies = file["frequencies"]
+        times = file["times"]
+        dataset = array_to_ttcal(file[objname(first(indices))],
+                                 metadata, frequencies, times[first(indices)])
+        prg = Progress(length(indices)-1)
+        for i in indices[2:end]
+            dataset′ = array_to_ttcal(file[objname(i)], metadata, frequencies, times[i])
+            TTCal.merge!(dataset, dataset′, axis=:time)
+            next!(prg)
         end
     end
     dataset
 end
 
-function output_dataset(output_file, dataset, time)
-    data = zeros(Complex128, 2, Nfreq(dataset), Nbase(dataset))
-    for frequency = 1:Nfreq(dataset)
-        visibilities = dataset[frequency, 1]
-        for ant1 = 1:Nant(dataset), ant2 = ant1:Nant(dataset)
-            α = baseline_index(ant1, ant2)
-            J = visibilities[ant1, ant2]
-            data[1, frequency, α] = J.xx
-            data[2, frequency, α] = J.yy
-        end
-    end
-    output_file[@sprintf("%06d",          time)] = data
-    output_file[@sprintf("%06d-metadata", time)] = dataset.metadata
-end
-
-function model_visibilities(spw, dataset, metadata)
-    sky  = readsky(joinpath(Common.workspace, "source-lists", "calibration-sky-model.json"))
-    if dataset == "rainy"
-        # use measured beam models
-        beam = TTCal.ZernikeBeam(beam_coeff[spw])
-    else
-        beam = SineBeam()
-    end
+function model_visibilities(metadata, beam, sky)
     model = genvis(metadata, beam, sky)
 
     # at the moment genvis only spits out full polarization visibilities, let's manually convert
@@ -96,16 +61,52 @@ function model_visibilities(spw, dataset, metadata)
     output
 end
 
-function apply_the_calibration(calibration, input_file, output_file)
-    Ntime = input_file["Ntime"]
-    baseline_flags = input_file["baseline-flags"]
-    for time = 1:Ntime
-        dataset = create_dataset_one_time(input_file, baseline_flags, time)
-        applycal!(dataset, calibration)
-        output_dataset(output_file, dataset, time)
+function apply_the_calibration(spw, name, calibration)
+    objname(i) = @sprintf("%06d", i)
+    metadata = getmeta(spw, name)
+    jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "r") do input_file
+        frequencies = input_file["frequencies"]
+        times = input_file["times"]
+        Ntime = length(times)
+
+        pool  = CachingPool(workers())
+        queue = collect(1:Ntime)
+
+        lck = ReentrantLock()
+        prg = Progress(length(queue))
+        increment() = (lock(lck); next!(prg); unlock(lck))
+
+        jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "w") do output_file
+            @sync for worker in workers()
+                @async while length(queue) > 0
+                    index = pop!(queue)
+                    raw_data = input_file[objname(index)]
+                    calibrated_data = remotecall_fetch(do_the_work, pool, raw_data, metadata,
+                                                       frequencies, times[index], calibration)
+                    output_file[objname(index)] = calibrated_data
+                    increment()
+                end
+            end
+            output_file["frequencies"] = frequencies
+            output_file["times"] = times
+            output_file["Nfreq"] = length(frequencies)
+            output_file["Ntime"] = length(times)
+        end
     end
-    output_file["Ntime"] = Ntime
-    output_file["Nfreq"] = input_file["Nfreq"]
+end
+
+function do_the_work(data, metadata, frequencies, time, calibration)
+    ttcal = array_to_ttcal(data, metadata, frequencies, time)
+    applycal!(ttcal, calibration)
+    ttcal_to_array(ttcal)
+end
+
+function getbeam(spw, dataset)
+    if dataset == "rainy"
+        return TTCal.ZernikeBeam(beam_coeff[spw])
+    else
+        return SineBeam()
+    end
 end
 
 beam_coeff = Dict( 4 => [ 0.538556463745644,     -0.46866163121041965,   -0.02903632892950315,

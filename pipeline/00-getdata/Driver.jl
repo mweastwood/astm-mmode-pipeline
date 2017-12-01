@@ -8,19 +8,19 @@ using TTCal
 include("../lib/Common.jl");  using .Common
 include("../lib/DADA2MS.jl"); using .DADA2MS
 
-function getdata(spw, dataset)
-    dadas = listdadas(spw, dataset)
-    getdata(spw, 53:57, 1:length(dadas), dataset)
+function getdata(spw, name)
+    dadas = listdadas(spw, name)
+    getdata(spw, 53:57, name)
 end
 
-function getdata_middle_channel(spw, dataset)
-    dadas = listdadas(spw, dataset)
-    getdata(spw, 55:55, 1:length(dadas), dataset)
+function getdata_middle_channel(spw, name)
+    dadas = listdadas(spw, name)
+    getdata(spw, 55:55, name)
 end
 
-function getdata(spw, channels, range, dataset)
-    dadas = listdadas(spw, dataset)[range]
-    Ntime = length(range)
+function getdata(spw, channels, name)
+    dadas = listdadas(spw, name)
+    Ntime = length(dadas)
     Nfreq = length(channels)
 
     pool  = CachingPool(workers())
@@ -30,54 +30,47 @@ function getdata(spw, channels, range, dataset)
     prg = Progress(length(queue))
     increment() = (lock(lck); next!(prg); unlock(lck))
 
-    path = getdir(spw, dataset)
-    isdir(path) || mkpath(path)
-    jldopen(joinpath(path, "raw-visibilities.jld2"), "w") do file
+    output_path = joinpath(getdir(spw, name), "raw-visibilities.jld2")
+    jldopen(output_path, "w") do file
+        times = Float64[]
         @sync for worker in workers()
             @async while length(queue) > 0
-                integration = pop!(queue)
-                dada = dadas[integration]
-                data, metadata = remotecall_fetch(do_the_work, pool, dataset, dada, channels)
-                write_to_disk(file, integration, data, metadata)
+                index = pop!(queue)
+                data, time, frequencies = remotecall_fetch(run_dada2ms, pool,
+                                                           name, dadas[index], channels)
+                file[@sprintf("%06d", index)] = data
+                push!(times, time)
+                if index == 1
+                    file["frequencies"] = frequencies
+                end
                 increment()
             end
         end
+        file["times"] = sort!(times)
         file["Ntime"] = Ntime
         file["Nfreq"] = Nfreq
     end
     nothing
 end
 
-function write_to_disk(file, integration, data, metadata)
-    objectname = @sprintf("%06d", integration)
-    file[objectname] = data
-    objectname = @sprintf("%06d-metadata", integration)
-    file[objectname] = metadata
-end
-
-function do_the_work(dataset, dada, channels)
-    local data, metadata
+function run_dada2ms(name, dada, channels)
+    local data, time, frequencies
     try
-        ms, path = dada2ms(dada, dataset)
+        ms = dada2ms(dada, name)
         raw_data = ms["DATA"] :: Array{Complex64, 3}
-        metadata = TTCal.Metadata(ms)
-        # horrible hack until it is possible to modify structs in place
-        frequencies = metadata.frequencies[channels]
-        resize!(metadata.frequencies, length(frequencies))
-        metadata.frequencies[:] = frequencies
-        # discard the xy and yx correlations because we don't really have the information to
-        # calibrate them (no polarization calibration)
+        spw = ms[kw"SPECTRAL_WINDOW"]
+        frequencies = spw["CHAN_FREQ", 1][channels]
+        Tables.close(spw)
+        time = ms["TIME", 1]
         keep = [true; false; false; true]
         data = raw_data[keep, channels, :]
         Tables.delete(ms)
     catch exception
-        # oops, something broke
         println(dada)
         println(exception)
-        time   = NaN
-        output = nothing
+        rethrow(exception)
     end
-    data, metadata
+    data, time, frequencies
 end
 
 end

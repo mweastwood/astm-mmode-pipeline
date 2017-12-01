@@ -8,11 +8,13 @@ module Common
 export getdir, getmeta, getfreq
 export listdadas
 export baseline_index, Nbase2Nant, Nant2Nbase
-export launch_maximum_workers
+export ttcal_to_array, array_to_ttcal
 
+using CasaCore.Measures
 using CasaCore.Tables
 using FileIO, JLD2
 using TTCal
+using Unitful
 
 include("DADA2MS.jl"); using .DADA2MS
 
@@ -68,7 +70,7 @@ function getmeta(spw, dataset)::TTCal.Metadata
         return meta
     else
         dadas = listdadas(spw, dataset)
-        ms, path = dada2ms(dadas[1], dataset)
+        ms = dada2ms(dadas[1], dataset)
         meta = TTCal.Metadata(ms)
         Tables.delete(ms)
         save(file, "metadata", meta)
@@ -76,16 +78,93 @@ function getmeta(spw, dataset)::TTCal.Metadata
     end
 end
 
-function getfreq(spw)
-    meta = getmeta(spw, "rainy")
-    meta.channels[55]
-end
-
-getfrequencies(spws, dataset) = [getfreq(spw) for spw in spws]
-
 baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
 Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
+
+function array_to_ttcal(data, metadata, frequencies, time)
+    my_metadata = TTCal.Metadata(frequencies.*u"Hz",
+                                 [Epoch(epoch"UTC", time*u"s")],
+                                 metadata.positions,
+                                 [Direction(dir"AZEL", 0.0*u"°", 90.0*u"°")])
+    ttcal_dataset = TTCal.Dataset(my_metadata, polarization=TTCal.Dual)
+    for frequency in 1:Nfreq(my_metadata)
+        visibilities = ttcal_dataset[frequency, 1]
+        for antenna1 = 1:Nant(my_metadata), antenna2 = antenna1:Nant(my_metadata)
+            α = baseline_index(antenna1, antenna2)
+            J = TTCal.DiagonalJonesMatrix(data[1, frequency, α], data[2, frequency, α])
+            visibilities[antenna1, antenna2] = J
+        end
+    end
+    ttcal_dataset
+end
+
+function ttcal_to_array(ttcal_dataset)
+    data = zeros(Complex128, 2, Nfreq(ttcal_dataset), Nbase(ttcal_dataset))
+    for frequency in 1:Nfreq(ttcal_dataset)
+        visibilities = ttcal_dataset[frequency, 1]
+        for antenna1 = 1:Nant(ttcal_dataset), antenna2 = antenna1:Nant(ttcal_dataset)
+            α = baseline_index(antenna1, antenna2)
+            J = visibilities[antenna1, antenna2]
+            data[1, frequency, α] = J.xx
+            data[2, frequency, α] = J.yy
+        end
+    end
+    data
+end
+
+# a priori flags
+
+function flag!(spw, dataset, ttcal_dataset)
+    antenna_flags  = flag_antennas(spw, dataset)
+    baseline_flags = flag_baselines(spw, dataset)
+    TTCal.flag_antennas!(ttcal_dataset, antenna_flags)
+    TTCal.flag_baselines!(ttcal_dataset, baseline_flags)
+end
+
+# antenna flags
+
+function flag_antennas(spw, dataset)
+    flags = Int[]
+    directory = joinpath(Common.workspace, "flags")
+    for file in (@sprintf("%s.ants", dataset),
+                 @sprintf("%s-spw%02d.ants", dataset, spw))
+        isfile(joinpath(directory, file)) || continue
+        antennas = read_antenna_flags(joinpath(directory, file))
+        for ant in antennas
+            push!(flags, ant)
+        end
+    end
+    flags
+end
+
+function read_antenna_flags(path) :: Vector{Int}
+    flags = readdlm(path, Int)
+    reshape(flags, length(flags))
+end
+
+# baseline flags
+
+function flag_baselines(spw, dataset)
+    flags = Tuple{Int, Int}[]
+    directory = joinpath(Common.workspace, "flags")
+    for file in (@sprintf("%s.bl", dataset),
+                 @sprintf("%s-spw%02d.bl", dataset, spw))
+        isfile(joinpath(directory, file)) || continue
+        baselines = read_baseline_flags(joinpath(directory, file))
+        for idx = 1:size(baselines, 1)
+            ant1 = baselines[idx, 1]
+            ant2 = baselines[idx, 2]
+            push!(flags, (ant1, ant2))
+        end
+    end
+    flags
+end
+
+function read_baseline_flags(path) :: Matrix{Int}
+    flags = readdlm(path, '&', Int)
+    flags
+end
 
 end
 
