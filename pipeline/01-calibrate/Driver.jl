@@ -20,27 +20,35 @@ function solve_for_the_calibration(spw, name, beam, sky, range)
     measured = read_raw_visibilities(spw, name, range)
     model    = model_visibilities(measured.metadata, beam, sky)
     Common.flag!(spw, name, measured)
-    calibration = TTCal.calibrate(measured, model)
+    calibration = TTCal.calibrate(measured, model, collapse_time=true)
     calibration
 end
 
 function read_raw_visibilities(spw, name, indices)
     local dataset
-    objname(i) = @sprintf("%06d", i)
-    metadata = getmeta(spw, name)
     jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "r") do file
-        frequencies = file["frequencies"]
-        times = file["times"]
-        dataset = array_to_ttcal(file[objname(first(indices))],
-                                 metadata, frequencies, times[first(indices)])
-        prg = Progress(length(indices)-1)
-        for i in indices[2:end]
-            dataset′ = array_to_ttcal(file[objname(i)], metadata, frequencies, times[i])
-            TTCal.merge!(dataset, dataset′, axis=:time)
+        metadata = file["metadata"]
+        TTCal.slice!(metadata, indices, axis=:time)
+        dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+        prg = Progress(length(indices))
+        for (i, j) in enumerate(indices)
+            pack!(dataset, file[o6d(j)], i)
             next!(prg)
         end
     end
     dataset
+end
+
+function pack!(dataset, array, index)
+    for frequency = 1:Nfreq(dataset)
+        visibilities = dataset[frequency, index]
+        α = 1
+        for antenna1 = 1:Nant(dataset), antenna2 = antenna1:Nant(dataset)
+            J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
+            visibilities[antenna1, antenna2] = J
+            α += 1
+        end
+    end
 end
 
 function model_visibilities(metadata, beam, sky)
@@ -62,15 +70,11 @@ function model_visibilities(metadata, beam, sky)
 end
 
 function apply_the_calibration(spw, name, calibration)
-    objname(i) = @sprintf("%06d", i)
-    metadata = getmeta(spw, name)
     jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "r") do input_file
-        frequencies = input_file["frequencies"]
-        times = input_file["times"]
-        Ntime = length(times)
+        metadata = input_file["metadata"]
 
         pool  = CachingPool(workers())
-        queue = collect(1:Ntime)
+        queue = collect(1:Ntime(metadata))
 
         lck = ReentrantLock()
         prg = Progress(length(queue))
@@ -80,25 +84,56 @@ function apply_the_calibration(spw, name, calibration)
             @sync for worker in workers()
                 @async while length(queue) > 0
                     index = pop!(queue)
-                    raw_data = input_file[objname(index)]
-                    calibrated_data = remotecall_fetch(do_the_work, pool, raw_data, metadata,
-                                                       frequencies, times[index], calibration)
-                    output_file[objname(index)] = calibrated_data
+                    raw_data = input_file[o6d(index)]
+                    calibrated_data = remotecall_fetch(do_the_work, pool, raw_data,
+                                                       metadata, index, calibration)
+                    output_file[o6d(index)] = calibrated_data
                     increment()
                 end
             end
-            output_file["frequencies"] = frequencies
-            output_file["times"] = times
-            output_file["Nfreq"] = length(frequencies)
-            output_file["Ntime"] = length(times)
+            output_file["calibration"] = calibration
+            output_file["metadata"] = metadata
         end
     end
 end
 
-function do_the_work(data, metadata, frequencies, time, calibration)
-    ttcal = array_to_ttcal(data, metadata, frequencies, time)
+function do_the_work(data, metadata, time, calibration)
+    ttcal = array_to_ttcal(data, metadata, time)
     applycal!(ttcal, calibration)
     ttcal_to_array(ttcal)
+end
+
+function array_to_ttcal(array, metadata, time)
+    # this assumes one time slice
+    metadata = deepcopy(metadata)
+    TTCal.slice!(metadata, time, axis=:time)
+    ttcal_dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+    for frequency in 1:Nfreq(metadata)
+        visibilities = ttcal_dataset[frequency, 1]
+        α = 1
+        for antenna1 = 1:Nant(metadata), antenna2 = antenna1:Nant(metadata)
+            J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
+            visibilities[antenna1, antenna2] = J
+            α += 1
+        end
+    end
+    ttcal_dataset
+end
+
+function ttcal_to_array(ttcal_dataset)
+    # this assumes one time slice
+    data = zeros(Complex128, 2, Nfreq(ttcal_dataset), Nbase(ttcal_dataset))
+    for frequency in 1:Nfreq(ttcal_dataset)
+        visibilities = ttcal_dataset[frequency, 1]
+        α = 1
+        for antenna1 = 1:Nant(ttcal_dataset), antenna2 = antenna1:Nant(ttcal_dataset)
+            J = visibilities[antenna1, antenna2]
+            data[1, frequency, α] = J.xx
+            data[2, frequency, α] = J.yy
+            α += 1
+        end
+    end
+    data
 end
 
 function getbeam(spw, dataset)

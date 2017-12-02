@@ -30,38 +30,34 @@ function getdata(spw, channels, name)
     prg = Progress(length(queue))
     increment() = (lock(lck); next!(prg); unlock(lck))
 
-    output_path = joinpath(getdir(spw, name), "raw-visibilities.jld2")
-    jldopen(output_path, "w") do file
-        times = Float64[]
+    jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "w") do file
+        metadata_list = Vector{TTCal.Metadata}(Ntime)
         @sync for worker in workers()
             @async while length(queue) > 0
                 index = pop!(queue)
-                data, time, frequencies = remotecall_fetch(run_dada2ms, pool,
-                                                           name, dadas[index], channels)
+                data, metadata = remotecall_fetch(run_dada2ms, pool,
+                                                  name, dadas[index], channels)
                 file[@sprintf("%06d", index)] = data
-                push!(times, time)
-                if index == 1
-                    file["frequencies"] = frequencies
-                end
+                metadata_list[index] = metadata
                 increment()
             end
         end
-        file["times"] = sort!(times)
-        file["Ntime"] = Ntime
-        file["Nfreq"] = Nfreq
+        master_metadata = metadata_list[1]
+        for metadata in metadata_list[2:end]
+            TTCal.merge!(master_metadata, metadata, axis=:time)
+        end
+        file["metadata"] = master_metadata
     end
     nothing
 end
 
 function run_dada2ms(name, dada, channels)
-    local data, time, frequencies
+    local data, metadata
     try
         ms = dada2ms(dada, name)
         raw_data = ms["DATA"] :: Array{Complex64, 3}
-        spw = ms[kw"SPECTRAL_WINDOW"]
-        frequencies = spw["CHAN_FREQ", 1][channels]
-        Tables.close(spw)
-        time = ms["TIME", 1]
+        metadata = TTCal.Metadata(ms)
+        TTCal.slice!(metadata, channels, axis=:frequency)
         keep = [true; false; false; true]
         data = raw_data[keep, channels, :]
         Tables.delete(ms)
@@ -70,7 +66,7 @@ function run_dada2ms(name, dada, channels)
         println(exception)
         rethrow(exception)
     end
-    data, time, frequencies
+    data, metadata
 end
 
 end

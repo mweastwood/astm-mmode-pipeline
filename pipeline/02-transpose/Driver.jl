@@ -3,39 +3,31 @@ module Driver
 using JLD2
 using ProgressMeter
 using TTCal
-using Unitful
 
 include("../lib/Common.jl"); using .Common
 
 function transpose(spw, name)
-    path =  getdir(spw, name)
-    meta = getmeta(spw, name)
-
+    path = getdir(spw, name)
     jldopen(joinpath(path, "calibrated-visibilities.jld2"), "r") do input_file
-        frequencies = input_file["frequencies"]
-        times = input_file["times"]
+        metadata = input_file["metadata"]
         jldopen(joinpath(path, "transposed-visibilities.jld2"), "w") do output_file
-            for frequency = 1:length(frequencies)
-                transpose(input_file, output_file, frequency, length(times), Nbase(meta))
+            for frequency = 1:Nfreq(metadata)
+                transpose(input_file, output_file, metadata, frequency)
             end
-            output_file["frequencies"] = frequencies
-            output_file["times"] = times
-            output_file["Nfreq"] = length(frequencies)
-            output_file["Ntime"] = length(times)
+            output_file["metadata"] = metadata
         end
     end
 end
 
-function transpose(input_file, output_file, frequency, Ntime, Nbase)
-    output = zeros(Complex128, 2, Nbase, Ntime)
-    prg = Progress(Ntime)
-    objname(i) = @sprintf("%06d", i)
-    for time = 1:Ntime
-        data = input_file[objname(time)]
+function transpose(input_file, output_file, metadata, frequency)
+    output = zeros(Complex128, 2, Nbase(metadata), Ntime(metadata))
+    prg = Progress(Ntime(metadata))
+    for time = 1:Ntime(metadata)
+        data = input_file[o6d(time)]
         pack!(output, data, frequency, time)
         next!(prg)
     end
-    output_file[objname(frequency)] = output
+    output_file[o6d(frequency)] = output
 end
 
 function pack!(output, data, frequency, time)

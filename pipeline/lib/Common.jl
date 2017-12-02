@@ -9,6 +9,7 @@ export getdir, getmeta, getfreq
 export listdadas
 export baseline_index, Nbase2Nant, Nant2Nbase
 export ttcal_to_array, array_to_ttcal
+export o6d
 
 using CasaCore.Measures
 using CasaCore.Tables
@@ -62,56 +63,27 @@ end
 # The rainy data is offset from the 100 hour run by one spectral window.
 fix_spw_offset(spw, dataset) = dataset == "rainy"? spw - 1 : spw
 
-function getmeta(spw, dataset)::TTCal.Metadata
-    dir = getdir(spw, dataset)
-    file = joinpath(dir, "metadata.jld2")
-    if isfile(file)
-        meta = load(file, "metadata")
-        return meta
-    else
-        dadas = listdadas(spw, dataset)
-        ms = dada2ms(dadas[1], dataset)
-        meta = TTCal.Metadata(ms)
-        Tables.delete(ms)
-        save(file, "metadata", meta)
-        return meta
-    end
-end
+o6d(i) = @sprintf("%06d", i)
 
-baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
+#function getmeta(spw, dataset)::TTCal.Metadata
+#    dir = getdir(spw, dataset)
+#    file = joinpath(dir, "metadata.jld2")
+#    if isfile(file)
+#        meta = load(file, "metadata")
+#        return meta
+#    else
+#        dadas = listdadas(spw, dataset)
+#        ms = dada2ms(dadas[1], dataset)
+#        meta = TTCal.Metadata(ms)
+#        Tables.delete(ms)
+#        save(file, "metadata", meta)
+#        return meta
+#    end
+#end
+
+#baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
 Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
-
-function array_to_ttcal(data, metadata, frequencies, time)
-    my_metadata = TTCal.Metadata(frequencies.*u"Hz",
-                                 [Epoch(epoch"UTC", time*u"s")],
-                                 metadata.positions,
-                                 [Direction(dir"AZEL", 0.0*u"°", 90.0*u"°")])
-    ttcal_dataset = TTCal.Dataset(my_metadata, polarization=TTCal.Dual)
-    for frequency in 1:Nfreq(my_metadata)
-        visibilities = ttcal_dataset[frequency, 1]
-        for antenna1 = 1:Nant(my_metadata), antenna2 = antenna1:Nant(my_metadata)
-            α = baseline_index(antenna1, antenna2)
-            J = TTCal.DiagonalJonesMatrix(data[1, frequency, α], data[2, frequency, α])
-            visibilities[antenna1, antenna2] = J
-        end
-    end
-    ttcal_dataset
-end
-
-function ttcal_to_array(ttcal_dataset)
-    data = zeros(Complex128, 2, Nfreq(ttcal_dataset), Nbase(ttcal_dataset))
-    for frequency in 1:Nfreq(ttcal_dataset)
-        visibilities = ttcal_dataset[frequency, 1]
-        for antenna1 = 1:Nant(ttcal_dataset), antenna2 = antenna1:Nant(ttcal_dataset)
-            α = baseline_index(antenna1, antenna2)
-            J = visibilities[antenna1, antenna2]
-            data[1, frequency, α] = J.xx
-            data[2, frequency, α] = J.yy
-        end
-    end
-    data
-end
 
 # a priori flags
 
