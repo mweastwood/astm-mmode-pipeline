@@ -23,12 +23,14 @@ const workspace = joinpath(@__DIR__, "..", "..", "workspace")
 
 function getdir(spw)
     dir = joinpath(workspace, @sprintf("spw%02d", spw))
-    isdir(dir) || mkdir(dir)
+    isdir(dir) || mkpath(dir)
     dir
 end
 
 function getdir(spw, dataset)
-    joinpath(getdir(spw), dataset)
+    dir = joinpath(getdir(spw), dataset)
+    isdir(dir) || mkpath(dir)
+    dir
 end
 
 """
