@@ -57,9 +57,9 @@ function model_visibilities(metadata, beam, sky)
     # at the moment genvis only spits out full polarization visibilities, let's manually convert
     # this to dual polarization
     output = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-    for frequency = 1:Nfreq(metadata)
-        vis1 =  model[frequency, 1]
-        vis2 = output[frequency, 1]
+    for time = 1:Ntime(metadata), frequency = 1:Nfreq(metadata)
+        vis1 =  model[frequency, time]
+        vis2 = output[frequency, time]
         for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
             J1 = vis1[ant1, ant2]
             J2 = TTCal.DiagonalJonesMatrix(J1.xx, J1.yy)
@@ -85,7 +85,7 @@ function apply_the_calibration(spw, name, calibration)
                 @async while length(queue) > 0
                     index = pop!(queue)
                     raw_data = input_file[o6d(index)]
-                    calibrated_data = remotecall_fetch(do_the_work, pool, raw_data,
+                    calibrated_data = remotecall_fetch(do_the_work, pool, spw, name, raw_data,
                                                        metadata, index, calibration)
                     output_file[o6d(index)] = calibrated_data
                     increment()
@@ -97,8 +97,9 @@ function apply_the_calibration(spw, name, calibration)
     end
 end
 
-function do_the_work(data, metadata, time, calibration)
+function do_the_work(spw, name, data, metadata, time, calibration)
     ttcal = array_to_ttcal(data, metadata, time)
+    Common.flag!(spw, name, ttcal)
     applycal!(ttcal, calibration)
     ttcal_to_array(ttcal)
 end

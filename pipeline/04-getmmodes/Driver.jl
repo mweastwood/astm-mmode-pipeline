@@ -8,7 +8,7 @@ using BPJSpec
 include("../lib/Common.jl"); using .Common
 
 function getmmodes(spw, name)
-    path =  getdir(spw, name)
+    path = getdir(spw, name)
     mmax = (6628-1) ÷ 2
     jldopen(joinpath(path, "folded-visibilities.jld2"), "r") do input_file
         ttcal_metadata   = input_file["metadata"]
