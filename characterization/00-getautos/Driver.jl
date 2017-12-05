@@ -43,7 +43,10 @@ function getautos(spw::Integer, name)
             TTCal.merge!(master_metadata, metadata, axis=:time)
         end
         file["metadata"] = master_metadata
-        file["autos"] = autos
+        for ant = 1:256
+            file[@sprintf("%03d", 2ant-1)] = autos[1, :, ant, :]
+            file[@sprintf("%03d", 2ant-0)] = autos[2, :, ant, :]
+        end
     end
     nothing
 end
