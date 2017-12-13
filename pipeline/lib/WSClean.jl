@@ -16,6 +16,7 @@ function wsclean(name; weight="uniform", minuvw=0, j=1)
     dirty_name = name*"-dirty.fits"
     rm(dirty_name)
     mv(image_name, name*".fits", remove_destination=true)
+    name*".fits"
 end
 
 function wsclean(input, output; weight="uniform", minuvw=0, j = 1)

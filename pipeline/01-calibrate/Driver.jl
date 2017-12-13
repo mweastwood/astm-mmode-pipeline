@@ -104,39 +104,6 @@ function do_the_work(spw, name, data, metadata, time, calibration)
     ttcal_to_array(ttcal)
 end
 
-function array_to_ttcal(array, metadata, time)
-    # this assumes one time slice
-    metadata = deepcopy(metadata)
-    TTCal.slice!(metadata, time, axis=:time)
-    ttcal_dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-    for frequency in 1:Nfreq(metadata)
-        visibilities = ttcal_dataset[frequency, 1]
-        α = 1
-        for antenna1 = 1:Nant(metadata), antenna2 = antenna1:Nant(metadata)
-            J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
-            visibilities[antenna1, antenna2] = J
-            α += 1
-        end
-    end
-    ttcal_dataset
-end
-
-function ttcal_to_array(ttcal_dataset)
-    # this assumes one time slice
-    data = zeros(Complex128, 2, Nfreq(ttcal_dataset), Nbase(ttcal_dataset))
-    for frequency in 1:Nfreq(ttcal_dataset)
-        visibilities = ttcal_dataset[frequency, 1]
-        α = 1
-        for antenna1 = 1:Nant(ttcal_dataset), antenna2 = antenna1:Nant(ttcal_dataset)
-            J = visibilities[antenna1, antenna2]
-            data[1, frequency, α] = J.xx
-            data[2, frequency, α] = J.yy
-            α += 1
-        end
-    end
-    data
-end
-
 function getbeam(spw, dataset)
     if dataset == "rainy"
         return TTCal.ZernikeBeam(beam_coeff[spw])
