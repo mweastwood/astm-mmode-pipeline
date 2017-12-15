@@ -11,15 +11,9 @@ include("../lib/DADA2MS.jl"); using .DADA2MS
 include("../lib/WSClean.jl"); using .WSClean
 
 function peel(spw, name)
-    sky = readsky(joinpath(Common.workspace, "source-lists", "calibration-sky-model.json"))
-
-    local output
+    sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
     jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
-
-        #raw_data = input_file[o6d(1650)]
-        #@time output = do_the_work(spw, name, raw_data, metadata, 1650, sky)
-        #@time image(spw, name, 1650, output)
 
         pool  = CachingPool(workers())
         queue = collect(1:Ntime(metadata))
@@ -28,41 +22,103 @@ function peel(spw, name)
         prg = Progress(length(queue))
         increment() = (lock(lck); next!(prg); unlock(lck))
 
+        residuals = Dict(source.name => zeros(Ntime(metadata)) for source in sky.sources)
         jldopen(joinpath(getdir(spw, name), "peeled-visibilities.jld2"), "w") do output_file
             @sync for worker in workers()
                 @async while length(queue) > 0
                     index = pop!(queue)
                     raw_data = input_file[o6d(index)]
-                    peeled_data = remotecall_fetch(do_the_work, pool, spw, name, raw_data,
-                                                   metadata, index, sky)
+                    peeled_data, _residuals = remotecall_fetch(do_the_work, pool, spw, name,
+                                                               raw_data, metadata, index, sky)
+                    fill_in_residuals!(residuals, _residuals, index)
                     output_file[o6d(index)] = peeled_data
                     increment()
                 end
             end
-            output_file["metadata"] = metadata
+            output_file["metadata"]  = metadata
+            output_file["residuals"] = residuals
         end
+    end
+end
+
+function test(spw, name, integration)
+    local output
+    sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
+    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
+        metadata = input_file["metadata"]
+        raw_data = input_file[o6d(integration)]
+
+        println("# no source removal")
+        output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
+                                         false, false, true)
+        image(spw, name, integration, output, "/lustre/mweastwood/tmp/1-$integration")
+
+        println("# only peeling")
+        output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
+                                         true, false, true)
+        image(spw, name, integration, output, "/lustre/mweastwood/tmp/2-$integration")
+
+        println("# full source removal")
+        output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
+                                         true, true, true)
+        image(spw, name, integration, output, "/lustre/mweastwood/tmp/3-$integration")
     end
     output
 end
 
-function do_the_work(spw, name, data, metadata, time, sky)
-    ttcal = array_to_ttcal(data, metadata, time)
-    Common.flag!(spw, name, ttcal)
-    do_the_source_removal!(spw, ttcal, sky)
-    #ttcal_to_array(ttcal)
+function fill_in_residuals!(residuals, _residuals, index)
+    for name in keys(_residuals)
+        residuals[name][index] = _residuals[name]
+    end
 end
 
-function do_the_source_removal!(spw, dataset, sky)
+function do_the_work(spw, name, data, metadata, time, sky)
+    # call this function if you want an ordinary array
+    ttcal, residuals = _do_the_work(spw, name, data, metadata, time, sky)
+    ttcal_to_array(ttcal), residuals
+end
+
+function _do_the_work(spw, name, data, metadata, time, sky,
+                      dopeeling=true, dosubtraction=true, istest=false)
+    # call this function if you want the TTCal.Dataset
+    ttcal = array_to_ttcal(data, metadata, time)
+    Common.flag!(spw, name, ttcal)
+    residuals = do_the_source_removal!(spw, ttcal, sky, dopeeling, dosubtraction, istest)
+    ttcal, residuals
+end
+
+function do_the_source_removal!(spw, dataset, sky, dopeeling, dosubtraction, istest)
     frame = ReferenceFrame(dataset.metadata)
     filter!(sky.sources) do source
         TTCal.isabovehorizon(frame, source)
     end
     measure_sky!(sky, dataset)
     bright, medium, faint = partition(spw, dataset.metadata, sky)
-    #@show bright medium faint
-    peel!(dataset, bright)
-    #subtract!(dataset, sky)
-    dataset
+    istest && (print("1: "); foreach(s->print(s.name, ", "), bright.sources); println())
+    istest && (print("2: "); foreach(s->print(s.name, ", "), medium.sources); println())
+    istest && (print("3: "); foreach(s->print(s.name, ", "),  faint.sources); println())
+
+    # peel bright sources
+    if dopeeling
+        subtract!(dataset, medium)
+        peel!(dataset, bright)
+        add!(dataset, medium)
+    end
+
+    if dosubtraction
+        # subtract medium sources
+        measure_sky!(medium, dataset)
+        subtract!(dataset, medium)
+
+        # subtract faint sources
+        measure_sky!(faint, dataset)
+        subtract!(dataset, faint)
+    end
+
+    # compute residuals
+    residuals = Dict(source.name => TTCal.getflux(dataset, source).I for source in sky.sources)
+    istest && @show residuals
+    residuals
 end
 
 function measure_sky!(sky::TTCal.SkyModel, dataset)
@@ -80,6 +136,14 @@ function measure_sky!(sky::TTCal.SkyModel, dataset)
     end
 end
 
+function add!(dataset, sky)
+    if length(sky.sources) > 0
+        model = genvis(dataset.metadata, TTCal.ConstantBeam(), sky, polarization=TTCal.Dual)
+        TTCal.add!(dataset, model)
+    end
+    dataset
+end
+
 function subtract!(dataset, sky)
     if length(sky.sources) > 0
         model = genvis(dataset.metadata, TTCal.ConstantBeam(), sky, polarization=TTCal.Dual)
@@ -95,7 +159,7 @@ function peel!(dataset, sky)
     dataset
 end
 
-function image(spw, name, integration, input)
+function image(spw, name, integration, input, fits)
     dadas = Common.listdadas(spw, name)
     dada  = dadas[integration]
     ms = dada2ms(spw, dada, name)
@@ -111,7 +175,7 @@ function image(spw, name, integration, input)
     end
     TTCal.write(ms, output, column="CORRECTED_DATA")
     Tables.close(ms)
-    wsclean(ms.path)
+    wsclean(ms.path, fits)
     #Tables.open(ms)
     #Tables.delete(ms)
 end
@@ -174,15 +238,16 @@ function partition(spw, metadata, sky)
         source = sky.sources[idx]
         if spw == 18
             #      name    | category | elev | flux
-            # -------------------------------------------------------------------------
+            # -------------------------------------
             @pick "Cyg A"     BRIGHT     10    1000
             @pick "Cas A"     BRIGHT     10    1000
-            @pick "Vir A"      FAINT     30    1000
-            @pick "Tau A"      FAINT     30    1000
+            @pick "Vir A"     BRIGHT     30    1000
+            @pick "Tau A"     BRIGHT     30    1000
             @pick "Her A"      FAINT     30     500
             @pick "Hya A"      FAINT     60     500
             @pick "Per B"      FAINT     60     500
             @pick "3C 353"     FAINT     60     500
+            @pick "Sun"       BRIGHT     15       0
         end
     end
     bright_sky = TTCal.SkyModel(sky.sources[bright])
@@ -192,7 +257,6 @@ function partition(spw, metadata, sky)
 end
 
 
-#function pick_sources_for_peeling_and_subtraction(spw, meta, sources, I, Q, directions, istest=false)
 #    # We have three categories for how sources are removed:
 #    #  1) peel them (for very bright sources)
 #    #  2) subtract them after peeling (for faint sources)
@@ -200,28 +264,6 @@ end
 #    # The third category is important because reasonably bright sources can interfere with the
 #    # peeling process if the flux of the two sources is comparable. For example, Cas A near the
 #    # horizon can create problems for trying to peel Vir A.
-#    to_peel = Int[]
-#    to_sub_faint  = Int[]
-#    to_sub_bright = Int[]
-#    to_fit_with_shapelets = Int[]
-#    frame = TTCal.reference_frame(meta)
-#    for idx = 1:length(sources)
-#        source = sources[idx]
-#        TTCal.isabovehorizon(frame, source) || continue
-#        if spw == 18
-#            #   Removal Technique    |   Name   | elev-e | elev-w | flux-hi | flux-lo |
-#            # -------------------------------------------------------------------------
-#            @pick_for_peeling          "Cyg A"     10       10       1000        30
-#            @pick_for_peeling          "Cas A"     10       10       1000        30
-#            #@pick_for_peeling          "Vir A"     30       30       1000        30
-#            #@pick_for_peeling          "Tau A"     30       30       1000        30
-#            #@pick_for_subtraction      "Her A"     30       30        500        30
-#            #@pick_for_subtraction      "Hya A"     60       60        500        30
-#            #@pick_for_subtraction      "Per B"     60       60        500        30
-#            #@pick_for_subtraction      "3C 353"    60       60        500        30
-#            #@pick_for_peeling          "Sun"       15       15          0         0
-#        end
-#    end
 #
 #    # If a source we are trying to subtract has higher flux than a source we are trying to peel, we
 #    # should probably be peeling that source.
