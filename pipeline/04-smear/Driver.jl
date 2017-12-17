@@ -1,17 +1,20 @@
 module Driver
 
-using JLD2
+using CasaCore.Measures
+using CasaCore.Tables
+using FileIO, JLD2
 using ProgressMeter
 using TTCal
+using Unitful
 
-include("../lib/Common.jl"); using .Common
+include("../lib/Common.jl");  using .Common
+include("../lib/DADA2MS.jl"); using .DADA2MS
+include("../lib/WSClean.jl"); using .WSClean
 
 function smear(spw, name)
-    _smear(spw, name)
-    #image = residuals(spw, name, source_dictionary[source])
-    #@show image joinpath(getdir(spw, name), lowercase(replace(source, " ", "-"))*".fits")
-    #mv(image, joinpath(getdir(spw, name), lowercase(replace(source, " ", "-"))*".fits"),
-    #   remove_destination=true)
+    #dataset = _smear(spw, name)
+    dataset = load(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "dataset")
+    residuals, coherencies = peel(spw, name, dataset, 2)
     nothing
 end
 
@@ -31,35 +34,56 @@ function _smear(spw, name)
     jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "w") do file
         file["dataset"] = dataset
     end
-    accumulation, metadata
+    dataset
 end
 
-#function do_the_work(spw, name, data, metadata, time, direction)
-#    ttcal = array_to_ttcal(data, metadata, time)
-#    Common.flag!(spw, name, ttcal)
-#    rotate_phase_center!(ttcal, direction)
-#    ttcal_to_array(ttcal)
-#end
-#
-#function do_the_image(spw, name, accumulation, frequencies)
-#    dada = first(listdadas(spw, name))
-#    ms = dada2ms(spw, dada, name)
-#    metadata = TTCal.Metadata(ms)
-#    output = zeros(Complex64, 4, Nfreq(metadata), Nbase(metadata))
-#    for (idx, ν) in enumerate(frequencies)
-#        jdx = first(find(ν .== metadata.frequencies))
-#        for α = 1:Nbase(metadata)
-#            output[1, jdx, α] = accumulation[1, idx, α]
-#            output[4, jdx, α] = accumulation[2, idx, α]
-#        end
-#    end
-#    ms["CORRECTED_DATA"] = output
-#    Tables.close(ms)
-#    image_path = "/dev/shm/mweastwood/image"
-#    name = wsclean(ms.path, image_path)
-#    Tables.delete(ms)
-#    image_path*".fits"
-#end
+function peel(spw, name, dataset, N)
+    Common.flag!(spw, name, dataset)
+    zenith = Direction(dir"AZEL", 0u"°", 90u"°")
+    flat   = TTCal.PowerLaw(1, 0, 0, 0, 10u"MHz", [0.0])
+    dummy  = TTCal.Source("dummy", TTCal.Point(zenith, flat))
+    sky = TTCal.SkyModel(fill(dummy, N))
+    calibrations = TTCal.peel!(deepcopy(dataset), TTCal.ConstantBeam(), sky)
+    coherencies  = compute_coherencies(dataset.metadata, sky, calibrations)
+    dataset, coherencies
+end
+
+function compute_coherencies(metadata, sky, calibrations)
+    function f(s, c)
+        coherency = genvis(metadata, TTCal.ConstantBeam(), s)
+        TTCal.corrupt!(coherency, coherencies)
+    end
+    f.(sky.sources, calibrations)
+end
+
+function compute_images(original, residuals, coherencies)
+    image(spw, name, original,  "smeared-visibilities")
+    image(spw, name, residuals, "smeared-visibilities-residuals")
+    N = length(coherencies)
+    for (idx, coherency) in enumerate(coherencies)
+        image(spw, name, coherency, "smeared-visibilities-component-$idx")
+    end
+end
+
+function image(spw, name, input, filename)
+    dadas = Common.listdadas(spw, name)
+    dada  = dadas[1]
+    ms = dada2ms(spw, dada, name)
+    metadata = TTCal.Metadata(ms)
+    output = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+    for idx = 1:Nfreq(input)
+        jdx = find(metadata.frequencies .== input.metadata.frequencies[idx])[1]
+        input_vis  =  input[idx, 1]
+        output_vis = output[jdx, 1]
+        for ant1 = 1:Nant(input), ant2=ant1:Nant(input)
+            output_vis[ant1, ant2] = input_vis[ant1, ant2]
+        end
+    end
+    TTCal.write(ms, output, column="CORRECTED_DATA")
+    Tables.close(ms)
+    wsclean(ms.path, joinpath(getdir(spw, name), filename))
+    Tables.delete(ms)
+end
 
 end
 
