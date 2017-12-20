@@ -12,10 +12,16 @@ include("../lib/DADA2MS.jl"); using .DADA2MS
 include("../lib/WSClean.jl"); using .WSClean
 
 function smear(spw, name)
-    #dataset = _smear(spw, name)
-    dataset = load(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "dataset")
+    dataset = _smear(spw, name)
+    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "w") do file
+        file["dataset"] = dataset
+    end
+    #dataset = load(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "dataset")
     residuals, coherencies = peel(spw, name, dataset, 2)
-    nothing
+    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "r+") do file
+        file["residuals"]   = residuals
+        file["coherencies"] = coherencies
+    end
 end
 
 function _smear(spw, name)
@@ -50,8 +56,8 @@ end
 
 function compute_coherencies(metadata, sky, calibrations)
     function f(s, c)
-        coherency = genvis(metadata, TTCal.ConstantBeam(), s)
-        TTCal.corrupt!(coherency, coherencies)
+        coherency = genvis(metadata, TTCal.ConstantBeam(), s, polarization=TTCal.Dual)
+        TTCal.corrupt!(coherency, c)
     end
     f.(sky.sources, calibrations)
 end
