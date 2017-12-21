@@ -12,7 +12,7 @@ include("../lib/WSClean.jl"); using .WSClean
 
 function peel(spw, name)
     sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
-    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
 
         pool  = CachingPool(workers())

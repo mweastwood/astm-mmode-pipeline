@@ -36,6 +36,7 @@ function _smear(spw, name)
             next!(prg)
         end
     end
+    accumulation ./= Ntime(metadata) # convert from sum to mean
     dataset = array_to_ttcal(accumulation, metadata, 1)
     jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "w") do file
         file["dataset"] = dataset
@@ -58,6 +59,7 @@ function compute_coherencies(metadata, sky, calibrations)
     function f(s, c)
         coherency = genvis(metadata, TTCal.ConstantBeam(), s, polarization=TTCal.Dual)
         TTCal.corrupt!(coherency, c)
+        ttcal_to_array(coherency)
     end
     f.(sky.sources, calibrations)
 end
