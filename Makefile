@@ -10,11 +10,14 @@ RFIREMOVED = $(DIRECTORY)/rfiremoved-visibilities.jld2
 PEELED     = $(DIRECTORY)/peeled-visibilities.jld2
 TRANSPOSED = $(DIRECTORY)/transposed-visibilities.jld2
 FOLDED     = $(DIRECTORY)/foled-visibilities.jld2
-MMODES     = $(wildcard $(DIRECTORY)/m-modes/*)
+MMODES     = $(DIRECTORY)/m-modes/METADATA.jld2
+DIRTYALM   = $(DIRECTORY)/dirty-alm.jld2
 
-.PHONY: test
+.PHONY: all test
 
-all: $(PEELED)
+all: $(DIRTYALM)
+
+test: $(FOLDED)
 
 GETDATA = $(wildcard pipeline/00-getdata/*)
 $(RAW): $(GETDATA)
@@ -36,9 +39,19 @@ PEEL = $(wildcard pipeline/02-peel/*)
 $(PEELED): $(PEEL) $(RFIREMOVED)
 	cd pipeline/02-peel; ./go.jl $(SPW) $(NAME)
 
-#$(TRANSPOSED): $(PEELED)
-#	cd pipeline/10-transpose; ./go.jl $(SPW) $(NAME)
-#
-#$(FOLDED): $(TRANSPOSED)
-#	cd pipeline/20-fold; ./go.jl $(SPW) $(NAME)
+TRANSPOSE = $(wildcard pipeline/10-transpose/*)
+$(TRANSPOSED): $(TRANSPOSE) $(PEELED)
+	cd pipeline/10-transpose; ./go.jl $(SPW) $(NAME)
+
+FOLD = $(wildcard pipeline/20-fold/*)
+$(FOLDED): $(FOLD) $(TRANSPOSED)
+	cd pipeline/20-fold; ./go.jl $(SPW) $(NAME)
+
+GETMMODES = $(wildcard pipeline/21-getmmodes/*)
+$(MMODES): $(GETMMODES) $(FOLDED)
+	cd pipeline/21-getmmodes; ./go.jl $(SPW) $(NAME)
+
+TIKHONOV = $(wildcard pipeline/22-tikhonov/*)
+$(DIRTYALM): $(TIKHONOV) $(MMODES)
+	cd pipeline/22-tikhonov; ./go.jl $(SPW) $(NAME)
 
