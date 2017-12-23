@@ -2,6 +2,7 @@ module Driver
 
 using BPJSpec
 using JLD2
+using LibHealpix
 
 include("../lib/Common.jl"); using .Common
 
@@ -13,6 +14,13 @@ function tikhonov(spw, name)
     jldopen(joinpath(path, "dirty-alm.jld2"), "w") do file
         file["alm"] = alm
     end
+    # create a Healpix map
+    _alm = Alm(Complex128, alm.lmax, alm.mmax)
+    for m = 1:alm.lmax, l = m:alm.mmax
+        @lm _alm[l, m] = alm[l, m]
+    end
+    map = alm2map(_alm, 2048)
+    writehealpix(joinpath(path, "dirty-map.fits"), map, replace=true)
 end
 
 end
