@@ -192,8 +192,7 @@ function image(spw, name, integration, input, fits)
     TTCal.write(ms, output, column="CORRECTED_DATA")
     Tables.close(ms)
     wsclean(ms.path, fits)
-    #Tables.open(ms)
-    #Tables.delete(ms)
+    Tables.delete(ms)
 end
 
 end
