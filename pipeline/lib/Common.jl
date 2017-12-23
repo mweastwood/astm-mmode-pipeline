@@ -10,6 +10,7 @@ export listdadas
 export baseline_index, Nbase2Nant, Nant2Nbase
 export ttcal_to_array, array_to_ttcal
 export o6d
+export image
 
 using CasaCore.Measures
 using CasaCore.Tables
@@ -18,6 +19,7 @@ using TTCal
 using Unitful
 
 include("DADA2MS.jl"); using .DADA2MS
+include("WSClean.jl"); using .WSClean
 
 const workspace = joinpath(@__DIR__, "..", "..", "workspace")
 
@@ -171,6 +173,27 @@ function ttcal_to_array(ttcal_dataset)
         end
     end
     data
+end
+
+function image(spw, name, integration, input, fits)
+    dadas = listdadas(spw, name)
+    dada  = dadas[integration]
+    ms = dada2ms(spw, dada, name)
+    metadata = TTCal.Metadata(ms)
+    output = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+    for idx = 1:Nfreq(input)
+        jdx = find(metadata.frequencies .== input.metadata.frequencies[idx])[1]
+        input_vis  =  input[idx, 1]
+        output_vis = output[jdx, 1]
+        for ant1 = 1:Nant(input), ant2=ant1:Nant(input)
+            output_vis[ant1, ant2] = input_vis[ant1, ant2]
+        end
+    end
+    TTCal.write(ms, output, column="CORRECTED_DATA")
+    Tables.close(ms)
+    wsclean(ms.path, fits)
+    #Tables.open(ms)
+    #Tables.delete(ms)
 end
 
 end

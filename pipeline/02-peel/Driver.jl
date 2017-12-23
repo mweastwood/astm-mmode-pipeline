@@ -1,14 +1,11 @@
 module Driver
 
 using CasaCore.Measures
-using CasaCore.Tables
 using JLD2
 using ProgressMeter
 using TTCal
 
-include("../lib/Common.jl");  using .Common
-include("../lib/DADA2MS.jl"); using .DADA2MS
-include("../lib/WSClean.jl"); using .WSClean
+include("../lib/Common.jl"); using .Common
 
 function peel(spw, name)
     sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
@@ -44,7 +41,7 @@ end
 function test(spw, name, integration)
     local output
     sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
-    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
         raw_data = input_file[o6d(integration)]
 
@@ -101,8 +98,20 @@ function do_the_source_removal!(spw, dataset, sky, dopeeling, dosubtraction, ist
     # peel bright sources
     if dopeeling
         subtract!(dataset, medium)
-        peel!(dataset, bright)
+        calibrations = peel!(dataset, bright)
         add!(dataset, medium)
+
+        # check to see if peeled sources were actually peeled
+        for (source, calibration) in zip(bright.sources, calibrations)
+            model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
+            flux  = TTCal.getflux(model, source).I
+            TTCal.corrupt!(model, calibration)
+            flux′ = TTCal.getflux(model, source).I
+            if abs(flux - flux′) > 0.1abs(flux)
+                TTCal.add!(dataset, model)
+                push!(medium.sources, source)
+            end
+        end
     end
 
     if dosubtraction
@@ -141,7 +150,6 @@ function add!(dataset, sky)
         model = genvis(dataset.metadata, TTCal.ConstantBeam(), sky, polarization=TTCal.Dual)
         TTCal.add!(dataset, model)
     end
-    dataset
 end
 
 function subtract!(dataset, sky)
@@ -149,35 +157,15 @@ function subtract!(dataset, sky)
         model = genvis(dataset.metadata, TTCal.ConstantBeam(), sky, polarization=TTCal.Dual)
         TTCal.subtract!(dataset, model)
     end
-    dataset
 end
 
 function peel!(dataset, sky)
     if length(sky.sources) > 0
-        TTCal.peel!(dataset, TTCal.ConstantBeam(), sky)
+        calibrations = TTCal.peel!(dataset, TTCal.ConstantBeam(), sky)
+    else
+        calibrations = TTCal.Calibration[]
     end
-    dataset
-end
-
-function image(spw, name, integration, input, fits)
-    dadas = Common.listdadas(spw, name)
-    dada  = dadas[integration]
-    ms = dada2ms(spw, dada, name)
-    metadata = TTCal.Metadata(ms)
-    output = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-    for idx = 1:Nfreq(input)
-        jdx = find(metadata.frequencies .== input.metadata.frequencies[idx])[1]
-        input_vis  =  input[idx, 1]
-        output_vis = output[jdx, 1]
-        for ant1 = 1:Nant(input), ant2=ant1:Nant(input)
-            output_vis[ant1, ant2] = input_vis[ant1, ant2]
-        end
-    end
-    TTCal.write(ms, output, column="CORRECTED_DATA")
-    Tables.close(ms)
-    wsclean(ms.path, fits)
-    #Tables.open(ms)
-    #Tables.delete(ms)
+    calibrations
 end
 
 macro pick(name, category, elevation_threshold, flux_threshold)
@@ -188,13 +176,16 @@ macro pick(name, category, elevation_threshold, flux_threshold)
     end
     quote
         if source.name == $name
-            category = $f(frame, metadata, source, $elevation_threshold, $flux_threshold)
+            category, flux = $f(frame, metadata, source, $elevation_threshold, $flux_threshold)
             if category == :BRIGHT
                 push!(bright, idx)
+                push!(bright_flux, flux)
             elseif category == :MEDIUM
                 push!(medium, idx)
+                push!(medium_flux, flux)
             elseif category == :FAINT
                 push!(faint, idx)
+                push!(faint_flux, flux)
             end
         end
     end |> esc
@@ -206,11 +197,11 @@ function categorize_bright(frame, metadata, source, elevation_threshold, flux_th
     high_flux = flux.I ≥ flux_threshold
     high_elevation = TTCal.isabovehorizon(frame, source, threshold=deg2rad(elevation_threshold))
     if high_elevation && high_flux
-        return :BRIGHT
+        return :BRIGHT, flux.I
     elseif any_flux
-        return :MEDIUM
+        return :MEDIUM, flux.I
     else
-        return :NOTHING
+        return :NOTHING, flux.I
     end
 end
 
@@ -220,18 +211,28 @@ function categorize_faint(frame, metadata, source, elevation_threshold, flux_thr
     high_flux = flux.I ≥ flux_threshold
     high_elevation = TTCal.isabovehorizon(frame, source, threshold=deg2rad(elevation_threshold))
     if high_elevation && high_flux
-        return :MEDIUM
+        return :MEDIUM, flux.I
     elseif any_flux
-        return :FAINT
+        return :FAINT, flux.I
     else
-        return :NOTHING
+        return :NOTHING, flux.I
     end
 end
 
 function partition(spw, metadata, sky)
+    # We have three categories for how sources are removed:
+    #  1) peel them (for very bright sources)
+    #  2) subtract them before peeling (for sources in the middle)
+    #  3) subtract them after peeling (for faint sources)
+    # The third category is important because reasonably bright sources can interfere with the
+    # peeling process if the flux of the two sources is comparable. For example, Cas A near the
+    # horizon can create problems for trying to peel Vir A.
     bright = Int[]
     medium = Int[]
     faint  = Int[]
+    bright_flux = Float64[]
+    medium_flux = Float64[]
+    faint_flux  = Float64[]
     frame = ReferenceFrame(metadata)
     N = length(sky.sources)
     for idx = 1:N
@@ -250,54 +251,46 @@ function partition(spw, metadata, sky)
             @pick "Sun"       BRIGHT     15       0
         end
     end
+
+    # Upgrade sources between categories if they are brighter than the faintest source in the above
+    # category.
+    if length(bright_flux) > 0
+        move = medium_flux .> minimum(bright_flux)
+        append!(bright,      medium[move])
+        append!(bright_flux, medium_flux[move])
+        medium      = medium[.!move]
+        medium_flux = medium_flux[.!move]
+    end
+
+    if length(medium_flux) > 0
+        move = faint_flux .> minimum(medium_flux)
+        append!(medium,      faint[move])
+        append!(medium_flux, faint_flux[move])
+        faint      = faint[.!move]
+        faint_flux = faint_flux[.!move]
+    end
+
+    # Downgrade bright sources that are much fainter than the brightest source (this can cause
+    # problems for peeling).
+    if length(bright_flux) > 0
+        move = 10 .* bright_flux .< maximum(bright_flux)
+        append!(medium,      bright[move])
+        append!(medium_flux, bright_flux[move])
+        bright      = bright[.!move]
+        bright_flux = bright_flux[.!move]
+    end
+
+    # Sort the bright sources in order of decreasing flux (this will determine the order in which
+    # they are peeled).
+    order = sortperm(bright_flux, rev=true)
+    bright      = bright[order]
+    bright_flux = bright_flux[order]
+
     bright_sky = TTCal.SkyModel(sky.sources[bright])
     medium_sky = TTCal.SkyModel(sky.sources[medium])
     faint_sky  = TTCal.SkyModel(sky.sources[faint])
     bright_sky, medium_sky, faint_sky
 end
-
-
-#    # We have three categories for how sources are removed:
-#    #  1) peel them (for very bright sources)
-#    #  2) subtract them after peeling (for faint sources)
-#    #  3) subtract them before peeling (for sources in the middle)
-#    # The third category is important because reasonably bright sources can interfere with the
-#    # peeling process if the flux of the two sources is comparable. For example, Cas A near the
-#    # horizon can create problems for trying to peel Vir A.
-#
-#    # If a source we are trying to subtract has higher flux than a source we are trying to peel, we
-#    # should probably be peeling that source.
-#    move = zeros(Bool, length(to_sub_bright))
-#    for idx in to_sub_bright
-#        for jdx in to_peel
-#            if I[idx] > I[jdx]
-#                move[to_sub_bright .== idx] = true
-#            end
-#        end
-#    end
-#    to_peel = [to_peel; to_sub_bright[move]]
-#    to_sub_bright = to_sub_bright[!move]
-#
-#    # If a source is much fainter than another source that is being peeled, it should be subtracted
-#    # instead.
-#    if length(to_peel) > 0
-#        max_I = maximum(I[to_peel])
-#        move = zeros(Bool, length(to_peel))
-#        for idx in to_peel
-#            if 10I[idx] < max_I
-#                move[to_peel .== idx] = true
-#            end
-#        end
-#        to_sub_bright = [to_sub_bright; to_peel[move]]
-#        to_peel = to_peel[!move]
-#    end
-#
-#    fluxes = I[to_peel]
-#    perm = sortperm(fluxes, rev=true)
-#    istest && @show I
-#    istest && @show fluxes[perm]
-#    to_peel[perm], to_sub_bright, to_sub_faint, to_fit_with_shapelets
-#end
 
 end
 
