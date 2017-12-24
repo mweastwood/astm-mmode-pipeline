@@ -12,21 +12,25 @@ function calibrate(spw, name)
     beam  = getbeam(spw, name)
     sky   = readsky(joinpath(Common.workspace, "source-lists", "calibration-sky-model.json"))
     range = 1600:1700
-    calibration = solve_for_the_calibration(spw, name, beam, sky, range)
+    dataset, calibration = solve_for_the_calibration(spw, name, beam, sky, range)
+    TTCal.slice!(dataset, 50, axis=:time)
+    image(spw, name, 1650, dataset, joinpath(getdir(spw, name), "calibrated-image"))
     apply_the_calibration(spw, name, calibration)
 end
 
 function solve_for_the_calibration(spw, name, beam, sky, range)
     measured = read_raw_visibilities(spw, name, range)
     model    = model_visibilities(measured.metadata, beam, sky)
-    Common.flag!(spw, name, measured)
-    calibration = TTCal.calibrate(measured, model, collapse_time=true)
-    calibration
+    calibration = TTCal.calibrate(measured, model,
+                                  maxiter=50, tolerance=1e-3, minuvw=15.0,
+                                  collapse_time=true)
+    applycal!(measured, calibration)
+    measured, calibration
 end
 
 function read_raw_visibilities(spw, name, indices)
     local dataset
-    jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "r") do file
+    jldopen(joinpath(getdir(spw, name), "flagged-visibilities.jld2"), "r") do file
         metadata = file["metadata"]
         TTCal.slice!(metadata, indices, axis=:time)
         dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
@@ -70,7 +74,7 @@ function model_visibilities(metadata, beam, sky)
 end
 
 function apply_the_calibration(spw, name, calibration)
-    jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(getdir(spw, name), "flagged-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
 
         pool  = CachingPool(workers())
@@ -99,7 +103,6 @@ end
 
 function do_the_work(spw, name, data, metadata, time, calibration)
     ttcal = array_to_ttcal(data, metadata, time)
-    Common.flag!(spw, name, ttcal)
     applycal!(ttcal, calibration)
     ttcal_to_array(ttcal)
 end

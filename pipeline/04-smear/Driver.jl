@@ -43,7 +43,6 @@ function _smear(spw, name)
 end
 
 function peel(spw, name, dataset, N)
-    Common.flag!(spw, name, dataset)
     zenith = Direction(dir"AZEL", 0u"°", 90u"°")
     flat   = TTCal.PowerLaw(1, 0, 0, 0, 10u"MHz", [0.0])
     dummy  = TTCal.Source("dummy", TTCal.Point(zenith, flat))

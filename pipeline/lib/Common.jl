@@ -89,59 +89,6 @@ o6d(i) = @sprintf("%06d", i)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
 Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
 
-# a priori flags
-
-function flag!(spw, dataset, ttcal_dataset)
-    antenna_flags  = flag_antennas(spw, dataset)
-    baseline_flags = flag_baselines(spw, dataset)
-    TTCal.flag_antennas!(ttcal_dataset, antenna_flags)
-    TTCal.flag_baselines!(ttcal_dataset, baseline_flags)
-end
-
-# antenna flags
-
-function flag_antennas(spw, dataset)
-    flags = Int[]
-    directory = joinpath(Common.workspace, "flags")
-    for file in (@sprintf("%s.ants", dataset),
-                 @sprintf("%s-spw%02d.ants", dataset, spw))
-        isfile(joinpath(directory, file)) || continue
-        antennas = read_antenna_flags(joinpath(directory, file))
-        for ant in antennas
-            push!(flags, ant)
-        end
-    end
-    flags
-end
-
-function read_antenna_flags(path) :: Vector{Int}
-    flags = readdlm(path, Int)
-    reshape(flags, length(flags))
-end
-
-# baseline flags
-
-function flag_baselines(spw, dataset)
-    flags = Tuple{Int, Int}[]
-    directory = joinpath(Common.workspace, "flags")
-    for file in (@sprintf("%s.bl", dataset),
-                 @sprintf("%s-spw%02d.bl", dataset, spw))
-        isfile(joinpath(directory, file)) || continue
-        baselines = read_baseline_flags(joinpath(directory, file))
-        for idx = 1:size(baselines, 1)
-            ant1 = baselines[idx, 1]
-            ant2 = baselines[idx, 2]
-            push!(flags, (ant1, ant2))
-        end
-    end
-    flags
-end
-
-function read_baseline_flags(path) :: Matrix{Int}
-    flags = readdlm(path, '&', Int)
-    flags
-end
-
 function array_to_ttcal(array, metadata, time)
     # this assumes one time slice
     metadata = deepcopy(metadata)
@@ -152,7 +99,9 @@ function array_to_ttcal(array, metadata, time)
         α = 1
         for antenna1 = 1:Nant(metadata), antenna2 = antenna1:Nant(metadata)
             J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
-            visibilities[antenna1, antenna2] = J
+            if J != zero(TTCal.DiagonalJonesMatrix)
+                visibilities[antenna1, antenna2] = J
+            end
             α += 1
         end
     end

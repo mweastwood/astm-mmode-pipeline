@@ -8,7 +8,7 @@ include("../lib/Common.jl"); using .Common
 
 function transpose(spw, name)
     path = getdir(spw, name)
-    jldopen(joinpath(path, "peeled-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(path, "raw-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
         jldopen(joinpath(path, "transposed-visibilities.jld2"), "w") do output_file
             for frequency = 1:Nfreq(metadata)

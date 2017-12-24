@@ -12,12 +12,18 @@ function flag(spw, name)
     local flags
     jldopen(joinpath(path, "transposed-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
-        flags = _flag(spw, name, input_file["000001"])
+        flags = _flag(spw, name, @time(input_file["000001"]))
         for frequency = 2:Nfreq(metadata)
-            raw_data = input_file[o6d(frequency)]
+            @time raw_data = input_file[o6d(frequency)]
             flags .|= _flag(spw, name, raw_data)
         end
     end
+    output(spw, name, flags)
+    flags
+end
+
+function output(spw, name, flags)
+    path = getdir(spw, name)
     jldopen(joinpath(path, "raw-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
         jldopen(joinpath(path, "flagged-visibilities.jld2"), "w") do output_file
@@ -32,6 +38,7 @@ function flag(spw, name)
                 output_file[o6d(time)] = raw_data
                 next!(prg)
             end
+            output_file["metadata"] = metadata
         end
     end
 end
@@ -65,8 +72,10 @@ function a_posteriori_flags!(data, flags)
     Nbase = size(data, 2)
     prg = Progress(Nbase)
     for α = 1:Nbase
-        time_series = data[1, α, :] + data[2, α, :]
-        flags[α, :] = threshold_flag(time_series)
+        if !all(view(flags, α, :))
+            time_series = view(data, 1, α, :) + view(data, 2, α, :)
+            flags[α, :] = threshold_flag(time_series)
+        end
         next!(prg)
     end
     flags
@@ -79,10 +88,10 @@ function threshold_flag(data)
     y = abs.(data)
     knots = x[2:10:end-1]
     spline = Spline1D(x, y, knots)
-    deviation = y .- spline.(x)
-    mad1 = median(abs.(deviation))
-    mad2 = windowed_mad(deviation)
-    flags = deviation .> 5 .* mad2
+    deviation = abs.(y .- spline.(x))
+    mad1 = median(deviation) # this is a lot faster and almost as good
+    #mad2 = windowed_mad(deviation)
+    flags = deviation .> 10 .* mad1
 
     #figure(1); clf()
     #plot(x, y, label="data")
@@ -101,7 +110,8 @@ function windowed_mad(deviation)
     output = similar(deviation)
     for idx = 1:N
         window = max(1, idx-100):min(N, idx+100)
-        output[idx] = median(abs.(deviation[window]))
+        δ = view(deviation, window)
+        output[idx] = median(δ)
     end
     output
 end

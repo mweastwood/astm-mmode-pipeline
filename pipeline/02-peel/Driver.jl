@@ -79,7 +79,6 @@ function _do_the_work(spw, name, data, metadata, time, sky,
                       dopeeling=true, dosubtraction=true, istest=false)
     # call this function if you want the TTCal.Dataset
     ttcal = array_to_ttcal(data, metadata, time)
-    Common.flag!(spw, name, ttcal)
     residuals = do_the_source_removal!(spw, ttcal, sky, dopeeling, dosubtraction, istest)
     ttcal, residuals
 end
@@ -102,16 +101,16 @@ function do_the_source_removal!(spw, dataset, sky, dopeeling, dosubtraction, ist
         add!(dataset, medium)
 
         # check to see if peeled sources were actually peeled
-        for (source, calibration) in zip(bright.sources, calibrations)
-            model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
-            flux  = TTCal.getflux(model, source).I
-            TTCal.corrupt!(model, calibration)
-            flux′ = TTCal.getflux(model, source).I
-            if abs(flux - flux′) > 0.1abs(flux)
-                TTCal.add!(dataset, model)
-                push!(medium.sources, source)
-            end
-        end
+        #for (source, calibration) in zip(bright.sources, calibrations)
+        #    model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
+        #    flux  = TTCal.getflux(model, source).I
+        #    TTCal.corrupt!(model, calibration)
+        #    flux′ = TTCal.getflux(model, source).I
+        #    if abs(flux - flux′) > 0.1abs(flux)
+        #        TTCal.add!(dataset, model)
+        #        push!(medium.sources, source)
+        #    end
+        #end
     end
 
     if dosubtraction
@@ -161,7 +160,8 @@ end
 
 function peel!(dataset, sky)
     if length(sky.sources) > 0
-        calibrations = TTCal.peel!(dataset, TTCal.ConstantBeam(), sky)
+        calibrations = TTCal.peel!(dataset, TTCal.ConstantBeam(), sky, quiet=true,
+                                   collapse_frequency=false)
     else
         calibrations = TTCal.Calibration[]
     end
