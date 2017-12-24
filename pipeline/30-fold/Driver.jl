@@ -8,13 +8,11 @@ include("../lib/Common.jl"); using .Common
 
 function fold(spw, name)
     path =  getdir(spw, name)
-    jldopen(joinpath(path, "transposed-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(path, "peeled-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
         jldopen(joinpath(path, "folded-visibilities.jld2"), "w") do output_file
-            prg = Progress(Nfreq(metadata))
             for frequency = 1:Nfreq(metadata)
                 fold(input_file, output_file, frequency)
-                next!(prg)
             end
             output_file["metadata"] = metadata
         end
