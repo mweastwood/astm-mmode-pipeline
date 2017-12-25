@@ -81,6 +81,7 @@ function flag_short_baselines(metadata, minuvw=15.0)
 end
 
 function _subrfi(data, metadata, coherencies)
+    original_flags = data .== 0
     flags = flag_short_baselines(metadata)
     Npol, Nfreq, Nbase = size(data)
     amplitude = zeros(Npol, Nfreq, length(coherencies))
@@ -93,6 +94,7 @@ function _subrfi(data, metadata, coherencies)
         end
         output[pol, freq, :] = x
     end
+    output[original_flags] = 0
     output, amplitude
 end
 
