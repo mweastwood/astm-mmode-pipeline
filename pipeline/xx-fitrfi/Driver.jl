@@ -8,9 +8,14 @@ using Unitful
 
 include("../lib/Common.jl"); using .Common
 
-macro fitrfi(integration, args...)
+macro fitrfi(integration, sources, options...)
+    sym = gensym()
+    options = Dict{Symbol, Any}(eval(current_module(), option) for option in options)
+    select = get(options, :select, 1)
+    istest = get(options, :istest, true)
     output = quote
-        _fitrfi(spw, name, input_file, metadata, $integration, $args)
+        $sym = _fitrfi(spw, name, input_file, metadata, $integration, $sources, $select, $istest)
+        push!(coherencies, $sym)
     end
     esc(output)
 end
@@ -18,16 +23,24 @@ end
 function fitrfi(spw, name)
     jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
-        @fitrfi 3837 1 "Cas A" "Tau A" "Cyg A"
+        coherencies = Array{Complex128, 3}[]
+
+        @fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :istest=>true
+        #@fitrfi 3837 1 "Cas A" "Tau A" "Cyg A"
+
+        jldopen(joinpath(getdir(spw, name), "fitrfi-visibilities.jld2"), "w") do output_file
+            output_file["coherencies"] = coherencies
+        end
     end
 end
 
-function _fitrfi(spw, name, input_file, metadata, integration, args)
-    sky = construct_sky(args)
+function _fitrfi(spw, name, input_file, metadata, integration, sources, select, istest)
+    sky = construct_sky(sources)
     raw_data = input_file[o6d(integration)]
     dataset = array_to_ttcal(raw_data, metadata, integration)
     residuals, coherencies = peel(spw, name, dataset, sky)
-    compute_images(spw, name, integration, dataset, residuals, coherencies)
+    istest && compute_images(spw, name, integration, dataset, residuals, coherencies)
+    ttcal_to_array(coherencies[select])
 end
 
 function construct_sky(args)
@@ -70,7 +83,6 @@ function measure_sky!(sky::TTCal.SkyModel, dataset)
 end
 
 function peel(spw, name, dataset, sky)
-    Common.flag!(spw, name, dataset)
     measure_sky!(sky, dataset)
     residuals = deepcopy(dataset)
     calibrations = TTCal.peel!(residuals, TTCal.ConstantBeam(), sky)
@@ -87,17 +99,19 @@ function compute_coherencies(metadata, sky, calibrations)
 end
 
 function compute_images(spw, name, integration, original, residuals, coherencies)
-    dir = getdir(spw, name)
+    dir = joinpath(getdir(spw, name), "fitrfi")
+    isdir(dir) || mkdir(dir)
     files = readdir(dir)
+    prefix = o6d(integration)
     for file in files
-        if startswith(file, "fitrfi-$integration")
+        if startswith(file, prefix)
             rm(joinpath(dir, file))
         end
     end
-    image(spw, name, integration, original,  joinpath(dir, "fitrfi-$integration-start"))
-    image(spw, name, integration, residuals, joinpath(dir, "fitrfi-$integration-stop"))
+    image(spw, name, integration, original,  joinpath(dir, "$prefix-start"))
+    image(spw, name, integration, residuals, joinpath(dir, "$prefix-stop"))
     for (idx, coherency) in enumerate(coherencies)
-        image(spw, name, integration, coherency, joinpath(dir, "fitrfi-$integration-$idx"))
+        image(spw, name, integration, coherency, joinpath(dir, "$prefix-$idx"))
     end
 end
 
