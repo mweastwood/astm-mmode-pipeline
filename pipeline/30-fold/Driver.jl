@@ -31,6 +31,7 @@ function fold(input_file, output_file, metadata, frequency)
         next!(prg)
     end
     output ./= weights
+    output[isnan.(output)] = 0
     output_file[o6d(frequency)] = output
 end
 
