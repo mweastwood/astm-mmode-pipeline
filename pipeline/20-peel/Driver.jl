@@ -9,7 +9,7 @@ include("../lib/Common.jl"); using .Common
 
 function peel(spw, name)
     sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
-    jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(getdir(spw, name), "subrfi-impulsive-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
 
         pool  = CachingPool(workers())
@@ -41,7 +41,7 @@ end
 function test(spw, name, integration)
     local output
     sky = readsky(joinpath(Common.workspace, "source-lists", "peeling-sky-model.json"))
-    jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(getdir(spw, name), "subrfi-impulsive-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
         raw_data = input_file[o6d(integration)]
 
@@ -101,16 +101,16 @@ function do_the_source_removal!(spw, dataset, sky, dopeeling, dosubtraction, ist
         add!(dataset, medium)
 
         # check to see if peeled sources were actually peeled
-        #for (source, calibration) in zip(bright.sources, calibrations)
-        #    model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
-        #    flux  = TTCal.getflux(model, source).I
-        #    TTCal.corrupt!(model, calibration)
-        #    flux′ = TTCal.getflux(model, source).I
-        #    if abs(flux - flux′) > 0.1abs(flux)
-        #        TTCal.add!(dataset, model)
-        #        push!(medium.sources, source)
-        #    end
-        #end
+        for (source, calibration) in zip(bright.sources, calibrations)
+            model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
+            flux  = TTCal.getflux(model, source).I
+            TTCal.corrupt!(model, calibration)
+            flux′ = TTCal.getflux(model, source).I
+            if abs(flux - flux′) > 0.1abs(flux)
+                TTCal.add!(dataset, model)
+                push!(medium.sources, source)
+            end
+        end
     end
 
     if dosubtraction

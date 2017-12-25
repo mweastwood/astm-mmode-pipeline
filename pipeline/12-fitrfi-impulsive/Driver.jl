@@ -21,14 +21,15 @@ macro fitrfi(integration, sources, options...)
 end
 
 function fitrfi(spw, name)
-    jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "r") do input_file
+    dir = getdir(spw, name)
+    jldopen(joinpath(dir, "subrfi-stationary-visibilities.jld2"), "r") do input_file
         metadata = input_file["metadata"]
         coherencies = Array{Complex128, 3}[]
 
         @fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :istest=>true
         #@fitrfi 3837 1 "Cas A" "Tau A" "Cyg A"
 
-        jldopen(joinpath(getdir(spw, name), "fitrfi-visibilities.jld2"), "w") do output_file
+        jldopen(joinpath(dir, "fitrfi-impulsive-coherencies.jld2"), "w") do output_file
             output_file["coherencies"] = coherencies
         end
     end

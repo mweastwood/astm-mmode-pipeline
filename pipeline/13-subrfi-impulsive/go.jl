@@ -3,6 +3,8 @@
 spw = parse(Int, ARGS[1])
 dataset = ARGS[2]
 
+addprocs(16)
 include("Driver.jl")
-Driver.smear(spw, dataset)
+Base.require(:Driver)
+Driver.subrfi_impulsive(spw, dataset)
 

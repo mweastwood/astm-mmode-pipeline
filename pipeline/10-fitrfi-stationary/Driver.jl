@@ -8,14 +8,14 @@ using Unitful
 
 include("../lib/Common.jl"); using .Common
 
-function smear(spw, name)
+function fitrfi(spw, name)
     dataset = _smear(spw, name)
-    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "w") do file
+    jldopen(joinpath(getdir(spw, name), "fitrfi-stationary-coherencies.jld2"), "w") do file
         file["dataset"] = dataset
     end
-    #dataset = load(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "dataset")
+    #dataset = load(joinpath(getdir(spw, name), "fitrfi-stationary-coherencies.jld2"), "dataset")
     residuals, coherencies = peel(spw, name, dataset, 3)
-    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "r+") do file
+    jldopen(joinpath(getdir(spw, name), "fitrfi-stationary-coherencies.jld2"), "r+") do file
         file["residuals"]   = residuals
         file["coherencies"] = ttcal_to_array.(coherencies)
     end
@@ -36,9 +36,6 @@ function _smear(spw, name)
     end
     accumulation ./= Ntime(metadata) # convert from sum to mean
     dataset = array_to_ttcal(accumulation, metadata, 1)
-    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "w") do file
-        file["dataset"] = dataset
-    end
     dataset
 end
 
@@ -62,11 +59,19 @@ function compute_coherencies(metadata, sky, calibrations)
 end
 
 function compute_images(spw, name, original, residuals, coherencies)
-    dir = getdir(spw, name)
-    image(spw, name, 1, original,  joinpath(dir, "smeared-visibilities"))
-    image(spw, name, 1, residuals, joinpath(dir, "smeared-visibilities-residuals"))
+    dir = joinpath(getdir(spw, name), "fitrfi")
+    isdir(dir) || mkdir(dir)
+    files = readdir(dir)
+    prefix = "smeared"
+    for file in files
+        if startswith(file, prefix)
+            rm(joinpath(dir, file))
+        end
+    end
+    image(spw, name, 1, original,  joinpath(dir, "$prefix-start"))
+    image(spw, name, 1, residuals, joinpath(dir, "$prefix-stop"))
     for (idx, coherency) in enumerate(coherencies)
-        image(spw, name, 1, coherency, joinpath(dir, "smeared-visibilities-component-$idx"))
+        image(spw, name, 1, coherency, joinpath(dir, "$prefix-$idx"))
     end
 end
 

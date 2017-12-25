@@ -9,12 +9,24 @@ include("../lib/Common.jl");  using .Common
 include("../lib/DADA2MS.jl"); using .DADA2MS
 include("../lib/WSClean.jl"); using .WSClean
 
-function subrfi(spw, name)
+function subrfi_stationary(spw, name)
+    subrfi(spw, name, "fitrfi-stationary-coherencies.jld2",
+                      "calibrated-visibilities.jld2",
+                      "subrfi-stationary-visibilities.jld2")
+end
+
+function subrfi_impulsive(spw, name)
+    subrfi(spw, name, "fitrfi-impulsive-coherencies.jld2",
+                      "calibrated-visibilities.jld2",
+                      "subrfi-impulsive-visibilities.jld2")
+end
+
+function subrfi(spw, name, coherencies_name, input_name, output_name)
     local coherencies
-    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "r") do file
+    jldopen(joinpath(getdir(spw, name), coherencies_name), "r") do file
         coherencies = file["coherencies"]
     end
-    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(getdir(spw, name), input_name), "r") do input_file
         metadata = input_file["metadata"]
         amplitude = zeros(2, Nfreq(metadata), Ntime(metadata), length(coherencies))
 
@@ -25,7 +37,7 @@ function subrfi(spw, name)
         prg = Progress(length(queue))
         increment() = (lock(lck); next!(prg); unlock(lck))
 
-        jldopen(joinpath(getdir(spw, name), "rfiremoved-visibilities.jld2"), "w") do output_file
+        jldopen(joinpath(getdir(spw, name), output_name), "w") do output_file
             @sync for worker in workers()
                 @async while length(queue) > 0
                     index = pop!(queue)
@@ -42,27 +54,27 @@ function subrfi(spw, name)
     end
 end
 
-function test(spw, name, integration)
-    local coherencies
-    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "r") do file
-        coherencies = file["coherencies"]
-    end
-    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
-        metadata = input_file["metadata"]
-        raw_data = input_file[o6d(integration)]
-
-        println("# before")
-        image(spw, name, integration, array_to_ttcal(raw_data, metadata, integration),
-              "/lustre/mweastwood/tmp/subrfi-before-$integration")
-
-        println("# after")
-        sub_data, amp = _subrfi(raw_data, metadata, coherencies)
-        @show amp
-        image(spw, name, integration, array_to_ttcal(sub_data, metadata, integration),
-              "/lustre/mweastwood/tmp/subrfi-after-$integration")
-    end
-    nothing
-end
+#function test(spw, name, integration)
+#    local coherencies
+#    jldopen(joinpath(getdir(spw, name), "smeared-visibilities.jld2"), "r") do file
+#        coherencies = file["coherencies"]
+#    end
+#    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do input_file
+#        metadata = input_file["metadata"]
+#        raw_data = input_file[o6d(integration)]
+#
+#        println("# before")
+#        image(spw, name, integration, array_to_ttcal(raw_data, metadata, integration),
+#              "/lustre/mweastwood/tmp/subrfi-before-$integration")
+#
+#        println("# after")
+#        sub_data, amp = _subrfi(raw_data, metadata, coherencies)
+#        @show amp
+#        image(spw, name, integration, array_to_ttcal(sub_data, metadata, integration),
+#              "/lustre/mweastwood/tmp/subrfi-after-$integration")
+#    end
+#    nothing
+#end
 
 function flag_short_baselines(metadata, minuvw=15.0)
     flags = fill(false, Nbase(metadata))
