@@ -55,10 +55,10 @@ function test(spw, name, integration)
                                          true, false, true)
         image(spw, name, integration, output, "/lustre/mweastwood/tmp/2-$integration")
 
-        println("# full source removal")
-        output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
-                                         true, true, true)
-        image(spw, name, integration, output, "/lustre/mweastwood/tmp/3-$integration")
+        #println("# full source removal")
+        #output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
+        #                                 true, true, true)
+        #image(spw, name, integration, output, "/lustre/mweastwood/tmp/3-$integration")
     end
     output
 end

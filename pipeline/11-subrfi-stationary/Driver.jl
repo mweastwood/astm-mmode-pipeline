@@ -17,7 +17,7 @@ end
 
 function subrfi_impulsive(spw, name)
     subrfi(spw, name, "fitrfi-impulsive-coherencies.jld2",
-                      "calibrated-visibilities.jld2",
+                      "subrfi-stationary-visibilities.jld2",
                       "subrfi-impulsive-visibilities.jld2")
 end
 
@@ -94,14 +94,17 @@ end
 
 function _subrfi(data, metadata, coherencies)
     original_flags = data .== 0
-    flags = flag_short_baselines(metadata)
+    short_baselines = flag_short_baselines(metadata, 15.0)
     Npol, Nfreq, Nbase = size(data)
     amplitude = zeros(Npol, Nfreq, length(coherencies))
     output    = zeros(Complex128, Npol, Nfreq, Nbase)
-    for pol = 1:Npol, freq = 1:Nfreq
+    for freq = 1:Nfreq, pol = 1:Npol
         x = data[pol, freq, :]
         for (index, coherency) in enumerate(coherencies)
             y = coherency[pol, freq, :]
+            flags = original_flags[pol, freq, :]
+            y[flags] = 0
+            flags .|= short_baselines
             amplitude[pol, freq, index] = sub!(x, y, flags)
         end
         output[pol, freq, :] = x
@@ -115,8 +118,14 @@ function sub!(x, y, flags)
     yf = y[.!flags]
     xx = [xf; conj(xf)]
     yy = [yf; conj(yf)]
-    scale = real(dot(xx, yy)/dot(yy, yy))
-    @. x -= scale*y
+    numerator   = dot(xx, yy)
+    denominator = dot(yy, yy)
+    if denominator != 0
+        scale = real(numerator/denominator)
+        @. x -= scale*y
+    else
+        scale = 0.0
+    end
     scale
 end
 

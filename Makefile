@@ -31,9 +31,9 @@ ROUTINE_TIKHONOV  = $(wildcard pipeline/32-tikhonov/*)
 
 .PHONY: all peel
 
-all: $(DIRTYALM)
-
-peel: $(PEELED)
+all:    $(DIRTYALM)
+subrfi: $(SUBRFI2)
+peel:   $(PEELED)
 
 $(RAW): $(ROUTINE_GETDATA)
 	cd pipeline/00-getdata; ./go.jl $(SPW) $(NAME)

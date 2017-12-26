@@ -89,23 +89,33 @@ o6d(i) = @sprintf("%06d", i)
 Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
 Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
 
-function array_to_ttcal(array, metadata, time)
+function array_to_ttcal(array, metadata, time, T=TTCal.Dual)
     # this assumes one time slice
     metadata = deepcopy(metadata)
     TTCal.slice!(metadata, time, axis=:time)
-    ttcal_dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+    ttcal_dataset = TTCal.Dataset(metadata, polarization=T)
     for frequency in 1:Nfreq(metadata)
         visibilities = ttcal_dataset[frequency, 1]
         α = 1
         for antenna1 = 1:Nant(metadata), antenna2 = antenna1:Nant(metadata)
-            J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
-            if J != zero(TTCal.DiagonalJonesMatrix)
+            J = pack_jones_matrix(array, frequency, α, T)
+            if J != zero(typeof(J))
                 visibilities[antenna1, antenna2] = J
             end
             α += 1
         end
     end
     ttcal_dataset
+end
+
+function pack_jones_matrix(array, frequency, α, ::Type{TTCal.Dual})
+    TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
+end
+function pack_jones_matrix(array, frequency, α, ::Type{TTCal.XX})
+    array[1, frequency, α]
+end
+function pack_jones_matrix(array, frequency, α, ::Type{TTCal.YY})
+    array[2, frequency, α]
 end
 
 function ttcal_to_array(ttcal_dataset)
@@ -116,12 +126,22 @@ function ttcal_to_array(ttcal_dataset)
         α = 1
         for antenna1 = 1:Nant(ttcal_dataset), antenna2 = antenna1:Nant(ttcal_dataset)
             J = visibilities[antenna1, antenna2]
-            data[1, frequency, α] = J.xx
-            data[2, frequency, α] = J.yy
+            unpack_jones_matrix!(data, frequency, α, J, TTCal.polarization(ttcal_dataset))
             α += 1
         end
     end
     data
+end
+
+function unpack_jones_matrix!(data, frequency, α, J, ::Type{TTCal.Dual})
+    data[1, frequency, α] = J.xx
+    data[2, frequency, α] = J.yy
+end
+function unpack_jones_matrix!(data, frequency, α, J, ::Type{TTCal.XX})
+    data[1, frequency, α] = J
+end
+function unpack_jones_matrix!(data, frequency, α, J, ::Type{TTCal.YY})
+    data[2, frequency, α] = J
 end
 
 function image(spw, name, integration, input, fits)
@@ -129,7 +149,7 @@ function image(spw, name, integration, input, fits)
     dada  = dadas[integration]
     ms = dada2ms(spw, dada, name)
     metadata = TTCal.Metadata(ms)
-    output = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+    output = TTCal.Dataset(metadata, polarization=TTCal.polarization(input))
     for idx = 1:Nfreq(input)
         jdx = find(metadata.frequencies .== input.metadata.frequencies[idx])[1]
         input_vis  =  input[idx, 1]

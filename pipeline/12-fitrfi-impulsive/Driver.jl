@@ -12,9 +12,11 @@ macro fitrfi(integration, sources, options...)
     sym = gensym()
     options = Dict{Symbol, Any}(eval(current_module(), option) for option in options)
     select = get(options, :select, 1)
+    pol    = get(options, :pol, TTCal.Dual)
     istest = get(options, :istest, true)
     output = quote
-        $sym = _fitrfi(spw, name, input_file, metadata, $integration, $sources, $select, $istest)
+        $sym = _fitrfi(spw, name, input_file, metadata, $integration, $sources,
+                       $select, $pol, $istest)
         push!(coherencies, $sym)
     end
     esc(output)
@@ -26,8 +28,8 @@ function fitrfi(spw, name)
         metadata = input_file["metadata"]
         coherencies = Array{Complex128, 3}[]
 
-        @fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :istest=>true
-        #@fitrfi 3837 1 "Cas A" "Tau A" "Cyg A"
+        @fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :istest=>false
+        #@fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :pol=>TTCal.YY :istest=>false
 
         jldopen(joinpath(dir, "fitrfi-impulsive-coherencies.jld2"), "w") do output_file
             output_file["coherencies"] = coherencies
@@ -35,10 +37,10 @@ function fitrfi(spw, name)
     end
 end
 
-function _fitrfi(spw, name, input_file, metadata, integration, sources, select, istest)
+function _fitrfi(spw, name, input_file, metadata, integration, sources, select, pol, istest)
     sky = construct_sky(sources)
     raw_data = input_file[o6d(integration)]
-    dataset = array_to_ttcal(raw_data, metadata, integration)
+    dataset = array_to_ttcal(raw_data, metadata, integration, pol)
     residuals, coherencies = peel(spw, name, dataset, sky)
     istest && compute_images(spw, name, integration, dataset, residuals, coherencies)
     ttcal_to_array(coherencies[select])
@@ -87,13 +89,14 @@ function peel(spw, name, dataset, sky)
     measure_sky!(sky, dataset)
     residuals = deepcopy(dataset)
     calibrations = TTCal.peel!(residuals, TTCal.ConstantBeam(), sky)
-    coherencies  = compute_coherencies(dataset.metadata, sky, calibrations)
+    coherencies  = compute_coherencies(dataset.metadata, sky, calibrations,
+                                       TTCal.polarization(dataset))
     residuals, coherencies
 end
 
-function compute_coherencies(metadata, sky, calibrations)
+function compute_coherencies(metadata, sky, calibrations, polarization)
     function f(s, c)
-        coherency = genvis(metadata, TTCal.ConstantBeam(), s, polarization=TTCal.Dual)
+        coherency = genvis(metadata, TTCal.ConstantBeam(), s, polarization=polarization)
         TTCal.corrupt!(coherency, c)
     end
     f.(sky.sources, calibrations)
