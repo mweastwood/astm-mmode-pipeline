@@ -4,22 +4,26 @@ NAME = rainy
 
 DIRECTORY = workspace/spw$(SPW)/$(NAME)
 RAW        = $(DIRECTORY)/raw-visibilities.jld2
-TRANSPOSED = $(DIRECTORY)/transposed-visibilities.jld2
+TRANSPOSED = $(DIRECTORY)/transposed-raw-visibilities.jld2
 FLAGGED    = $(DIRECTORY)/flagged-visibilities.jld2
 CALIBRATED = $(DIRECTORY)/calibrated-visibilities.jld2
+FLAGGED_CALIBRATED = $(DIRECTORY)/flagged-calibrated-visibilities.jld2
+
 FITRFI1    = $(DIRECTORY)/fitrfi-stationary-coherencies.jld2
 SUBRFI1    = $(DIRECTORY)/subrfi-stationary-visibilities.jld2
 FITRFI2    = $(DIRECTORY)/fitrfi-impulsive-coherencies.jld2
 SUBRFI2    = $(DIRECTORY)/subrfi-impulsive-visibilities.jld2
 PEELED     = $(DIRECTORY)/peeled-visibilities.jld2
-FOLDED     = $(DIRECTORY)/foled-visibilities.jld2
+FOLDED     = $(DIRECTORY)/folded-visibilities.jld2
 MMODES     = $(DIRECTORY)/m-modes/METADATA.jld2
 DIRTYALM   = $(DIRECTORY)/dirty-alm.jld2
 
 ROUTINE_GETDATA   = $(wildcard pipeline/00-getdata/*)
 ROUTINE_TRANSPOSE = $(wildcard pipeline/01-transpose/*)
-ROUTINE_FLAG      = $(wildcard pipeline/02-flag/*)
+ROUTINE_FLAG1     = $(wildcard pipeline/02-flag/*)
 ROUTINE_CALIBRATE = $(wildcard pipeline/03-calibrate/*)
+ROUTINE_FLAG2     = $(wildcard pipeline/04-flag/*)
+
 ROUTINE_FITRFI1   = $(wildcard pipeline/10-fitrfi-stationary/*)
 ROUTINE_SUBRFI1   = $(wildcard pipeline/11-subrfi-stationary/*)
 ROUTINE_FITRFI2   = $(wildcard pipeline/12-fitrfi-impulsive/*)
@@ -33,24 +37,26 @@ ROUTINE_TIKHONOV  = $(wildcard pipeline/32-tikhonov/*)
 
 all:    $(DIRTYALM)
 subrfi: $(SUBRFI2)
+fitrfi: $(FITRFI2)
 peel:   $(PEELED)
+test:   $(FLAGGED_CALIBRATED)
 
 $(RAW): $(ROUTINE_GETDATA)
 	cd pipeline/00-getdata; ./go.jl $(SPW) $(NAME)
 
-$(TRANSPOSED): $(ROUTINE_TRANSPOSE) $(RAW)
-	cd pipeline/01-transpose; ./go.jl $(SPW) $(NAME)
-
-$(FLAGGED): $(ROUTINE_FLAG) $(TRANSPOSED) $(RAW)
+$(FLAGGED): $(ROUTINE_FLAG1) $(RAW)
 	cd pipeline/02-flag; ./go.jl $(SPW) $(NAME)
 
 $(CALIBRATED): $(ROUTINE_CALIBRATE) $(FLAGGED)
 	cd pipeline/03-calibrate; ./go.jl $(SPW) $(NAME)
 
-$(FITRFI1): $(ROUTINE_FITRFI1) $(CALIBRATED)
+$(FLAGGED_CALIBRATED): $(ROUTINE_FLAG2) $(CALIBRATED)
+	cd pipeline/04-flag; ./go.jl $(SPW) $(NAME)
+
+$(FITRFI1): $(ROUTINE_FITRFI1) $(FLAGGED_CALIBRATED)
 	cd pipeline/10-fitrfi-stationary; ./go.jl $(SPW) $(NAME)
 
-$(SUBRFI1): $(ROUTINE_SUBRFI1) $(CALIBRATED) $(FITRFI1)
+$(SUBRFI1): $(ROUTINE_SUBRFI1) $(FLAGGED_CALIBRATED) $(FITRFI1)
 	cd pipeline/11-subrfi-stationary; ./go.jl $(SPW) $(NAME)
 
 $(FITRFI2): $(ROUTINE_FITRFI2) $(SUBRFI1)

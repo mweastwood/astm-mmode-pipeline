@@ -1,48 +1,67 @@
-function apply_integration_flags!(data, flags)
+function apply_integration_flags!(data, flags, threshold; windowed=false)
     Nbase, Ntime = size(data)
     prg = Progress(Nbase)
     for α = 1:Nbase
+    #for α = 30741 # longest baseline
+    #for α = 19520 # problematic baseline at integration 763
+    #for α = 314 # erroneously flagged at integration 2000 (when using unwindowed median)
+    #for α = 4228
         time_series = data[α, :]
         if !all(time_series .== 0)
-            flags.integration_flags[α, :] = threshold_flag(time_series)
+            flags.integration_flags[α, :] = threshold_flag(time_series, threshold, windowed)
         end
         next!(prg)
     end
     flags
 end
 
-#using PyPlot
+using PyPlot
 
-function threshold_flag(data)
+function threshold_flag(data, threshold, windowed)
     x = 1:length(data)
     y = abs.(data)
-    knots = x[2:10:end-1]
-    spline = Spline1D(x, y, knots)
-    deviation = abs.(y .- spline.(x))
-    mad1 = median(deviation) # this is a lot faster and almost as good
-    #mad2 = windowed_mad(deviation)
-    flags = deviation .> 10 .* mad1
+    f = y .== 0
+    knots = x[.!f][2:10:end-1]
+    spline = Spline1D(x[.!f], y[.!f], knots)
+    z = spline.(x)
+    deviation = abs.(y .- z)
+    if windowed
+        mad = windowed_mad(deviation)
+    else
+        mad = median(deviation)
+    end
+    flags = deviation .> threshold .* mad
+
+    # iterate on the spline once
+    f .|= flags
+    knots = x[.!f][2:10:end-1]
+    spline = Spline1D(x[.!f], y[.!f], knots)
+    z = spline.(x)
+    deviation = abs.(y .- z)
+    flags = deviation .> threshold .* mad
 
     #figure(1); clf()
-    #plot(x, y, label="data")
-    #plot(x, spline.(x), label="spline")
-    #plot(x, spline.(x) .+ 5 .* mad1, label="unwindowed")
-    #plot(x, spline.(x) .+ 5 .* mad2, label="windowed")
-    #legend()
+    #plot(x, y, "k-")
+    #plot(x, z, "b-")
+    #plot(x, z+threshold*mad, "r-")
 
     flags
 end
 
-#function windowed_mad(deviation)
-#    # the system temperature varies with time, computing the median-absolute-deviation within a
-#    # window allows our threshold to also vary with time
-#    N = length(deviation)
-#    output = similar(deviation)
-#    for idx = 1:N
-#        window = max(1, idx-100):min(N, idx+100)
-#        δ = view(deviation, window)
-#        output[idx] = median(δ)
-#    end
-#    output
-#end
+function windowed_mad(deviation)
+    # the system temperature varies with time, computing the median-absolute-deviation within a
+    # window allows our threshold to also vary with time
+    N = length(deviation)
+    output = similar(deviation)
+    for idx = 1:N
+        window = max(1, idx-100):min(N, idx+100)
+        output[idx] = do_the_thing(deviation, window)
+    end
+    output
+end
+
+function do_the_thing(deviation, window)
+    δ = view(deviation, window)
+    median(δ)
+end
 

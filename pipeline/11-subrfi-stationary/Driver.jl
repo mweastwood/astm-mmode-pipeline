@@ -11,7 +11,7 @@ include("../lib/WSClean.jl"); using .WSClean
 
 function subrfi_stationary(spw, name)
     subrfi(spw, name, "fitrfi-stationary-coherencies.jld2",
-                      "calibrated-visibilities.jld2",
+                      "flagged-calibrated-visibilities.jld2",
                       "subrfi-stationary-visibilities.jld2")
 end
 
@@ -121,8 +121,12 @@ function sub!(x, y, flags)
     numerator   = dot(xx, yy)
     denominator = dot(yy, yy)
     if denominator != 0
-        scale = real(numerator/denominator)
-        @. x -= scale*y
+        scale  = real(numerator/denominator)
+        to_sub = scale.*y
+        # short baselines were not used while fitting for how much to subtract so we also shouldn't
+        # subtract anything from them
+        to_sub[flags] = 0
+        @. x -= to_sub
     else
         scale = 0.0
     end

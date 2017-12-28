@@ -6,20 +6,30 @@ using TTCal
 
 include("../lib/Common.jl"); using .Common
 
-function transpose(spw, name)
+function transpose_raw(spw, name)
+    transpose(spw, name, "raw-visibilities.jld2",
+                         "transposed-raw-visibilities.jld2")
+end
+
+#function transpose_subrfi_stationary(spw, name)
+#    transpose(spw, name, "subrfi-stationary-visibilities.jld2",
+#                         "transposed-subrfi-stationary-visibilities.jld2")
+#end
+
+function transpose(spw, name, input, output)
     path = getdir(spw, name)
-    jldopen(joinpath(path, "raw-visibilities.jld2"), "r") do input_file
+    jldopen(joinpath(path, input), "r") do input_file
         metadata = input_file["metadata"]
-        jldopen(joinpath(path, "transposed-visibilities.jld2"), "w") do output_file
+        jldopen(joinpath(path, output), "w") do output_file
             for frequency = 1:Nfreq(metadata)
-                transpose(input_file, output_file, metadata, frequency)
+                _transpose(input_file, output_file, metadata, frequency)
             end
             output_file["metadata"] = metadata
         end
     end
 end
 
-function transpose(input_file, output_file, metadata, frequency)
+function _transpose(input_file, output_file, metadata, frequency)
     output = zeros(Complex128, 2, Nbase(metadata), Ntime(metadata))
     prg = Progress(Ntime(metadata))
     for time = 1:Ntime(metadata)

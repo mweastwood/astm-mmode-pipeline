@@ -24,7 +24,7 @@ end
 
 function _smear(spw, name)
     local accumulation, metadata
-    jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "r") do file
+    jldopen(joinpath(getdir(spw, name), "flagged-calibrated-visibilities.jld2"), "r") do file
         metadata = file["metadata"]
         accumulation = zeros(Complex128, 2, Nfreq(metadata), Nbase(metadata))
         prg = Progress(Ntime(metadata))

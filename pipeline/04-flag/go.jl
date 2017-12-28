@@ -4,5 +4,5 @@ spw = parse(Int, ARGS[1])
 dataset = ARGS[2]
 
 include("Driver.jl")
-Driver.transpose_raw(spw, dataset)
+Driver.flag_calibrated(spw, dataset)
 

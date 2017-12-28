@@ -14,9 +14,10 @@ macro fitrfi(integration, sources, options...)
     select = get(options, :select, 1)
     pol    = get(options, :pol, TTCal.Dual)
     istest = get(options, :istest, true)
+    channels = get(options, :channels, nothing)
     output = quote
         $sym = _fitrfi(spw, name, input_file, metadata, $integration, $sources,
-                       $select, $pol, $istest)
+                       $select, $pol, $istest, $channels)
         push!(coherencies, $sym)
     end
     esc(output)
@@ -29,7 +30,9 @@ function fitrfi(spw, name)
         coherencies = Array{Complex128, 3}[]
 
         @fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :istest=>false
-        #@fitrfi 3664 ("Cas A", 1, "Cyg A", "Tau A") :select=>2 :pol=>TTCal.YY :istest=>false
+
+        # This one looks like channels 2, 3, 4 are barfing on Cas A
+        #@fitrfi 763 ("Cyg A", "Cas A", 1) :select=>2 :istest=>true
 
         jldopen(joinpath(dir, "fitrfi-impulsive-coherencies.jld2"), "w") do output_file
             output_file["coherencies"] = coherencies
@@ -37,12 +40,17 @@ function fitrfi(spw, name)
     end
 end
 
-function _fitrfi(spw, name, input_file, metadata, integration, sources, select, pol, istest)
+function _fitrfi(spw, name, input_file, metadata, integration, sources,
+                 select, pol, istest, channels)
     sky = construct_sky(sources)
     raw_data = input_file[o6d(integration)]
     dataset = array_to_ttcal(raw_data, metadata, integration, pol)
     residuals, coherencies = peel(spw, name, dataset, sky)
-    istest && compute_images(spw, name, integration, dataset, residuals, coherencies)
+    if istest
+        fluxes = Dict(source.name => TTCal.getflux(residuals, source).I for source in sky.sources)
+        @show fluxes
+        compute_images(spw, name, integration, dataset, residuals, coherencies)
+    end
     ttcal_to_array(coherencies[select])
 end
 
@@ -112,10 +120,10 @@ function compute_images(spw, name, integration, original, residuals, coherencies
             rm(joinpath(dir, file))
         end
     end
-    image(spw, name, integration, original,  joinpath(dir, "$prefix-start"))
-    image(spw, name, integration, residuals, joinpath(dir, "$prefix-stop"))
+    image(spw, name, integration, original,  joinpath(dir, "$prefix-start"), del=false)
+    image(spw, name, integration, residuals, joinpath(dir, "$prefix-stop"),  del=false)
     for (idx, coherency) in enumerate(coherencies)
-        image(spw, name, integration, coherency, joinpath(dir, "$prefix-$idx"))
+        image(spw, name, integration, coherency, joinpath(dir, "$prefix-$idx"), del=false)
     end
 end
 

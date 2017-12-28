@@ -47,17 +47,35 @@ function apply_to_transpose!(data, flags, frequency)
     end
 end
 
-function accumulate_time(file, metadata, flags)
-    output = zeros(Complex128, Nbase(metadata), Nfreq(metadata))
-    count  = zeros(       Int, Nbase(metadata), Nfreq(metadata))
-    prg = Progress(Nfreq(metadata))
-    for frequency = 1:Nfreq(metadata)
-        data = file[o6d(frequency)]
-        apply_to_transpose!(data, flags, frequency)
-        @views output[:, frequency] .+= squeeze(sum(data[1, :, :], 2), 2)
-        @views output[:, frequency] .+= squeeze(sum(data[2, :, :], 2), 2)
-        @views count[:, frequency]  .+= squeeze(sum(data[1, :, :] .!= 0, 2), 2)
-        @views count[:, frequency]  .+= squeeze(sum(data[2, :, :] .!= 0, 2), 2)
+#function accumulate_time(file, metadata, flags)
+#    output = zeros(Complex128, Nbase(metadata), Nfreq(metadata))
+#    count  = zeros(       Int, Nbase(metadata), Nfreq(metadata))
+#    prg = Progress(Nfreq(metadata))
+#    for frequency = 1:Nfreq(metadata)
+#        data = file[o6d(frequency)]
+#        apply_to_transpose!(data, flags, frequency)
+#        @views output[:, frequency] .+= squeeze(sum(data[1, :, :], 2), 2)
+#        @views output[:, frequency] .+= squeeze(sum(data[2, :, :], 2), 2)
+#        @views count[:, frequency]  .+= squeeze(sum(data[1, :, :] .!= 0, 2), 2)
+#        @views count[:, frequency]  .+= squeeze(sum(data[2, :, :] .!= 0, 2), 2)
+#        next!(prg)
+#    end
+#    count[count .== 0] .= 1
+#    output ./= count
+#    output
+#end
+
+function accumulate_frequency(file, metadata, flags)
+    output = zeros(Complex128, Nbase(metadata), Ntime(metadata))
+    count  = zeros(       Int, Nbase(metadata), Ntime(metadata))
+    prg = Progress(Ntime(metadata))
+    for time = 1:Ntime(metadata)
+        data = file[o6d(time)]
+        apply!(data, flags, time)
+        @views output[:, time] .+= squeeze(sum(data[1, :, :], 1), 1)
+        @views output[:, time] .+= squeeze(sum(data[2, :, :], 1), 1)
+        @views count[:, time]  .+= squeeze(sum(data[1, :, :] .!= 0, 1), 1)
+        @views count[:, time]  .+= squeeze(sum(data[2, :, :] .!= 0, 1), 1)
         next!(prg)
     end
     count[count .== 0] .= 1
@@ -65,17 +83,15 @@ function accumulate_time(file, metadata, flags)
     output
 end
 
-function accumulate_frequency(file, metadata, flags)
+function accumulate_frequency_variance(file, metadata, flags)
     output = zeros(Complex128, Nbase(metadata), Ntime(metadata))
     count  = zeros(       Int, Nbase(metadata), Ntime(metadata))
-    prg = Progress(Nfreq(metadata))
-    for frequency = 1:Nfreq(metadata)
-        data = file[o6d(frequency)]
-        apply_to_transpose!(data, flags, frequency)
-        @views output .+= data[1, :, :]
-        @views output .+= data[2, :, :]
-        @views count  .+= data[1, :, :] .!= 0
-        @views count  .+= data[2, :, :] .!= 0
+    prg = Progress(Ntime(metadata))
+    for time = 1:Ntime(metadata)
+        data = file[o6d(time)]
+        apply!(data, flags, time)
+        @views output[:, time] .+= squeeze(std(data, (1, 2)), (1, 2))
+        @views count[:, time]  .+= squeeze(sum(data .!= 0, (1, 2)), (1, 2))
         next!(prg)
     end
     count[count .== 0] .= 1
@@ -88,38 +104,49 @@ include("integration-flags.jl")
 include("baseline-flags.jl")
 include("channel-flags.jl")
 
-function flag(spw, name)
+function flag_raw(spw, name)
     path = getdir(spw, name)
     local flags
-    jldopen(joinpath(path, "transposed-visibilities.jld2"), "r") do file
+    jldopen(joinpath(path, "raw-visibilities.jld2"), "r") do file
         metadata = file["metadata"]
         flags = Flags(metadata)
         a_priori_flags!(flags, spw, name)
-
         data = accumulate_frequency(file, metadata, flags)
-        save(joinpath(path, "flagging-checkpoint-1.jld2"), "data", data)
+        #save(joinpath(path, "flagging-checkpoint-1.jld2"), "data", data)
         #@time data = load(joinpath(path, "flagging-checkpoint-1.jld2"), "data")
-
-        apply_baseline_flags!(data, flags, metadata)
-        apply_integration_flags!(data, flags)
-
-        # (it turns out we don't really need channel flags yet, so we've left the rest out for now)
-
-        #data = accumulate_time(file, metadata, flags)
-        #save(joinpath(path, "flagging-checkpoint-2.jld2"), "data", data)
-        #@time data = load(joinpath(path, "flagging-checkpoint-2.jld2"), "acc")
-        #apply_channel_flags!(data, flags)
-
+        apply_baseline_flags!(data, flags, metadata, 15)
+        apply_integration_flags!(data, flags, 15, windowed=true)
     end
-    output(spw, name, flags)
+    output(spw, name, flags, "raw-visibilities.jld2", "flagged-visibilities.jld2")
     flags
 end
 
-function output(spw, name, flags)
+function flag_calibrated(spw, name)
     path = getdir(spw, name)
-    jldopen(joinpath(path, "raw-visibilities.jld2"), "r") do input_file
+    local flags
+    jldopen(joinpath(path, "calibrated-visibilities.jld2"), "r") do file
+        metadata = file["metadata"]
+        flags = Flags(metadata)
+        data = accumulate_frequency(file, metadata, flags)
+        save(joinpath(path, "flagging-checkpoint-1.jld2"), "data", data)
+        #@time data = load(joinpath(path, "flagging-checkpoint-1.jld2"), "data")
+        apply_baseline_flags!(data, flags, metadata, 10)
+        apply_integration_flags!(data, flags, 10, windowed=true)
+
+        data = accumulate_frequency_variance(file, metadata, flags)
+        save(joinpath(path, "flagging-checkpoint-2.jld2"), "data", data)
+        #@time data = load(joinpath(path, "flagging-checkpoint-2.jld2"), "data")
+        apply_integration_flags!(data, flags, 5, windowed=false)
+    end
+    output(spw, name, flags, "calibrated-visibilities.jld2", "flagged-calibrated-visibilities.jld2")
+    flags
+end
+
+function output(spw, name, flags, input, output)
+    path = getdir(spw, name)
+    jldopen(joinpath(path, input), "r") do input_file
         metadata = input_file["metadata"]
-        jldopen(joinpath(path, "flagged-visibilities.jld2"), "w") do output_file
+        jldopen(joinpath(path, output), "w") do output_file
             prg = Progress(Ntime(metadata))
             for time = 1:Ntime(metadata)
                 raw_data = input_file[o6d(time)]
@@ -128,6 +155,7 @@ function output(spw, name, flags)
                 next!(prg)
             end
             output_file["metadata"] = metadata
+            output_file["flags"] = flags
         end
     end
 end
