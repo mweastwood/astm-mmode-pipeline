@@ -144,10 +144,17 @@ function unpack_jones_matrix!(data, frequency, α, J, ::Type{TTCal.YY})
     data[2, frequency, α] = J
 end
 
-function image(spw, name, integration, input, fits)
+function image(spw, name, integration, input, fits; del=true)
     dadas = listdadas(spw, name)
     dada  = dadas[integration]
-    ms = dada2ms(spw, dada, name)
+    filename = replace(basename(dada), "dada", "ms")
+    filename = @sprintf("spw%02d-%s", spw, filename)
+    path = joinpath("/dev/shm/mweastwood", filename)
+    if !isdir(path)
+        ms = dada2ms(spw, dada, name)
+    else
+        ms = Tables.open(path, write=true)
+    end
     metadata = TTCal.Metadata(ms)
     output = TTCal.Dataset(metadata, polarization=TTCal.polarization(input))
     for idx = 1:Nfreq(input)
@@ -161,7 +168,7 @@ function image(spw, name, integration, input, fits)
     TTCal.write(ms, output, column="CORRECTED_DATA")
     Tables.close(ms)
     wsclean(ms.path, fits)
-    Tables.delete(ms)
+    del && Tables.delete(ms)
 end
 
 end
