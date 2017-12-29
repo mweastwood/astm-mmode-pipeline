@@ -48,12 +48,12 @@ function test(spw, name, integration)
         println("# no source removal")
         output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
                                          false, false, true)
-        image(spw, name, integration, output, "/lustre/mweastwood/tmp/1-$integration")
+        image(spw, name, integration, output, "/lustre/mweastwood/tmp/1-$integration", del=false)
 
         println("# only peeling")
         output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
                                          true, false, true)
-        image(spw, name, integration, output, "/lustre/mweastwood/tmp/2-$integration")
+        image(spw, name, integration, output, "/lustre/mweastwood/tmp/2-$integration", del=false)
 
         #println("# full source removal")
         #output, residuals = _do_the_work(spw, name, raw_data, metadata, integration, sky,
@@ -101,16 +101,16 @@ function do_the_source_removal!(spw, dataset, sky, dopeeling, dosubtraction, ist
         add!(dataset, medium)
 
         # check to see if peeled sources were actually peeled
-        for (source, calibration) in zip(bright.sources, calibrations)
-            model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
-            flux  = TTCal.getflux(model, source).I
-            TTCal.corrupt!(model, calibration)
-            flux′ = TTCal.getflux(model, source).I
-            if abs(flux - flux′) > 0.1abs(flux)
-                TTCal.add!(dataset, model)
-                push!(medium.sources, source)
-            end
-        end
+        #for (source, calibration) in zip(bright.sources, calibrations)
+        #    model = genvis(dataset.metadata, TTCal.ConstantBeam(), source, polarization=TTCal.Dual)
+        #    flux  = TTCal.getflux(model, source).I
+        #    TTCal.corrupt!(model, calibration)
+        #    flux′ = TTCal.getflux(model, source).I
+        #    if abs(flux - flux′) > 0.1abs(flux)
+        #        TTCal.add!(dataset, model)
+        #        push!(medium.sources, source)
+        #    end
+        #end
     end
 
     if dosubtraction
@@ -171,8 +171,10 @@ end
 macro pick(name, category, elevation_threshold, flux_threshold)
     if category == :BRIGHT
         f = :categorize_bright
-    else
+    elseif category == :FAINT
         f = :categorize_faint
+    elseif category == :SPECIAL
+        f = :categorize_special
     end
     quote
         if source.name == $name
@@ -186,6 +188,8 @@ macro pick(name, category, elevation_threshold, flux_threshold)
             elseif category == :FAINT
                 push!(faint, idx)
                 push!(faint_flux, flux)
+            elseif category == :SPECIAL
+                push!(special, idx)
             end
         end
     end |> esc
@@ -219,6 +223,15 @@ function categorize_faint(frame, metadata, source, elevation_threshold, flux_thr
     end
 end
 
+function categorize_special(frame, metadata, source, elevation_threshold, flux_threshold)
+    high_elevation = TTCal.isabovehorizon(frame, source, threshold=deg2rad(elevation_threshold))
+    if high_elevation
+        return :SPECIAL, 0
+    else
+        return :MEDIUM, 0
+    end
+end
+
 function partition(spw, metadata, sky)
     # We have three categories for how sources are removed:
     #  1) peel them (for very bright sources)
@@ -230,6 +243,7 @@ function partition(spw, metadata, sky)
     bright = Int[]
     medium = Int[]
     faint  = Int[]
+    special = Int[]
     bright_flux = Float64[]
     medium_flux = Float64[]
     faint_flux  = Float64[]
@@ -286,7 +300,7 @@ function partition(spw, metadata, sky)
     bright      = bright[order]
     bright_flux = bright_flux[order]
 
-    bright_sky = TTCal.SkyModel(sky.sources[bright])
+    bright_sky = TTCal.SkyModel(sky.sources[[special; bright]])
     medium_sky = TTCal.SkyModel(sky.sources[medium])
     faint_sky  = TTCal.SkyModel(sky.sources[faint])
     bright_sky, medium_sky, faint_sky
