@@ -34,6 +34,8 @@ function compute(file, transfermatrix, mmodes)
             increment()
         end
     end
+    file["lmax"] = lmax
+    file["mmax"] = mmax
 end
 
 function _compute(transfermatrix, mmodes, lmax, m)
