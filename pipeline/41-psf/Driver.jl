@@ -1,40 +1,11 @@
 module Driver
 
-using GSL
 using JLD2
 using LibHealpix
 using ProgressMeter
-using StaticArrays
 
-include("../lib/Common.jl"); using .Common
-
-module Worker
-    using JLD2
-    using LibHealpix
-
-    const observation_matrix_blocks     = Dict{Int, Matrix{Complex128}}()
-    const cholesky_decomposition_blocks = Dict{Int, Matrix{Complex128}}()
-
-    function load(path, list_of_m)
-        jldopen(path, "r") do file
-            for m in list_of_m
-                if !haskey(observation_matrix_blocks, m)
-                    observation_matrix_blocks[m]     = file[@sprintf("%06d-block",    m)]
-                    cholesky_decomposition_blocks[m] = file[@sprintf("%06d-cholesky", m)]
-                end
-            end
-        end
-    end
-
-    function observe(a, m)
-        BLAS.set_num_threads(1)
-        BB = observation_matrix_blocks[m]
-        U  = cholesky_decomposition_blocks[m]
-        f(BB, U, a)
-    end
-
-    f(BB, U, a) = U\(U'\(BB*a))
-end
+include("../lib/Common.jl");   using .Common
+include("../lib/Cleaning.jl"); using .Cleaning
 
 function psf(spw, name)
     path = joinpath(getdir(spw, name), "observation-matrix.jld2")
@@ -87,16 +58,6 @@ function psf_alm(θ, ϕ, lmax, mmax, responsibilities)
     alm
 end
 
-function observe!(alm, responsibilities)
-    @sync for worker in keys(responsibilities)
-        @async for m in responsibilities[worker]
-            a = @lm alm[:, m]
-            b = remotecall_fetch(Worker.observe, worker, a, m)
-            @lm alm[:, m] = b
-        end
-    end
-end
-
 function psf_properties(map, pixel; extent=1)
     vec = LibHealpix.pix2vec_ring(map.nside, pixel)
     img = postage_stamp(map, pixel; extent=extent)
@@ -139,33 +100,6 @@ function psf_properties(map, pixel; extent=1)
     peak, major_σ, minor_σ, angle
 end
 
-"Compute the spherical harmonic coefficients for a point source at the given coordinates."
-function pointsource_alm(θ, ϕ, lmax, mmax)
-    cosθ = cos(θ)
-    alm = Alm(Complex128, lmax, mmax)
-    for m = 0:mmax
-        coeff = GSL.sf_legendre_sphPlm_array(lmax, m, cosθ)
-        cismϕ = cis(-m*ϕ)
-        for l = m:lmax
-            @lm alm[l, m] = coeff[l-m+1]*cismϕ
-        end
-    end
-    alm
-end
-
-"Distribute the blocks amongst all available workers."
-function distribute_responsibilities(mmax)
-    # Note that we are choosing to discard m=0 here by not assigning it to any worker.
-    Dict(worker => idx:nworkers():mmax for (idx, worker) in enumerate(workers()))
-end
-
-"Load the observation matrix on each worker."
-function load_observation_matrix(path, responsibilities)
-    @sync for worker in keys(responsibilities)
-        @async remotecall_wait(Worker.load, worker, path, responsibilities[worker])
-    end
-end
-
 "Starting pixel of each Healpix ring."
 function find_healpix_rings(nside)
     nring  = nside2nring(nside)
@@ -175,26 +109,6 @@ function find_healpix_rings(nside)
         θ, ϕ = LibHealpix.pix2ang_ring(nside, pixel)
         θ < deg2rad(120)
     end
-end
-
-"Cutout a 1° by 1° image of the pixel."
-function postage_stamp(map, pixel; extent=1)
-    z  = LibHealpix.pix2vec_ring(map.nside, pixel)
-    y  = SVector(0, 0, 1)
-    y -= dot(y, z)*z
-    y /= norm(y)
-    x  = cross(y, z)
-    xgrid = linspace(-deg2rad(extent), +deg2rad(extent), 1001)
-    ygrid = linspace(-deg2rad(extent), +deg2rad(extent), 1001)
-    image = zeros(length(ygrid), length(xgrid))
-    for idx = 1:length(xgrid), jdx = 1:length(ygrid)
-        vector = xgrid[idx]*x + ygrid[jdx]*y + z
-        vector /= norm(vector)
-        θ = acos(vector[3])
-        ϕ = mod2pi(atan2(vector[2], vector[1]))
-        image[jdx, idx] = LibHealpix.interpolate(map, θ, ϕ)
-    end
-    image
 end
 
 end
