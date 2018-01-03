@@ -62,12 +62,5 @@ function restore!(restored_map, components, ringstart, peak, major, minor, angle
     end
 end
 
-function gaussian(x, y, A, σx, σy, θ)
-    a = cos(θ)^2/(2σx^2) + sin(θ)^2/(2σy^2)
-    b = sin(2θ)/(4σx^2) - sin(2θ)/(4σy^2)
-    c = sin(θ)^2/(2σx^2) + cos(θ)^2/(2σy^2)
-    A*exp(-(a*y^2 + 2b*x*y + c*x^2))
-end
-
 end
 
