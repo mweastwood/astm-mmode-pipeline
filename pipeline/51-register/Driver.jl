@@ -26,7 +26,8 @@ function register(spw, name)
     rotations = [Measures.RotationMatrix(catalog[idx], measured[idx]) for idx = 1:N]
 
     @time dedistorted = dedistort(map, catalog, rotations)
-    writehealpix(joinpath(path, "clean-map-registered-galactic.fits"), dedistorted, replace=true)
+    writehealpix(joinpath(path, "clean-map-registered-galactic.fits"), dedistorted,
+                 coordsys="G", replace=true)
 
     #function line(start, finish)
     #    scale = 50
