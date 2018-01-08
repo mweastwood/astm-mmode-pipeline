@@ -1,19 +1,20 @@
 module Driver
 
 using CasaCore.Measures
+using FileIO, JLD2
 using LibHealpix
-#using NLopt
 using ProgressMeter
 using StaticArrays
+using TTCal
 using Unitful
 
-using PyPlot # temp
+#using PyPlot # temp
 
 include("../lib/Common.jl"); using .Common
 
 function register(spw, name)
     path = getdir(spw, name)
-    map = readhealpix(joinpath(path, "clean-map-galactic.fits"))
+    map = readhealpix(joinpath(path, "clean-map.fits"))
 
     ra, dec, flux = read_vlssr_catalog()
     ra, dec, flux = flux_cutoff(ra, dec, flux, 30)
@@ -21,13 +22,16 @@ function register(spw, name)
     ra, dec, flux = too_close_together(ra, dec, flux)
     N = length(flux)
 
-    catalog   = convert_to_galactic(ra, dec)
+    metadata = load(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "metadata")
+    TTCal.slice!(metadata, 1, axis=:time)
+    frame = ReferenceFrame(metadata)
+
+    catalog   = convert_to_itrf(frame, ra, dec)
     measured  = register_centroid(map, catalog)
     rotations = [Measures.RotationMatrix(catalog[idx], measured[idx]) for idx = 1:N]
 
     @time dedistorted = dedistort(map, catalog, rotations)
-    writehealpix(joinpath(path, "clean-map-registered-galactic.fits"), dedistorted,
-                 coordsys="G", replace=true)
+    writehealpix(joinpath(path, "clean-map-registered.fits"), dedistorted, replace=true)
 
     #function line(start, finish)
     #    scale = 50
@@ -50,7 +54,7 @@ function register(spw, name)
     #    plot(x[2], y[2], "r.")
     #end
     #for l in linspace(-π, π, 40)[1:end-1], b in linspace(-π/2, π/2, 20)[2:end-1]
-    #    start    = Direction(dir"GALACTIC", l*u"rad", b*u"rad")
+    #    start    = Direction(dir"ITRF", l*u"rad", b*u"rad")
     #    rotation = interpolate_rotation(catalog, rotations, start)
     #    finish   = rotation*start
     #    x, y = line(start, finish)
@@ -170,13 +174,12 @@ function output_region_file(ra, dec)
     close(ds9_region_file)
 end
 
-function convert_to_galactic(ra, dec)
-    frame = ReferenceFrame()
+function convert_to_itrf(frame, ra, dec)
     output = Direction[]
     for idx = 1:length(ra)
         j2000 = Direction(dir"J2000", ra[idx]*u"rad", dec[idx]*u"rad")
-        galactic = measure(frame, j2000, dir"GALACTIC")
-        push!(output, galactic)
+        itrf  = measure(frame, j2000, dir"ITRF")
+        push!(output, itrf)
     end
     output
 end
@@ -199,7 +202,7 @@ function _register_centroid(map, direction)
     disc  = query_disc(map, θ, ϕ, deg2rad(0.5), inclusive=true)
     pixel = disc[indmax(map[disc])]
     vec = pix2vec(map, pixel)
-    Direction(dir"GALACTIC", vec[1], vec[2], vec[3])
+    Direction(dir"ITRF", vec[1], vec[2], vec[3])
 end
 
 function interpolate_rotation(catalog, rotations, direction)

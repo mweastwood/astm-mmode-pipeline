@@ -11,7 +11,7 @@ include("../lib/Common.jl"); using .Common
 
 function rotate(spw, name)
     path = getdir(spw, name)
-    map = readhealpix(joinpath(path, "clean-map.fits"))
+    map = readhealpix(joinpath(path, "clean-map-kelvin.fits"))
 
     galactic = rotate_to_galactic(spw, name, map)
     writehealpix(joinpath(path, "clean-map-galactic.fits"), galactic, coordsys="G", replace=true)
