@@ -85,23 +85,30 @@ function load_observation_matrix(path, responsibilities)
 end
 
 "Cutout a 1° by 1° image of the pixel."
-function postage_stamp(map, pixel; extent=1)
+function postage_stamp(map, pixel; extent=1, N=1001)
+    image, _ = postage_stamp_with_unit_vectors(map, pixel, extent=extent, N=N)
+    image
+end
+
+function postage_stamp_with_unit_vectors(map, pixel; extent=1, N=1001)
     z  = LibHealpix.pix2vec_ring(map.nside, pixel)
     y  = SVector(0, 0, 1)
     y -= dot(y, z)*z
     y /= norm(y)
     x  = cross(y, z)
-    xgrid = linspace(-deg2rad(extent), +deg2rad(extent), 1001)
-    ygrid = linspace(-deg2rad(extent), +deg2rad(extent), 1001)
-    image = zeros(length(ygrid), length(xgrid))
+    xgrid = linspace(-deg2rad(extent), +deg2rad(extent), N)
+    ygrid = linspace(-deg2rad(extent), +deg2rad(extent), N)
+    image   = zeros(N, N)
+    vectors = zeros(3, N, N)
     for idx = 1:length(xgrid), jdx = 1:length(ygrid)
         vector = xgrid[idx]*x + ygrid[jdx]*y + z
         vector /= norm(vector)
         θ = acos(vector[3])
         ϕ = mod2pi(atan2(vector[2], vector[1]))
         image[jdx, idx] = LibHealpix.interpolate(map, θ, ϕ)
+        vectors[:, jdx, idx] = vector
     end
-    image
+    image, vectors
 end
 
 function gaussian_alm(fwhm, lmax, mmax)
