@@ -1,131 +1,144 @@
-function find_sources(spw, target)
+#function find_sources(spw, target)
+#    dir = getdir(spw)
+#    map = readhealpix(joinpath(dir, target*".fits"))
+#    psf_dec, psf = load_psf(spw)
+#    flux, background, residual = _find_sources(map, psf_dec, psf)
+#    writehealpix(joinpath(dir, "tmp", "flux.fits"), HealpixMap(flux), replace=true)
+#    writehealpix(joinpath(dir, "tmp", "background.fits"), HealpixMap(background), replace=true)
+#    writehealpix(joinpath(dir, "tmp", "residual.fits"), HealpixMap(residual), replace=true)
+#end
+#
+#function _find_sources(map, psf_dec, psf)
+#    N = length(map)
+#    flux = zeros(N)
+#    background = zeros(N)
+#    residual = zeros(N)
+#
+#    pixel = 1
+#    next_pixel() = (pixel′ = pixel; pixel += 1; pixel′)
+#    prg = Progress(N, "Progress: ")
+#    lck = ReentrantLock()
+#    increment_progress() = (lock(lck); next!(prg); unlock(lck))
+#    @sync for worker in workers()
+#        @async begin
+#            input_channel  = RemoteChannel()
+#            output_channel = RemoteChannel()
+#            try
+#                remotecall(find_sources_remote_processing_loop, worker, input_channel, output_channel,
+#                           map, psf_dec, psf)
+#                Lumberjack.debug("Worker $worker has been started")
+#                while true
+#                    mypixel = next_pixel()
+#                    mypixel ≤ N || break
+#                    Lumberjack.debug("Worker $worker is processing pixel=$mypixel")
+#                    put!(input_channel, mypixel)
+#                    flux[mypixel], background[mypixel], residual[mypixel] = take!(output_channel)
+#                    increment_progress()
+#                end
+#            finally
+#                close(input_channel)
+#                close(output_channel)
+#            end
+#        end
+#    end
+#    flux, background, residual
+#end
+#
+#function find_sources_remote_processing_loop(input, output, map, psf_dec, psf)
+#    while true
+#        try
+#            pixel = take!(input)
+#            flux, background, residual = measure_flux(map, psf_dec, psf, pixel)
+#            put!(output, (flux, background, residual))
+#        catch exception
+#            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
+#                # If this is a remote worker, we will see a RemoteException when the channel is
+#                # closed. However, if this is the master process (ie. we're running without any
+#                # workers) then this will be an InvalidStateException. This is kind of messy...
+#                break
+#            else
+#                println(exception)
+#                rethrow(exception)
+#            end
+#        end
+#    end
+#end
+#
+#function measure_flux(map, psf_dec, psf, pixel)
+#    θ, ϕ = LibHealpix.pix2ang_ring(nside(map), pixel)
+#    ra, dec = ϕ, π/2-θ
+#    dec < minimum(psf_dec) && return 0.0, 0.0, 0.0
+#
+#    xgrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
+#    ygrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
+#    image = extract_image(map, xgrid, ygrid, ra, dec)
+#    mypsf = interpolate_psf(psf_dec, psf, dec)
+#
+#    image = image[76:126, 76:126]
+#    mypsf = mypsf[76:126, 76:126]
+#
+#    measure_flux_do_the_work(image, mypsf)
+#end
+#
+#function measure_flux_do_the_work(image, psf)
+#    N, M = size(image)
+#
+#    # The goal is to fit the PSF to the given image and measure the flux of a point source (if there
+#    # is one) at the given location. However, there is a diffuse background that we'd like to
+#    # account for so we'll add some additional large-scale terms to prevent the diffuse emission
+#    # from contaminating the flux measurement.
+#    constant = ones(N*M)
+#    linear_x = vec([idx for idx = 1:N, jdx = 1:M])
+#    linear_y = vec([jdx for idx = 1:N, jdx = 1:M])
+#    quadratic_xx = vec([idx^2 for idx = 1:N, jdx = 1:M])
+#    quadratic_xy = vec([idx*jdx for idx = 1:N, jdx = 1:M])
+#    quadratic_yy = vec([jdx^2 for idx = 1:N, jdx = 1:M])
+#
+#    A = [vec(psf) constant linear_x linear_y quadratic_xx quadratic_xy quadratic_yy]
+#    b = vec(image)
+#    x = A\b
+#
+#    # Discard high residual pixels (these likely contain another bright source).
+#    δ = b - A*x
+#    mad  = median(abs(δ))
+#    keep = δ .< 5mad
+#
+#    A = A[keep, :]
+#    b = b[keep]
+#    x = A\b
+#
+#    flux = x[1]
+#    background = x[2]
+#    residual = vecnorm(b - A*x)/vecnorm(b)
+#    flux, background, residual
+#end
+
+function find_sources_in_the_map(spw, dataset)
     dir = getdir(spw)
-    map = readhealpix(joinpath(dir, target*".fits"))
-    psf_dec, psf = load_psf(spw)
-    flux, background, residual = _find_sources(map, psf_dec, psf)
-    writehealpix(joinpath(dir, "tmp", "flux.fits"), HealpixMap(flux), replace=true)
-    writehealpix(joinpath(dir, "tmp", "background.fits"), HealpixMap(background), replace=true)
-    writehealpix(joinpath(dir, "tmp", "residual.fits"), HealpixMap(residual), replace=true)
-end
-
-function _find_sources(map, psf_dec, psf)
-    N = length(map)
-    flux = zeros(N)
-    background = zeros(N)
-    residual = zeros(N)
-
-    pixel = 1
-    next_pixel() = (pixel′ = pixel; pixel += 1; pixel′)
-    prg = Progress(N, "Progress: ")
-    lck = ReentrantLock()
-    increment_progress() = (lock(lck); next!(prg); unlock(lck))
-    @sync for worker in workers()
-        @async begin
-            input_channel  = RemoteChannel()
-            output_channel = RemoteChannel()
-            try
-                remotecall(find_sources_remote_processing_loop, worker, input_channel, output_channel,
-                           map, psf_dec, psf)
-                Lumberjack.debug("Worker $worker has been started")
-                while true
-                    mypixel = next_pixel()
-                    mypixel ≤ N || break
-                    Lumberjack.debug("Worker $worker is processing pixel=$mypixel")
-                    put!(input_channel, mypixel)
-                    flux[mypixel], background[mypixel], residual[mypixel] = take!(output_channel)
-                    increment_progress()
-                end
-            finally
-                close(input_channel)
-                close(output_channel)
-            end
-        end
-    end
-    flux, background, residual
-end
-
-function find_sources_remote_processing_loop(input, output, map, psf_dec, psf)
-    while true
-        try
-            pixel = take!(input)
-            flux, background, residual = measure_flux(map, psf_dec, psf, pixel)
-            put!(output, (flux, background, residual))
-        catch exception
-            if isa(exception, RemoteException) || isa(exception, InvalidStateException)
-                # If this is a remote worker, we will see a RemoteException when the channel is
-                # closed. However, if this is the master process (ie. we're running without any
-                # workers) then this will be an InvalidStateException. This is kind of messy...
-                break
-            else
-                println(exception)
-                rethrow(exception)
-            end
-        end
-    end
-end
-
-function measure_flux(map, psf_dec, psf, pixel)
-    θ, ϕ = LibHealpix.pix2ang_ring(nside(map), pixel)
-    ra, dec = ϕ, π/2-θ
-    dec < minimum(psf_dec) && return 0.0, 0.0, 0.0
-
-    xgrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
-    ygrid = linspace(-deg2rad(5.0), +deg2rad(5.0), 201)
-    image = extract_image(map, xgrid, ygrid, ra, dec)
-    mypsf = interpolate_psf(psf_dec, psf, dec)
-
-    image = image[76:126, 76:126]
-    mypsf = mypsf[76:126, 76:126]
-
-    measure_flux_do_the_work(image, mypsf)
-end
-
-function measure_flux_do_the_work(image, psf)
-    N, M = size(image)
-
-    # The goal is to fit the PSF to the given image and measure the flux of a point source (if there
-    # is one) at the given location. However, there is a diffuse background that we'd like to
-    # account for so we'll add some additional large-scale terms to prevent the diffuse emission
-    # from contaminating the flux measurement.
-    constant = ones(N*M)
-    linear_x = vec([idx for idx = 1:N, jdx = 1:M])
-    linear_y = vec([jdx for idx = 1:N, jdx = 1:M])
-    quadratic_xx = vec([idx^2 for idx = 1:N, jdx = 1:M])
-    quadratic_xy = vec([idx*jdx for idx = 1:N, jdx = 1:M])
-    quadratic_yy = vec([jdx^2 for idx = 1:N, jdx = 1:M])
-
-    A = [vec(psf) constant linear_x linear_y quadratic_xx quadratic_xy quadratic_yy]
-    b = vec(image)
-    x = A\b
-
-    # Discard high residual pixels (these likely contain another bright source).
-    δ = b - A*x
-    mad  = median(abs(δ))
-    keep = δ .< 5mad
-
-    A = A[keep, :]
-    b = b[keep]
-    x = A\b
-
-    flux = x[1]
-    background = x[2]
-    residual = vecnorm(b - A*x)/vecnorm(b)
-    flux, background, residual
-end
-
-function find_sources_in_the_map(spw, target)
-    dir = getdir(spw)
-    map = readhealpix(joinpath(dir, target*".fits"))
-    flux = readhealpix(joinpath(dir, "tmp", "flux.fits"))
-    meta = getmeta(18, "rainy")
+    meta = getmeta(spw, dataset)
     frame = TTCal.reference_frame(meta)
 
-    regions = select_regions(flux, 64)
+    alm = load(joinpath(dir, "alm-rfi-subtracted-peeled-$dataset.jld"), "alm")
+
+    # discard most of the low-m coefficients to knock out most of the diffuse emission
+    for l = 0:100, m = 0:l
+        alm[l, m] = 0
+    end
+    map = alm2map(alm, 512)
+
+    # get the PSF near zenith in order to an extremely rough flux correction
+    psf_near_zenith = readhealpix(joinpath(dir, "psf", "psf+37-degrees.fits"))
+    correction = 1/maximum(pixels(psf_near_zenith))
+    map *= correction
+
+    writehealpix(joinpath(dir, "tmp", "source-finding-start.fits"), map, replace=true)
+    regions = select_regions(map, 32)
+    #@show length(regions)
     #for region in regions
-    #    vec = LibHealpix.pix2vec_ring(nside(flux), first(region))
+    #    vec = LibHealpix.pix2vec_ring(nside(map), first(region))
     #    itrf = Direction(dir"ITRF", vec[1], vec[2], vec[3])
     #    j2000 = measure(frame, itrf, dir"J2000")
-    #    image = extract_image(map, itrf)
+    #    image = GetPSF.extract_image(map, itrf)
 
     #    @show region
     #    @show j2000
@@ -133,6 +146,7 @@ function find_sources_in_the_map(spw, target)
     #    figure(1); clf()
     #    imshow(image, interpolation="nearest")
     #    gca()[:set_aspect]("equal")
+    #    grid("on")
     #    colorbar()
 
     #    print("Continue? ")
@@ -140,13 +154,13 @@ function find_sources_in_the_map(spw, target)
     #    inp == "q" && break
     #end
 
-    output = HealpixMap(Float64, 512)
-    for idx = 1:length(regions)
-        for pixel in regions[idx]
-            output[pixel] = idx
-        end
-    end
-    writehealpix(joinpath(dir, "tmp", "sources.fits"), output, replace=true)
+    #output = HealpixMap(Float64, 512)
+    #for idx = 1:length(regions)
+    #    for pixel in regions[idx]
+    #        output[pixel] = idx
+    #    end
+    #end
+    #writehealpix(joinpath(dir, "tmp", "sources.fits"), output, replace=true)
 
     regions
 end
@@ -244,6 +258,7 @@ function select_regions(map, cutoff)
             end
         end
     end
+
     sets
 end
 

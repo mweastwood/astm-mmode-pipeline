@@ -303,8 +303,8 @@ do
         isbetween 32 && getpsf_w  $spw
         isbetween 33 && clean     $spw $dataset "new-alm-wiener-filtered"
         isbetween 34 && restore   $spw $dataset "new-alm-wiener-filtered"
-        isbetween 35 && register  $spw $dataset "new-map-restored"
-        isbetween 36 && glamour   $spw $dataset "new-map-restored-registered"
+        isbetween 35 && register  $spw $dataset "map-restored"
+        isbetween 36 && glamour   $spw $dataset "map-restored-registered"
 
         # Jackknife
         isbetween 50 && getmmodes-odd  $spw $dataset "rfi-subtracted-peeled-interpolated"

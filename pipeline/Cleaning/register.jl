@@ -48,6 +48,7 @@ function register(spw, dataset, target)
     lower_bounds!(opt, xmin)
     upper_bounds!(opt, xmax)
     minf, coeff, ret = optimize(opt, coeff)
+    @show coeff
 
     fix_ra(ra) = rad2deg(mod2pi.(ra + π)-π)/15
     fix_dec(dec) = rad2deg(dec)
@@ -68,7 +69,7 @@ function register(spw, dataset, target)
 
     map = dedistort(map, coeff)
     writehealpix(joinpath(dir, "$target-registered-$dataset-itrf.fits"), map, replace=true)
-    save(joinpath(dir, "$target-registered-$dataset.jld"), "map", map.pixels)
+    save(joinpath(dir, "$target-registered-$dataset.jld"), "map", map.pixels, "coeff", coeff)
 end
 
 function read_vlssr_catalog()

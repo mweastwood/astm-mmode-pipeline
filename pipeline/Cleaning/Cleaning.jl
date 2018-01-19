@@ -1,6 +1,6 @@
 module Cleaning
 
-using JLD
+using HDF5, JLD
 using ProgressMeter
 using CasaCore.Measures
 using LibHealpix
@@ -19,6 +19,10 @@ include("restore.jl")
 include("register.jl")
 
 include("postage-stamp.jl")
+
+# For Uri
+include("psf-snapshot.jl")
+include("restore-with-masked-point-sources.jl")
 
 end
 

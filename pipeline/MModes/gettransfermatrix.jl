@@ -7,11 +7,12 @@ function gettransfermatrix(spw, dataset, lmax=1000; nside=2048)
     beam = readhealpix(joinpath(dir, "beam-$nside.fits"))
     path = joinpath(dir, "transfermatrix-$lmax-$mmax")
     # TEST
-    #variables = BPJSpec.TransferMatrixVariables(meta, lmax, mmax, nside)
+    variables = BPJSpec.TransferMatrixVariables(meta, lmax, mmax, nside)
     #α = 30741
-    #return @time BPJSpec.fringes(beam, variables, meta.channels[1], α)
+    α = 2
+    return @time BPJSpec.fringes(beam, variables, meta.channels[1], α)
     # TEST
-    transfermatrix = TransferMatrix(path, meta, beam, lmax, mmax, nside)
+    #transfermatrix = TransferMatrix(path, meta, beam, lmax, mmax, nside)
     nothing
 end
 

@@ -141,7 +141,11 @@ function load_ovro_lwa_comparison(lwa1, ν, resolution)
     map2 = map2 * (BPJSpec.Jy * (BPJSpec.c/ovro_ν[idx+1])^2 / (2*BPJSpec.k))
     ovro_lwa = wgt1*map1 + wgt2*map2
     ovro_lwa = Pipeline.MModes.rotate_to_j2000(4, "rainy", ovro_lwa)
-    smooth(ovro_lwa, resolution, nside(lwa1))
+    writehealpix(@sprintf("ovro-lwa-j2000-%.3fMHz.fits", ν/1e6), ovro_lwa)
+    smoothed = smooth(ovro_lwa, resolution, nside(lwa1))
+    writehealpix(@sprintf("ovro-lwa-j2000-%.3fMHz-smoothed.fits", ν/1e6), smoothed)
+    error("stop")
+    smoothed
 end
 
 function fix_lwa1_rotation(lwa1_original, lwa1, ovro_lwa, mask)

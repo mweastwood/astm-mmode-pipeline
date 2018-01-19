@@ -11,7 +11,7 @@ function glamour(spw, dataset, target; min=0, max=0)
 
     str = @sprintf("spw%02d", spw)
     output = joinpath(dir, "glamour-$target-$dataset.jld")
-    image = mollweide(map, (2048, 4096))
+    image = mollweide(map, (4098, 2*4096))
     save(output, "image", image, "frequency", ν, "map", map.pixels, compress=true)
     if contains(target, "new")
         writehealpix(@sprintf("ovro-lwa-sky-map-%6.3fMHz-improved-resolution.fits", ν/1e6), map,
