@@ -33,6 +33,10 @@ function register(spw, name)
     @time dedistorted = dedistort(map, catalog, rotations)
     writehealpix(joinpath(path, "clean-map-registered.fits"), dedistorted, replace=true)
 
+    map = readhealpix(joinpath(path, "clean-map-residuals.fits"))
+    @time dedistorted = dedistort(map, catalog, rotations)
+    writehealpix(joinpath(path, "clean-map-registered-residuals.fits"), dedistorted, replace=true)
+
     #function line(start, finish)
     #    scale = 50
     #    x = ustrip.([longitude(start), longitude(finish)])

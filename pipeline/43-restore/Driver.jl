@@ -6,6 +6,7 @@ using ProgressMeter
 using StaticArrays
 
 include("../lib/Common.jl");   using .Common
+include("../lib/Cleaning.jl"); using .Cleaning
 
 function restore(spw, name)
     path = getdir(spw, name)
@@ -28,6 +29,7 @@ function restore(spw, name)
 
     restored_alm = residual_alm + degraded_alm
     restored_map = alm2map(restored_alm, 2048)
+    writehealpix(joinpath(path, "clean-map-residuals.fits"), restored_map, replace=true)
 
     restore!(restored_map, components, pixels, peak, major, minor, angle)
     writehealpix(joinpath(path, "clean-map.fits"), restored_map, replace=true)

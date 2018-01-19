@@ -65,6 +65,11 @@ function check_flux_scale(spw, name)
 
     writehealpix(joinpath(path, "clean-map-kelvin.fits"), map, replace=true)
 
+    map = readhealpix(joinpath(path, "clean-map-registered-residuals.fits"))
+    map .*= factor
+    map ./= 2 # flux scale fix
+    writehealpix(joinpath(path, "clean-map-kelvin-residuals.fits"), map, replace=true)
+
     pixels, peak
 end
 
