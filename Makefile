@@ -1,5 +1,5 @@
 
-SPW  = 18
+SPW  = 17
 NAME = rainy
 
 DIRECTORY = workspace/spw$(SPW)/$(NAME)
@@ -35,11 +35,13 @@ ROUTINE_TIKHONOV  = $(wildcard pipeline/32-tikhonov/*)
 
 .PHONY: all peel
 
-all:    $(DIRTYALM)
-subrfi: $(SUBRFI2)
-fitrfi: $(FITRFI2)
-peel:   $(PEELED)
-test:   $(FLAGGED_CALIBRATED)
+all:       $(DIRTYALM)
+subrfi:    $(SUBRFI2)
+fitrfi:    $(FITRFI2)
+peel:      $(PEELED)
+calibrate: $(CALIBRATED)
+raw:       $(RAW)
+test:      $(FLAGGED_CALIBRATED)
 
 $(RAW): $(ROUTINE_GETDATA)
 	cd pipeline/00-getdata; ./go.jl $(SPW) $(NAME)

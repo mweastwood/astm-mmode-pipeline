@@ -20,7 +20,7 @@ function transfermatrix(spw, name)
         beam(coeff, threshold, azimuth, elevation)
     end
 
-    path = joinpath(path, "transfermatrix")
+    path = joinpath(path, "transfer-matrix")
     transfermatrix = BPJSpec.HierarchicalTransferMatrix(path, bpjspec_metadata)
     BPJSpec.compute!(transfermatrix, beam_model, lmax=200)
 end

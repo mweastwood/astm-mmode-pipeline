@@ -10,6 +10,11 @@ include("../lib/DADA2MS.jl"); using .DADA2MS
 
 function getdata(spw, name)
     dadas = listdadas(spw, name)
+    getdata(spw, 1:109, name)
+end
+
+function getdata_some_channels(spw, name)
+    dadas = listdadas(spw, name)
     getdata(spw, 53:57, name)
 end
 
