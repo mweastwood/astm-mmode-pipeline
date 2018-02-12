@@ -32,7 +32,7 @@ end
 function getdir(spw, dataset)
     dir = joinpath(getdir(spw), dataset)
     isdir(dir) || mkpath(dir)
-    dir
+    normpath(dir)
 end
 
 """

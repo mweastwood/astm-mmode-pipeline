@@ -21,7 +21,7 @@ function fisher(spw, name)
     end
 
     file = joinpath(path, "fisher-matrix")
-    fishermatrix = BPJSpec.FisherMatrix(transfermatrix, covariancematrices)
+    fishermatrix = BPJSpec.fisher(transfermatrix, covariancematrices)
 end
 
 end
