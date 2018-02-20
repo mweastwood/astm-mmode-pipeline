@@ -95,7 +95,7 @@ FOREGROUND_COVARIANCE_MATRIX = $(DIRECTORY)/covariance-matrix-fiducial-foregroun
 SIGNAL_COVARIANCE_MATRIX     = $(DIRECTORY)/covariance-matrix-fiducial-signal/METADATA.jld2
 FOREGROUND_FILTERED          = $(DIRECTORY)/transfer-matrix-final/METADATA.jld2
 BASIS_COVARIANCE_MATRICES    = $(DIRECTORY)/basis-covariance-matrices/001-001/METADATA.jld2
-#FISHER_MATRIX                = $(DIRECTORY)/
+FISHER_MATRIX                = $(DIRECTORY)/fisher-matrix.jld2
 
 ROUTINE_AVERAGE_TRANSFER_MATRIX      = $(wildcard pipeline/101-average-transfer-matrix/*)
 ROUTINE_NOISE_COVARIANCE_MATRIX      = $(wildcard pipeline/102-noise-covariance-matrix/*)
@@ -104,10 +104,12 @@ ROUTINE_FOREGROUND_COVARIANCE_MATRIX = $(wildcard pipeline/200-foreground-covari
 ROUTINE_SIGNAL_COVARIANCE_MATRIX     = $(wildcard pipeline/201-signal-covariance-matrix/*)
 ROUTINE_FOREGROUND_FILTER            = $(wildcard pipeline/202-foreground-filter/*)
 ROUTINE_BASIS_COVARIANCE_MATRICES    = $(wildcard pipeline/300-basis-covariance-matrices/*)
-#ROUTINE_FISHER_MATRIX                = $(wildcard pipeline/301-fisher-matrix/*)
+ROUTINE_FISHER_MATRIX                = $(wildcard pipeline/301-fisher-matrix/*)
 
 ps: power-spectrum
-power-spectrum: $(FOREGROUND_FILTERED)
+power-spectrum: fisher-matrix
+foreground-filtered: $(FOREGROUND_FILTERED)
+fisher-matrix: $(FISHER_MATRIX)
 
 $(AVERAGED_TRANSFER_MATRIX): $(ROUTINE_AVERAGE_TRANSFER_MATRIX)
 	cd pipeline/101-average-transfer-matrix; ./go.jl $(SPW) $(NAME)
@@ -130,4 +132,7 @@ $(FOREGROUND_FILTERED): $(ROUTINE_FOREGROUND_FILTER) $(COMPRESSED_TRANSFER_MATRI
 
 $(BASIS_COVARIANCE_MATRICES): $(ROUTINE_BASIS_COVARIANCE_MATRICES) $(AVERAGED_TRANSFER_MATRIX)
 	cd pipeline/300-basis-covariance-matrices; ./go.jl $(SPW) $(NAME)
+
+$(FISHER_MATRIX): $(ROUTINE_FISHER_MATRIX) $(BASIS_COVARIANCE_MATRICES) $(FOREGROUND_FILTERED)
+	cd pipeline/301-fisher-matrix; ./go.jl $(SPW) $(NAME)
 

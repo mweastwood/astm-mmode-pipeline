@@ -23,7 +23,8 @@ function fisher(spw, name)
         push!(basis, basismatrix)
     end
 
-    BPJSpec.fisher(transfermatrix, covariancematrix, basis, iterations=100)
+    F = BPJSpec.fisher(transfermatrix, covariancematrix, basis, iterations=100)
+    save(joinpath(path, "fisher-matrix.jld2"), "matrix", F)
 end
 
 end
