@@ -3,6 +3,14 @@ SPW  = 17
 NAME = rainy
 
 DIRECTORY = workspace/spw$(SPW)/$(NAME)
+
+.PHONY: all peel
+all: power-spectrum
+
+###########
+# Imaging #
+###########
+
 RAW        = $(DIRECTORY)/raw-visibilities.jld2
 TRANSPOSED = $(DIRECTORY)/transposed-raw-visibilities.jld2
 FLAGGED    = $(DIRECTORY)/flagged-visibilities.jld2
@@ -33,9 +41,6 @@ ROUTINE_FOLD      = $(wildcard pipeline/30-fold/*)
 ROUTINE_GETMMODES = $(wildcard pipeline/31-getmmodes/*)
 ROUTINE_TIKHONOV  = $(wildcard pipeline/32-tikhonov/*)
 
-.PHONY: all peel
-
-all:       $(DIRTYALM)
 subrfi:    $(SUBRFI2)
 fitrfi:    $(FITRFI2)
 peel:      $(PEELED)
@@ -78,4 +83,33 @@ $(MMODES): $(ROUTINE_GETMMODES) $(FOLDED)
 
 $(DIRTYALM): $(ROUTINE_TIKHONOV) $(MMODES)
 	cd pipeline/32-tikhonov; ./go.jl $(SPW) $(NAME)
+
+##################
+# Power Spectrum #
+##################
+
+AVERAGED_TRANSFER_MATRIX     = $(DIRECTORY)/transfer-matrix-averaged/METADATA.jld2
+FIDUCIAL_COVARIANCE_MATRICES = $(DIRECTORY)/covariance-matrix-noise/METADATA.jld2
+COMPRESSED_TRANSFER_MATRIX   = $(DIRECTORY)/transfer-matrix-compressed/METADATA.jld2
+FOREGROUND_FILTERED          = $(DIRECTORY)/transfer-matrix-final/METADATA.jld2
+
+ROUTINE_AVERAGE_TRANSFER_MATRIX      = $(wildcard pipeline/xx-average-transfer-matrix/*)
+ROUTINE_FIDUCIAL_COVARIANCE_MATRICES = $(wildcard pipeline/xx-fiducial-covariance-matrices/*)
+ROUTINE_COMPRESS_TRANSFER_MATRIX     = $(wildcard pipeline/xx-compress-transfer-matrix/*)
+ROUTINE_FOREGROUND_FILTER            = $(wildcard pipeline/xx-foreground-filter/*)
+
+ps: power-spectrum
+power-spectrum: $(FOREGROUND_FILTERED)
+
+$(AVERAGED_TRANSFER_MATRIX): $(ROUTINE_AVERAGE_TRANSFER_MATRIX)
+	cd pipeline/xx-average-transfer-matrix; ./go.jl $(SPW) $(NAME)
+
+$(FIDUCIAL_COVARIANCE_MATRICES): $(ROUTINE_FIDUCIAL_COVARIANCE_MATRICES) $(AVERAGED_TRANSFER_MATRIX)
+	cd pipeline/xx-fiducial-covariance-matrices; ./go.jl $(SPW) $(NAME)
+
+$(COMPRESSED_TRANSFER_MATRIX): $(ROUTINE_COMPRESS_TRANSFER_MATRIX) $(FIDUCIAL_COVARIANCE_MATRICES)
+	cd pipeline/xx-compress-transfer-matrix; ./go.jl $(SPW) $(NAME)
+
+$(FOREGROUND_FILTERED): $(ROUTINE_FOREGROUND_FILTER) $(COMPRESSED_TRANSFER_MATRIX)
+	cd pipeline/xx-foreground-filter; ./go.jl $(SPW) $(NAME)
 

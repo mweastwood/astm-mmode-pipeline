@@ -9,19 +9,21 @@ function fisher(spw, name)
     path  = getdir(spw, name)
     path′ = joinpath(path, "basis-covariance-matrices")
 
-    file = joinpath(path, "transfer-matrix-averaged")
-    transfermatrix = BPJSpec.SpectralBlockDiagonalMatrix(file)
+    file = joinpath(path, "transfer-matrix-final")
+    transfermatrix = DenseBlockDiagonalMatrix(file)
+
+    file = joinpath(path, "covariance-matrix-final")
+    covariancematrix = DenseBlockDiagonalMatrix(file)
 
     model = load(joinpath(path′, "FIDUCIAL.jld2"), "model")
-    covariancematrices = BPJSpec.AngularCovarianceMatrix[]
+    basis = BPJSpec.AngularCovarianceMatrix[]
     for j = 1:length(model.kperp), i = 1:length(model.kpara)
         file = joinpath(path′, @sprintf("%03d-%03d", i, j))
-        covariancematrix = BPJSpec.AngularCovarianceMatrix(file)
-        push!(covariancematrices, covariancematrix)
+        basismatrix = AngularCovarianceMatrix(file)
+        push!(basis, basismatrix)
     end
 
-    file = joinpath(path, "fisher-matrix")
-    fishermatrix = BPJSpec.fisher(transfermatrix, covariancematrices)
+    BPJSpec.fisher(transfermatrix, covariancematrix, basis, iterations=100)
 end
 
 end
