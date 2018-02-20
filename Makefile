@@ -103,8 +103,8 @@ ROUTINE_COMPRESS_TRANSFER_MATRIX     = $(wildcard pipeline/103-compress-transfer
 ROUTINE_FOREGROUND_COVARIANCE_MATRIX = $(wildcard pipeline/200-foreground-covariance-matrix/*)
 ROUTINE_SIGNAL_COVARIANCE_MATRIX     = $(wildcard pipeline/201-signal-covariance-matrix/*)
 ROUTINE_FOREGROUND_FILTER            = $(wildcard pipeline/202-foreground-filter/*)
-ROUTINE_BASIS_COVARIANCE_MATRICES    = $(wildcard pipeline/301-basis-covariance-matrices/*)
-#ROUTINE_FISHER_MATRIX                = $(wildcard pipeline/302-fisher-matrix/*)
+ROUTINE_BASIS_COVARIANCE_MATRICES    = $(wildcard pipeline/300-basis-covariance-matrices/*)
+#ROUTINE_FISHER_MATRIX                = $(wildcard pipeline/301-fisher-matrix/*)
 
 ps: power-spectrum
 power-spectrum: $(FOREGROUND_FILTERED)
@@ -129,5 +129,5 @@ $(FOREGROUND_FILTERED): $(ROUTINE_FOREGROUND_FILTER) $(COMPRESSED_TRANSFER_MATRI
 	cd pipeline/202-foreground-filter; ./go.jl $(SPW) $(NAME)
 
 $(BASIS_COVARIANCE_MATRICES): $(ROUTINE_BASIS_COVARIANCE_MATRICES) $(AVERAGED_TRANSFER_MATRIX)
-	cd pipeline/301-basis-covariance-matrices; ./go.jl $(SPW) $(NAME)
+	cd pipeline/300-basis-covariance-matrices; ./go.jl $(SPW) $(NAME)
 
