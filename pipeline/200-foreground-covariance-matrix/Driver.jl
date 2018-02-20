@@ -16,13 +16,6 @@ function covariances(spw, name)
     bandwidth   = transfermatrix′.bandwidth
     hierarchy   = transfermatrix.hierarchy
 
-    # This is nominally representative of the rainy day dataset
-    #noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 7756)
-    # This is nominally representative of some fiducial long integration
-    noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 30*6628)
-    noise = NoiseCovarianceMatrix(joinpath(path, "covariance-matrix-noise"),
-                                  mmax, frequencies, bandwidth, hierarchy, noisemodel)
-
     points   = AngularCovarianceMatrix(joinpath(path, "covariance-matrix-point-sources"),
                                        lmax, frequencies, bandwidth,
                                        BPJSpec.extragalactic_point_sources(),
@@ -38,11 +31,6 @@ function covariances(spw, name)
     for l = 0:lmax
         foregrounds[l, 0] = points[l, 0] + galactic[l, 0]
     end
-
-    signal   = AngularCovarianceMatrix(joinpath(path, "covariance-matrix-fiducial-signal"),
-                                       lmax, frequencies, bandwidth,
-                                       BPJSpec.fiducial_signal_model(),
-                                       progressbar=true)
 end
 
 end

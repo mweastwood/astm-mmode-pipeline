@@ -89,27 +89,45 @@ $(DIRTYALM): $(ROUTINE_TIKHONOV) $(MMODES)
 ##################
 
 AVERAGED_TRANSFER_MATRIX     = $(DIRECTORY)/transfer-matrix-averaged/METADATA.jld2
-FIDUCIAL_COVARIANCE_MATRICES = $(DIRECTORY)/covariance-matrix-noise/METADATA.jld2
+NOISE_COVARIANCE_MATRIX      = $(DIRECTORY)/covariance-matrix-noise/METADATA.jld2
 COMPRESSED_TRANSFER_MATRIX   = $(DIRECTORY)/transfer-matrix-compressed/METADATA.jld2
+FOREGROUND_COVARIANCE_MATRIX = $(DIRECTORY)/covariance-matrix-fiducial-foregrounds/METADATA.jld2
+SIGNAL_COVARIANCE_MATRIX     = $(DIRECTORY)/covariance-matrix-fiducial-signal/METADATA.jld2
 FOREGROUND_FILTERED          = $(DIRECTORY)/transfer-matrix-final/METADATA.jld2
+BASIS_COVARIANCE_MATRICES    = $(DIRECTORY)/basis-covariance-matrices/001-001/METADATA.jld2
+#FISHER_MATRIX                = $(DIRECTORY)/
 
-ROUTINE_AVERAGE_TRANSFER_MATRIX      = $(wildcard pipeline/xx-average-transfer-matrix/*)
-ROUTINE_FIDUCIAL_COVARIANCE_MATRICES = $(wildcard pipeline/xx-fiducial-covariance-matrices/*)
-ROUTINE_COMPRESS_TRANSFER_MATRIX     = $(wildcard pipeline/xx-compress-transfer-matrix/*)
-ROUTINE_FOREGROUND_FILTER            = $(wildcard pipeline/xx-foreground-filter/*)
+ROUTINE_AVERAGE_TRANSFER_MATRIX      = $(wildcard pipeline/101-average-transfer-matrix/*)
+ROUTINE_NOISE_COVARIANCE_MATRIX      = $(wildcard pipeline/102-noise-covariance-matrix/*)
+ROUTINE_COMPRESS_TRANSFER_MATRIX     = $(wildcard pipeline/103-compress-transfer-matrix/*)
+ROUTINE_FOREGROUND_COVARIANCE_MATRIX = $(wildcard pipeline/200-foreground-covariance-matrix/*)
+ROUTINE_SIGNAL_COVARIANCE_MATRIX     = $(wildcard pipeline/201-signal-covariance-matrix/*)
+ROUTINE_FOREGROUND_FILTER            = $(wildcard pipeline/202-foreground-filter/*)
+ROUTINE_BASIS_COVARIANCE_MATRICES    = $(wildcard pipeline/301-basis-covariance-matrices/*)
+#ROUTINE_FISHER_MATRIX                = $(wildcard pipeline/302-fisher-matrix/*)
 
 ps: power-spectrum
 power-spectrum: $(FOREGROUND_FILTERED)
 
 $(AVERAGED_TRANSFER_MATRIX): $(ROUTINE_AVERAGE_TRANSFER_MATRIX)
-	cd pipeline/xx-average-transfer-matrix; ./go.jl $(SPW) $(NAME)
+	cd pipeline/101-average-transfer-matrix; ./go.jl $(SPW) $(NAME)
 
-$(FIDUCIAL_COVARIANCE_MATRICES): $(ROUTINE_FIDUCIAL_COVARIANCE_MATRICES) $(AVERAGED_TRANSFER_MATRIX)
-	cd pipeline/xx-fiducial-covariance-matrices; ./go.jl $(SPW) $(NAME)
+$(NOISE_COVARIANCE_MATRIX): $(ROUTINE_NOISE_COVARIANCE_MATRIX) $(AVERAGED_TRANSFER_MATRIX)
+	cd pipeline/102-noise-covariance-matrix; ./go.jl $(SPW) $(NAME)
 
-$(COMPRESSED_TRANSFER_MATRIX): $(ROUTINE_COMPRESS_TRANSFER_MATRIX) $(FIDUCIAL_COVARIANCE_MATRICES)
-	cd pipeline/xx-compress-transfer-matrix; ./go.jl $(SPW) $(NAME)
+$(COMPRESSED_TRANSFER_MATRIX): $(ROUTINE_COMPRESS_TRANSFER_MATRIX) $(NOISE_COVARIANCE_MATRIX)
+	cd pipeline/103-compress-transfer-matrix; ./go.jl $(SPW) $(NAME)
 
-$(FOREGROUND_FILTERED): $(ROUTINE_FOREGROUND_FILTER) $(COMPRESSED_TRANSFER_MATRIX)
-	cd pipeline/xx-foreground-filter; ./go.jl $(SPW) $(NAME)
+$(FOREGROUND_COVARIANCE_MATRIX): $(ROUTINE_FOREGROUND_COVARIANCE_MATRIX) $(AVERAGED_TRANSFER_MATRIX)
+	cd pipeline/200-foreground-covariance-matrix; ./go.jl $(SPW) $(NAME)
+
+$(SIGNAL_COVARIANCE_MATRIX): $(ROUTINE_SIGNAL_COVARIANCE_MATRIX) $(AVERAGED_TRANSFER_MATRIX)
+	cd pipeline/201-signal-covariance-matrix; ./go.jl $(SPW) $(NAME)
+
+$(FOREGROUND_FILTERED): $(ROUTINE_FOREGROUND_FILTER) $(COMPRESSED_TRANSFER_MATRIX) \
+					    $(FOREGROUND_COVARIANCE_MATRIX) $(SIGNAL_COVARIANCE_MATRIX)
+	cd pipeline/202-foreground-filter; ./go.jl $(SPW) $(NAME)
+
+$(BASIS_COVARIANCE_MATRICES): $(ROUTINE_BASIS_COVARIANCE_MATRICES) $(AVERAGED_TRANSFER_MATRIX)
+	cd pipeline/301-basis-covariance-matrices; ./go.jl $(SPW) $(NAME)
 

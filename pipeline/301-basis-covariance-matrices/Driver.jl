@@ -13,7 +13,7 @@ function covariance(spw, name)
     isdir(path′) || mkdir(path′)
     model = fiducial()
 
-    transfermatrix = TransferMatrix(joinpath(path, "transfer-matrix-compressed"))
+    transfermatrix = TransferMatrix(joinpath(path, "transfer-matrix-averaged"))
     lmax        = transfermatrix.mmax
     frequencies = transfermatrix.frequencies
     bandwidth   = transfermatrix.bandwidth
