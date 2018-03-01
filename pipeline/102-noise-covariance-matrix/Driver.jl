@@ -17,9 +17,7 @@ function covariances(spw, name)
     hierarchy   = transfermatrix.hierarchy
 
     # This is nominally representative of the rainy day dataset
-    #noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 7756)
-    # This is nominally representative of some fiducial long integration
-    noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 30*6628, 2.441u"str")
+    noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 7756, 2.441u"sr")
     noise = NoiseCovarianceMatrix(joinpath(path, "covariance-matrix-noise"),
                                   mmax, frequencies, bandwidth, hierarchy, noisemodel)
 end
