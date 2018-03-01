@@ -2,6 +2,7 @@ module Driver
 
 using BPJSpec
 using CasaCore.Measures
+using Cubature
 using FileIO, JLD2
 using TTCal
 
@@ -24,6 +25,9 @@ function transfermatrix(spw, name; simulation="")
     function beam_model(azimuth, elevation)
         beam(coeff, threshold, azimuth, elevation)
     end
+
+    Ω, err = hcubature(x -> beam_model(x[1], x[2])*cos(x[2]), [0, 0], [2π, π/2])
+    @show Ω
 
     if simulation != ""
         path = joinpath(path, "transfer-matrix-"*simulation)

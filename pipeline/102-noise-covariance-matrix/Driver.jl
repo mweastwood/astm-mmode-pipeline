@@ -19,7 +19,7 @@ function covariances(spw, name)
     # This is nominally representative of the rainy day dataset
     #noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 7756)
     # This is nominally representative of some fiducial long integration
-    noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 30*6628)
+    noisemodel = BPJSpec.NoiseModel(2000u"K", 13u"s", 30*6628, 2.441u"str")
     noise = NoiseCovarianceMatrix(joinpath(path, "covariance-matrix-noise"),
                                   mmax, frequencies, bandwidth, hierarchy, noisemodel)
 end
