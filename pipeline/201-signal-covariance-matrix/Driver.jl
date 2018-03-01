@@ -16,10 +16,21 @@ function covariances(spw, name)
     bandwidth   = transfermatrix′.bandwidth
     hierarchy   = transfermatrix.hierarchy
 
-    signal   = AngularCovarianceMatrix(joinpath(path, "covariance-matrix-fiducial-signal"),
-                                       lmax, frequencies, bandwidth,
-                                       BPJSpec.fiducial_signal_model(),
-                                       progressbar=true)
+    signal = AngularCovarianceMatrix(joinpath(path, "covariance-matrix-fiducial-signal"),
+                                     lmax, frequencies, bandwidth,
+                                     fiducial_signal_model(),
+                                     progressbar=true)
+end
+
+function fiducial_signal_model()
+    kpara = logspace(log10(0.01), log10(1.0), 200) .* u"Mpc^-1"
+    kperp = logspace(log10(0.01), log10(1.0), 200) .* u"Mpc^-1"
+    unshift!(kpara, 0u"Mpc^-1")
+    unshift!(kperp, 0u"Mpc^-1")
+    k = sqrt.(kpara.^2 .+ kperp.'.^2)
+    Δ21 = min.(40 .* (k./(0.03u"Mpc^-1")).^2, 400) .* u"mK^2"
+    P21 = Δ21 .* 2π^2 ./ (k+0.05u"Mpc^-1").^3
+    BPJSpec.SignalModel((10., 30.), kpara, kperp, P21)
 end
 
 end
