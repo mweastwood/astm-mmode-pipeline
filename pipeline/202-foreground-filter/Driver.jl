@@ -20,7 +20,8 @@ function foreground_filter(spw, name)
     file = joinpath(path, "covariance-matrix-fiducial-signal")
     signalmatrix = AngularCovarianceMatrix(file)
 
-    BPJSpec.kltransforms(transfermatrix, noisematrix, foregroundmatrix, signalmatrix)
+    BPJSpec.kltransforms(transfermatrix, noisematrix, foregroundmatrix, signalmatrix;
+                         threshold=0.1)
 end
 
 end

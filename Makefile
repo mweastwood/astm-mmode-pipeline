@@ -4,7 +4,7 @@ NAME = rainy
 
 DIRECTORY = workspace/spw$(SPW)/$(NAME)
 
-.PHONY: all peel
+.PHONY: all
 all: power-spectrum
 
 ###########
@@ -41,6 +41,7 @@ ROUTINE_FOLD      = $(wildcard pipeline/030-fold/*)
 ROUTINE_GETMMODES = $(wildcard pipeline/031-getmmodes/*)
 ROUTINE_TIKHONOV  = $(wildcard pipeline/032-tikhonov/*)
 
+.PHONY: subrfi fitrfi peel calibrate raw test
 subrfi:    $(SUBRFI2)
 fitrfi:    $(FITRFI2)
 peel:      $(PEELED)
@@ -94,8 +95,9 @@ COMPRESSED_TRANSFER_MATRIX   = $(DIRECTORY)/transfer-matrix-compressed/METADATA.
 FOREGROUND_COVARIANCE_MATRIX = $(DIRECTORY)/covariance-matrix-fiducial-foregrounds/METADATA.jld2
 SIGNAL_COVARIANCE_MATRIX     = $(DIRECTORY)/covariance-matrix-fiducial-signal/METADATA.jld2
 FOREGROUND_FILTERED          = $(DIRECTORY)/transfer-matrix-final/METADATA.jld2
-BASIS_COVARIANCE_MATRICES    = $(DIRECTORY)/basis-covariance-matrices/001-001/METADATA.jld2
+BASIS_COVARIANCE_MATRICES    = $(DIRECTORY)/basis-covariance-matrices/FIDUCIAL.jld2
 FISHER_MATRIX                = $(DIRECTORY)/fisher-matrix.jld2
+QUADRATIC_ESTIMATOR          = $(DIRECTORY)/quadratic-estimator.jld2
 
 ROUTINE_AVERAGE_TRANSFER_MATRIX      = $(wildcard pipeline/101-average-transfer-matrix/*)
 ROUTINE_NOISE_COVARIANCE_MATRIX      = $(wildcard pipeline/102-noise-covariance-matrix/*)
@@ -105,11 +107,14 @@ ROUTINE_SIGNAL_COVARIANCE_MATRIX     = $(wildcard pipeline/201-signal-covariance
 ROUTINE_FOREGROUND_FILTER            = $(wildcard pipeline/202-foreground-filter/*)
 ROUTINE_BASIS_COVARIANCE_MATRICES    = $(wildcard pipeline/300-basis-covariance-matrices/*)
 ROUTINE_FISHER_MATRIX                = $(wildcard pipeline/301-fisher-matrix/*)
+ROUTINE_QUADRATIC_ESTIMATOR          = $(wildcard pipeline/302-quadratic-estimator/*)
 
+.PHONY: ps power-spectrum foreground-filtered fisher-matrix quadratic-estimator
 ps: power-spectrum
-power-spectrum: fisher-matrix
+power-spectrum: quadratic-estimator
 foreground-filtered: $(FOREGROUND_FILTERED)
 fisher-matrix: $(FISHER_MATRIX)
+quadratic-estimator: $(QUADRATIC_ESTIMATOR)
 
 $(AVERAGED_TRANSFER_MATRIX): $(ROUTINE_AVERAGE_TRANSFER_MATRIX)
 	cd pipeline/101-average-transfer-matrix; ./go.jl $(SPW) $(NAME)
@@ -135,4 +140,7 @@ $(BASIS_COVARIANCE_MATRICES): $(ROUTINE_BASIS_COVARIANCE_MATRICES) $(AVERAGED_TR
 
 $(FISHER_MATRIX): $(ROUTINE_FISHER_MATRIX) $(BASIS_COVARIANCE_MATRICES) $(FOREGROUND_FILTERED)
 	cd pipeline/301-fisher-matrix; ./go.jl $(SPW) $(NAME)
+
+$(QUADRATIC_ESTIMATOR): $(ROUTINE_QUADRATIC_ESTIMATOR) $(FISHER_MATRIX)
+	cd pipeline/302-quadratic-estimator; ./go.jl $(SPW) $(NAME)
 

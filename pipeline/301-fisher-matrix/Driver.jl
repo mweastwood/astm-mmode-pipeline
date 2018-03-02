@@ -17,14 +17,14 @@ function fisher(spw, name)
 
     model = load(joinpath(path′, "FIDUCIAL.jld2"), "model")
     basis = BPJSpec.AngularCovarianceMatrix[]
-    for j = 1:length(model.kperp), i = 1:length(model.kpara)
-        file = joinpath(path′, @sprintf("%03d-%03d", i, j))
+    for idx = 1:length(model.power)
+        file = joinpath(path′, @sprintf("%03d", idx))
         basismatrix = AngularCovarianceMatrix(file)
         push!(basis, basismatrix)
     end
 
-    F = BPJSpec.fisher(transfermatrix, covariancematrix, basis, iterations=100)
-    save(joinpath(path, "fisher-matrix.jld2"), "matrix", F)
+    F = BPJSpec.fisher_information(transfermatrix, covariancematrix, basis, iterations=100)
+    save(joinpath(path, "fisher-matrix.jld2"), "matrix", F, "model", model)
 end
 
 end

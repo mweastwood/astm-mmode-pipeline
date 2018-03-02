@@ -30,7 +30,7 @@ function fiducial_signal_model()
     k = sqrt.(kpara.^2 .+ kperp.'.^2)
     Δ21 = min.(40 .* (k./(0.03u"Mpc^-1")).^2, 400) .* u"mK^2"
     P21 = Δ21 .* 2π^2 ./ (k+0.05u"Mpc^-1").^3
-    BPJSpec.SignalModel((10., 30.), kpara, kperp, P21)
+    BPJSpec.CylindricalPS((10., 30.), kpara, kperp, P21)
 end
 
 end
