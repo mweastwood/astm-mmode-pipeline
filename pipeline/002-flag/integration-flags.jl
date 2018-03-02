@@ -15,7 +15,7 @@ function apply_integration_flags!(data, flags, threshold; windowed=false)
     flags
 end
 
-using PyPlot
+#using PyPlot
 
 function threshold_flag(data, threshold, windowed)
     x = 1:length(data)

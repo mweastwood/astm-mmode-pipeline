@@ -11,9 +11,10 @@ include("../lib/Common.jl"); using .Common
 function calibrate(spw, name)
     beam  = getbeam(spw, name)
     sky   = readsky(joinpath(Common.workspace, "source-lists", "calibration-sky-model.json"))
-    range = 1600:1700
+    #range = 1600:1700
+    range = 1640:1660
     dataset, calibration = solve_for_the_calibration(spw, name, beam, sky, range)
-    TTCal.slice!(dataset, 50, axis=:time)
+    TTCal.slice!(dataset, cld(length(range), 2), axis=:time)
     image(spw, name, 1650, dataset, joinpath(getdir(spw, name), "calibrated-image"))
     apply_the_calibration(spw, name, calibration)
 end
@@ -139,6 +140,7 @@ beam_coeff = Dict( 4 => [ 0.538556463745644,     -0.46866163121041965,   -0.0290
                   18 => [ 0.5494343726261235,    -0.4422544222256613,    -0.010377387323544141,
                          -0.020193950880921727,  -0.03933368453654855,    0.03569618734453113,
                          -0.020645215922528007,  -0.0007547051500611155, -0.02480903125367872])
+beam_coeff[17] = 0.5 .* (beam_coeff[16] .+ beam_coeff[18])
 
 end
 
