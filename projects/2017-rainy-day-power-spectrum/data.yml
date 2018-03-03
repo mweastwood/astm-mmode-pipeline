@@ -1,0 +1,9 @@
+
+dada2ms:
+    utmzone: 11
+    antfile: /opt/astro/dada2ms/share/dada2ms/ant_positions_NAD83_fiber_mapping1.txt
+    polswap: swapped-polarizations-rainy
+
+subbands:
+    17: all
+
