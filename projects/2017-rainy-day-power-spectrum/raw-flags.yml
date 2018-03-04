@@ -1,3 +1,5 @@
+input: raw-visibilities
+output: flagged-visibilities
 baseline-flag-threshold: 15
 integration-flag-threshold: 15
 integration-variance-flag-threshold: 0
@@ -61,7 +63,7 @@ a-priori-antenna-flags:
     - 254 # LEDA
     - 255 # LEDA
     - 256 # LEDA
-a-priori-baselines:
+a-priori-baseline-flags:
     - 1&2
     - 1&3
     - 2&3

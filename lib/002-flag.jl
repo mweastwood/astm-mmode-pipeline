@@ -4,6 +4,9 @@ using FileIO, JLD2
 using ProgressMeter
 using TTCal
 using Dierckx
+using Unitful # for ustrip
+using YAML
+#using PyPlot
 
 include("Project.jl")
 
@@ -18,6 +21,13 @@ struct Config
 end
 
 function load(file)
+    dict = YAML.load(open(file))
+    do_the_splits(s) = (s′ = split(s, "&"); (parse(Int, s′[1]), parse(Int, s′[2])))
+    a_priori_antenna_flags  = dict["a-priori-antenna-flags"]
+    a_priori_baseline_flags = do_the_splits.(dict["a-priori-baseline-flags"])
+    Config(dict["input"], dict["output"], a_priori_antenna_flags, a_priori_baseline_flags,
+           dict["baseline-flag-threshold"], dict["integration-flag-threshold"],
+           dict["integration-variance-flag-threshold"])
 end
 
 struct Flags
@@ -36,12 +46,12 @@ function go(project_file, config_file)
     project = Project.load(project_file)
     config  = load(config_file)
     flag(project, config)
-    Project.touch(project, "flags")
+    Project.touch(project, config.output)
 end
 
 function flag(project, config)
     local flags
-    jldopen(joinpath(Project.workspace(project), config.input), "r") do file
+    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do file
         metadata = file["metadata"]
         flags = Flags(metadata)
         a_priori_flags!(flags, config, metadata)
@@ -66,9 +76,9 @@ end
 
 function output(project, flags, input, output)
     path = Project.workspace(project)
-    jldopen(joinpath(path, input), "r") do input_file
+    jldopen(joinpath(path, input*".jld2"), "r") do input_file
         metadata = input_file["metadata"]
-        jldopen(joinpath(path, output), "w") do output_file
+        jldopen(joinpath(path, output*".jld2"), "w") do output_file
             prg = Progress(Ntime(metadata))
             for time = 1:Ntime(metadata)
                 raw_data = input_file[o6d(time)]
@@ -81,6 +91,8 @@ function output(project, flags, input, output)
         end
     end
 end
+
+o6d(i) = @sprintf("%06d", i)
 
 ####################################################################################################
 
