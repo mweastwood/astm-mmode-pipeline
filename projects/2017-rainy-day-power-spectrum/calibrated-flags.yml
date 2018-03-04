@@ -1,0 +1,4 @@
+baseline-flag-threshold: 10
+integration-flag-threshold: 10
+integration-variance-flag-threshold: 5
+

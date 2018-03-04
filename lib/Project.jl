@@ -33,6 +33,7 @@ lib() = @__DIR__
 bin() = normpath(lib(), "..", "bin")
 
 function touch(metadata, filename)
+    isdir(metadata.hidden) || mkpath(metadata.hidden)
     Base.touch(joinpath(metadata.hidden, filename))
 end
 
