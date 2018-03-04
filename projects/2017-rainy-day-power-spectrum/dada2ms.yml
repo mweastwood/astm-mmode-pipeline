@@ -1,0 +1,6 @@
+utmzone: 11
+antfile: /opt/astro/dada2ms/share/dada2ms/ant_positions_NAD83_fiber_mapping1.txt
+polswap: swap-polarizations-rainy
+datadir: /lustre/data/2017-02-17_24hour_run
+prefix:  2017-02-11-02:36:59
+

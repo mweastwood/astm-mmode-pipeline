@@ -4,67 +4,96 @@ using CasaCore.Tables
 using JLD2
 using ProgressMeter
 using TTCal
+using YAML
 
-#include("../lib/Common.jl");  using .Common
-#include("../lib/DADA2MS.jl"); using .DADA2MS
+include("Project.jl")
+include("DADA2MS.jl")
 
-function go(metadata_file, config_file)
-    @show pwd()
-    @show metadata_file config_file
-    @show workers()
-
+struct Config
+    subbands :: Dict{Int, Vector{Int}}
 end
 
-#function getdata(spw, channels, name)
-#    dadas = listdadas(spw, name)
-#    Ntime = length(dadas)
-#    Nfreq = length(channels)
-#
-#    pool  = CachingPool(workers())
-#    queue = collect(1:Ntime)
-#
-#    lck = ReentrantLock()
-#    prg = Progress(length(queue))
-#    increment() = (lock(lck); next!(prg); unlock(lck))
-#
-#    jldopen(joinpath(getdir(spw, name), "raw-visibilities.jld2"), "w") do file
-#        metadata_list = Vector{TTCal.Metadata}(Ntime)
-#        @sync for worker in workers()
-#            @async while length(queue) > 0
-#                index = pop!(queue)
-#                data, metadata = remotecall_fetch(run_dada2ms, pool,
-#                                                  name, dadas[index], channels)
-#                file[@sprintf("%06d", index)] = data
-#                metadata_list[index] = metadata
-#                increment()
-#            end
-#        end
-#        master_metadata = metadata_list[1]
-#        for metadata in metadata_list[2:end]
-#            TTCal.merge!(master_metadata, metadata, axis=:time)
-#        end
-#        file["metadata"] = master_metadata
-#    end
-#    nothing
-#end
-#
-#function run_dada2ms(name, dada, channels)
-#    local data, metadata
-#    try
-#        ms = dada2ms(dada, name)
-#        raw_data = ms["DATA"] :: Array{Complex64, 3}
-#        metadata = TTCal.Metadata(ms)
-#        TTCal.slice!(metadata, channels, axis=:frequency)
-#        keep = [true; false; false; true]
-#        data = raw_data[keep, channels, :]
-#        Tables.delete(ms)
-#    catch exception
-#        println(dada)
-#        println(exception)
-#        rethrow(exception)
-#    end
-#    data, metadata
-#end
+function load(file)
+    dict = YAML.load(open(file))
+    subbands = Dict{Int, Vector{Int}}()
+    for (key, value) in dict["subbands"]
+        subband = key
+        if value == "all"
+            subbands[subband] = collect(1:109)
+        elseif value isa Int
+            subbands[subband] = [value]
+        else
+            subbands[subband] = value
+        end
+    end
+    Config(subbands)
+end
+
+function go(project_file, dada2ms_file, config_file)
+    project = Project.load(project_file)
+    dada2ms = DADA2MS.load(dada2ms_file)
+    config  = load(config_file)
+    getdata(project, dada2ms, config)
+    Project.touch(project, "raw-data")
+end
+
+function getdata(project, dada2ms, config)
+    # load the list of files for each subband
+    for subband in keys(config.subbands)
+        DADA2MS.load!(dada2ms, subband)
+    end
+
+    Ntime = DADA2MS.number(dada2ms)
+    queue = collect(1:Ntime)
+    pool  = CachingPool(workers())
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
+
+    jldopen(joinpath(Project.workspace(project), "raw-visibilities.jld2"), "w") do file
+        metadata_list = Vector{TTCal.Metadata}(Ntime)
+        @sync for worker in workers()
+            @async while length(queue) > 0
+                index = shift!(queue)
+                data, metadata = remotecall_fetch(_getdata, pool, dada2ms, config, index)
+                file[o6d(index)] = data
+                metadata_list[index] = metadata
+                increment()
+            end
+        end
+        master_metadata = metadata_list[1]
+        for metadata in metadata_list[2:end]
+            TTCal.merge!(master_metadata, metadata, axis=:time)
+        end
+        file["metadata"] = master_metadata
+    end
+    nothing
+end
+
+o6d(i) = @sprintf("%06d", i)
+
+function _getdata(dada2ms, config, index)
+    subbands = sort(collect(keys(config.subbands)))
+    data, metadata = run_dada2ms(dada2ms, config, first(subbands), index)
+    for subband in subbands[2:end]
+        _data, _metadata = run_dada2ms(dada2ms, config, subband, index)
+        data = cat(2, data, _data)
+        TTCal.merge!(metadata, _metadata, axis=:frequency)
+    end
+    data, metadata
+end
+
+function run_dada2ms(dada2ms, config, subband, index)
+    keep = [true; false; false; true]
+    channels = config.subbands[subband]
+    ms = DADA2MS.run(dada2ms, subband, index)
+    raw_data = ms["DATA"] :: Array{Complex64, 3}
+    metadata = TTCal.Metadata(ms)
+    TTCal.slice!(metadata, channels, axis=:frequency)
+    data = raw_data[keep, channels, :]
+    Tables.delete(ms)
+    data, metadata
+end
 
 end
 

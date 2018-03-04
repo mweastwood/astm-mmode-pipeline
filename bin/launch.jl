@@ -12,24 +12,19 @@ function parse_commandline()
         "--remote-workers"
             help = "the number of remote workers to launch"
             arg_type = Int
-        "--driver"
+        "driver"
             help = "path to a Julia file that defines `Driver.go(...)`"
             arg_type = String
             required = true
-        "--metadata"
-            help = "path to a project metadata.yml file"
-            arg_type = String
-            required = true
-        "--config"
-            help = "path to a configuration file for the routine we are launching"
-            arg_type = String
+        "args"
+            help = "any remaining arguments will be passed to `Driver.go(...)`"
+            nargs = '*'
     end
     return parse_args(s)
 end
 args = parse_commandline()
 
-info("Loading code")
-lib  = joinpath(@__DIR__, "..", "lib")
+lib  = normpath(joinpath(@__DIR__, "..", "lib"))
 path = joinpath(lib, args["driver"])
 include(path)
 
@@ -46,10 +41,11 @@ if args["remote-workers"] !== nothing
     addprocs([(machine, N) for machine in machines], exeflags=`-L $path`)
 end
 
-info("Launching driver")
-if args["config"] === nothing
-    Driver.go(args["metadata"])
-else
-    Driver.go(args["metadata"], args["config"])
+if args["local-workers"] !== nothing || args["remote-workers"] !== nothing
+    @sync for worker in workers()
+        @async remotecall_wait(include, worker, path)
+    end
 end
+
+Driver.go(args["args"]...)
 

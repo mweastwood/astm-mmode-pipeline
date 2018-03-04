@@ -4,8 +4,8 @@ BIN=../../bin
 LIB=../../lib
 LAUNCH=$(BIN)/launch.jl
 
-.pipeline/data: data.yml metadata.yml
-	$(LAUNCH) --local-workers 2 --driver 000-getdata.jl --metadata metadata.yml --config data.yml
+.pipeline/raw-data: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
+	$(LAUNCH) --local-workers 8 000-getdata.jl project.yml dada2ms.yml raw-data.yml
 
 
 
