@@ -1,0 +1,4 @@
+input: flagged-calibrated-visibilities
+output: folded-visibilities
+integrations-per-day: 6628
+

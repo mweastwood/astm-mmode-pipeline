@@ -24,8 +24,7 @@ function parse_commandline()
 end
 args = parse_commandline()
 
-lib  = normpath(joinpath(@__DIR__, "..", "lib"))
-path = joinpath(lib, args["driver"])
+path = abspath(normpath(args["driver"]))
 include(path)
 
 if args["local-workers"] !== nothing
