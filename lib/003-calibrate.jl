@@ -8,6 +8,7 @@ using Unitful
 using YAML
 
 include("Project.jl")
+include("WSClean.jl")
 
 struct Config
     input  :: String
@@ -46,7 +47,9 @@ function calibrate(project, config)
     dataset, calibration = solve_for_the_calibration(project, config)
 
     # solve for the calibration
-    #applycal!(measured, calibration)
+    applycal!(dataset, calibration)
+    wsclean = WSClean.Config("natural", 0, 1)
+    WSClean.run(wsclean, dataset, "test")
 
 
 
@@ -92,7 +95,9 @@ function pack!(dataset, array, index)
         α = 1
         for antenna1 = 1:Nant(dataset), antenna2 = antenna1:Nant(dataset)
             J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
-            visibilities[antenna1, antenna2] = J
+            if J.xx != 0 && J.yy != 0
+                visibilities[antenna1, antenna2] = J
+            end
             α += 1
         end
     end
