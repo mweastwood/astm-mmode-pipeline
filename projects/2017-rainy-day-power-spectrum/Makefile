@@ -15,7 +15,7 @@ all: .pipeline/calibrated-visibilities
 
 .pipeline/calibrated-visibilities: $(LIB)/003-calibrate.jl project.yml calibrated-data.yml \
 		.pipeline/flagged-visibilities
-	$(LAUNCH) --local-workers 8 003-calibrate.jl project.yml calibrated-data.yml
+	$(LAUNCH) --local-workers 8 003-calibrate.jl project.yml wsclean.yml calibrated-data.yml
 
 .pipeline/flagged-calibrated-visibilities: $(LIB)/002-flag.jl project.yml raw-flags.yml \
 		.pipeline/calibrated-visibilities

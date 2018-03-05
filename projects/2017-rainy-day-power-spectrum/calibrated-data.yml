@@ -1,8 +1,10 @@
 input: flagged-visibilities
 output: calibrated-visibilities
 sky-model: calibration-sky-model.json
+test-image: calibration
 integrations: 1640:1660
 maxiter: 50
 tolerance: 1e-3
 minuvw: 15.0
+delete-input: false
 

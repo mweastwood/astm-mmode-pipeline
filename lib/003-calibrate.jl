@@ -8,16 +8,19 @@ using Unitful
 using YAML
 
 include("Project.jl")
+include("Datasets.jl")
 include("WSClean.jl")
 
 struct Config
     input  :: String
     output :: String
-    skymodel  :: String
+    skymodel :: String
+    test_image :: String
     integrations :: Vector{Int}
     maxiter   :: Int
     tolerance :: Float64
     minuvw    :: Float64
+    delete_input :: Bool
 end
 
 function load(file)
@@ -32,30 +35,26 @@ function load(file)
         integrations = dict["integrations"]
     end
     Config(dict["input"], dict["output"],
-           joinpath(dirname(file), dict["sky-model"]), integrations,
-           dict["maxiter"], dict["tolerance"], dict["minuvw"])
+           joinpath(dirname(file), dict["sky-model"]), dict["test-image"],
+           integrations, dict["maxiter"], dict["tolerance"], dict["minuvw"],
+           dict["delete-input"])
 end
 
-function go(project_file, config_file)
+function go(project_file, wsclean_file, config_file)
     project = Project.load(project_file)
+    wsclean = WSClean.load(wsclean_file)
     config  = load(config_file)
-    calibrate(project, config)
+    calibrate(project, wsclean, config)
+    if config.delete_input
+        rm(joinpath(Project.workspace(project), config.input*".jld2"))
+    end
     Project.touch(project, config.output)
 end
 
-function calibrate(project, config)
+function calibrate(project, wsclean, config)
     dataset, calibration = solve_for_the_calibration(project, config)
-
-    # solve for the calibration
-    applycal!(dataset, calibration)
-    wsclean = WSClean.Config("natural", 0, 1)
-    WSClean.run(wsclean, dataset, "test")
-
-
-
-    #TTCal.slice!(dataset, cld(length(range), 2), axis=:time)
-    #image(spw, name, 1650, dataset, joinpath(getdir(spw, name), "calibrated-image"))
-    #apply_the_calibration(spw, name, calibration)
+    WSClean.run(wsclean, dataset, joinpath(Project.workspace(project), config.test_image))
+    apply_the_calibration(project, config, calibration)
 end
 
 function solve_for_the_calibration(project, config)
@@ -66,10 +65,8 @@ function solve_for_the_calibration(project, config)
     calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
                                   tolerance=config.tolerance, minuvw=config.minuvw,
                                   collapse_time=true)
+    applycal!(measured, calibration)
     measured, calibration
-end
-
-function image_the_calibration(project, config, dataset, calibration)
 end
 
 ####################################################################################################
@@ -107,39 +104,38 @@ o6d(i) = @sprintf("%06d", i)
 
 ####################################################################################################
 
-#function apply_the_calibration(spw, name, calibration)
-#    jldopen(joinpath(getdir(spw, name), "flagged-visibilities.jld2"), "r") do input_file
-#        metadata = input_file["metadata"]
-#
-#        pool  = CachingPool(workers())
-#        queue = collect(1:Ntime(metadata))
-#
-#        lck = ReentrantLock()
-#        prg = Progress(length(queue))
-#        increment() = (lock(lck); next!(prg); unlock(lck))
-#
-#        jldopen(joinpath(getdir(spw, name), "calibrated-visibilities.jld2"), "w") do output_file
-#            @sync for worker in workers()
-#                @async while length(queue) > 0
-#                    index = pop!(queue)
-#                    raw_data = input_file[o6d(index)]
-#                    calibrated_data = remotecall_fetch(do_the_work, pool, spw, name, raw_data,
-#                                                       metadata, index, calibration)
-#                    output_file[o6d(index)] = calibrated_data
-#                    increment()
-#                end
-#            end
-#            output_file["calibration"] = calibration
-#            output_file["metadata"] = metadata
-#        end
-#    end
-#end
-#
-#function do_the_work(spw, name, data, metadata, time, calibration)
-#    ttcal = array_to_ttcal(data, metadata, time)
-#    applycal!(ttcal, calibration)
-#    ttcal_to_array(ttcal)
-#end
+function apply_the_calibration(project, config, calibration)
+    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do input_file
+        metadata = input_file["metadata"]
+
+        pool  = CachingPool(workers())
+        queue = collect(1:Ntime(metadata))
+        lck = ReentrantLock()
+        prg = Progress(length(queue))
+        increment() = (lock(lck); next!(prg); unlock(lck))
+
+        jldopen(joinpath(Project.workspace(project), config.output*".jld2"), "w") do output_file
+            output_file["calibration"] = calibration
+            output_file["metadata"] = metadata
+            @sync for worker in workers()
+                @async while length(queue) > 0
+                    index = pop!(queue)
+                    raw_data = input_file[o6d(index)]
+                    calibrated_data = remotecall_fetch(do_the_work, pool, raw_data, metadata,
+                                                       index, calibration)
+                    output_file[o6d(index)] = calibrated_data
+                    increment()
+                end
+            end
+        end
+    end
+end
+
+function do_the_work(data, metadata, time, calibration)
+    dataset = Datasets.array_to_ttcal(data, metadata, time)
+    applycal!(dataset, calibration)
+    Datasets.ttcal_to_array(dataset)
+end
 
 ####################################################################################################
 
