@@ -23,8 +23,10 @@ end
 function load(file)
     dict = YAML.load(open(file))
     do_the_splits(s) = (s′ = split(s, "&"); (parse(Int, s′[1]), parse(Int, s′[2])))
-    a_priori_antenna_flags  = dict["a-priori-antenna-flags"]
-    a_priori_baseline_flags = do_the_splits.(dict["a-priori-baseline-flags"])
+    a_priori_antenna_flags  = get(dict, "a-priori-antenna-flags", Int[])
+    a_priori_baseline_flags = haskey(dict, "a-priori-baseline-flags") ?
+                                do_the_splits.(dict["a-priori-baseline-flags"]) :
+                                Tuple{Int, Int}[]
     Config(dict["input"], dict["output"], a_priori_antenna_flags, a_priori_baseline_flags,
            dict["baseline-flag-threshold"], dict["integration-flag-threshold"],
            dict["integration-variance-flag-threshold"])
