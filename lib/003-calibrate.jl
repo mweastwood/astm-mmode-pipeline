@@ -9,6 +9,7 @@ using YAML
 
 include("Project.jl")
 include("Datasets.jl")
+include("CreateMeasurementSet.jl")
 include("WSClean.jl")
 
 struct Config
@@ -52,8 +53,10 @@ function go(project_file, wsclean_file, config_file)
 end
 
 function calibrate(project, wsclean, config)
+    path = Project.workspace(project)
     dataset, calibration = solve_for_the_calibration(project, config)
-    WSClean.run(wsclean, dataset, joinpath(Project.workspace(project), config.test_image))
+    ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
+    WSClean.run(wsclean, ms, joinpath(path, config.test_image))
     apply_the_calibration(project, config, calibration)
 end
 
