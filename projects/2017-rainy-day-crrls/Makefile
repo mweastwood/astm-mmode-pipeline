@@ -18,7 +18,7 @@ all: .pipeline/folded-visibilities
 	$(LAUNCH) --local-workers 8 $(filter-out $<,$^)
 
 .pipeline/flagged-calibrated-visibilities: .pipeline/calibrated-visibilities \
-		$(LIB)/002-flag.jl project.yml raw-flags.yml
+		$(LIB)/002-flag.jl project.yml calibrated-flags.yml
 	$(LAUNCH) $(filter-out $<,$^)
 
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
