@@ -31,7 +31,7 @@ end
 
 function transfermatrix(project, config; simulation="")
     path = Project.workspace(project)
-    ttcal_metadata = load(joinpath(path, config.input*".jld2"), "metadata")
+    ttcal_metadata = FileIO.load(joinpath(path, config.input*".jld2"), "metadata")
     frame = ReferenceFrame(ttcal_metadata)
     ttcal_metadata.phase_centers[1] = measure(frame, ttcal_metadata.phase_centers[1], dir"ITRF")
     if simulation != ""

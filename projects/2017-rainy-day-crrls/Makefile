@@ -1,10 +1,12 @@
-.PHONY: all
+.PHONY: all raw transfer
 
 BIN=../../bin
 LIB=../../lib
 LAUNCH=$(BIN)/launch.jl
 
 all: .pipeline/folded-visibilities
+raw: .pipeline/raw-data
+transfer: .pipeline/transfer-matrix
 
 .pipeline/raw-data: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
 	$(LAUNCH) --local-workers 8 $^
@@ -24,4 +26,8 @@ all: .pipeline/folded-visibilities
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
 		$(LIB)/030-fold.jl project.yml folded-data.yml
 	$(LAUNCH) $(filter-out $<,$^)
+
+.pipeline/transfer-matrix: .pipeline/raw-data \
+		$(LIB)/100-transfer-matrix.jl project.yml transfer-matrix.yml
+	$(LAUNCH) --local-workers 8 $(filter-out $<,$^)
 
