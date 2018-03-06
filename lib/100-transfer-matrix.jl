@@ -5,12 +5,33 @@ using CasaCore.Measures
 using Cubature
 using FileIO, JLD2
 using TTCal
+using YAML
 
-include("../lib/Common.jl"); using .Common
+include("Project.jl")
 
-function transfermatrix(spw, name; simulation="")
-    path = getdir(spw, name)
-    ttcal_metadata = load(joinpath(path, "raw-visibilities.jld2"), "metadata")
+struct Config
+    input  :: String
+    output :: String
+    coeff  :: Vector{Float64}
+    lmax   :: Int
+end
+
+function load(file)
+    dict = YAML.load(open(file))
+    # TODO: allow lmax to be computed from the maximum baseline length
+    Config(dict["input"], dict["output"], dict["coeff"], dict["lmax"])
+end
+
+function go(project_file, config_file)
+    project = Project.load(project_file)
+    config  = load(config_file)
+    transfermatrix(project, config)
+    Project.touch(project, config.output)
+end
+
+function transfermatrix(project, config; simulation="")
+    path = Project.workspace(project)
+    ttcal_metadata = load(joinpath(path, config.input*".jld2"), "metadata")
     frame = ReferenceFrame(ttcal_metadata)
     ttcal_metadata.phase_centers[1] = measure(frame, ttcal_metadata.phase_centers[1], dir"ITRF")
     if simulation != ""
@@ -20,10 +41,9 @@ function transfermatrix(spw, name; simulation="")
     end
     bpjspec_metadata = BPJSpec.from_ttcal(ttcal_metadata)
 
-    coeff = load("/lustre/mweastwood/mmode-analysis/workspace/spw18/beam.jld", "I-coeff")
     threshold = deg2rad(10)
     function beam_model(azimuth, elevation)
-        beam(coeff, threshold, azimuth, elevation)
+        beam(config.coeff, threshold, azimuth, elevation)
     end
 
     Ω, err = hcubature(x -> beam_model(x[1], x[2])*cos(x[2]), [0, 0], [2π, π/2])
@@ -34,7 +54,8 @@ function transfermatrix(spw, name; simulation="")
     else
         path = joinpath(path, "transfer-matrix")
     end
-    transfermatrix = BPJSpec.HierarchicalTransferMatrix(path, bpjspec_metadata, lmax=200)
+    transfermatrix = BPJSpec.HierarchicalTransferMatrix(joinpath(path, config.output),
+                                                        bpjspec_metadata, lmax=config.lmax)
     BPJSpec.compute!(transfermatrix, beam_model)
 end
 
