@@ -14,7 +14,7 @@ all: .pipeline/folded-visibilities
 	$(LAUNCH) $(filter-out $<,$^)
 
 .pipeline/calibrated-visibilities: .pipeline/flagged-visibilities \
-		$(LIB)/003-calibrate.jl project.yml calibrated-data.yml
+		$(LIB)/003-calibrate.jl project.yml wsclean.yml calibrated-data.yml
 	$(LAUNCH) --local-workers 8 $(filter-out $<,$^)
 
 .pipeline/flagged-calibrated-visibilities: .pipeline/calibrated-visibilities \
