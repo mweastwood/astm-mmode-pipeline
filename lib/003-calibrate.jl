@@ -143,9 +143,13 @@ function getbeam(metadata)
     ν = mean(metadata.frequencies)
     νlist = sort(collect(keys(beam_coeff)))
     idx = searchsortedlast(νlist, ν)
-    w1 = uconvert(NoUnits, (νlist[idx+1]-ν)/(νlist[idx+1]-νlist[idx]))
-    w2 = 1 - w1
-    TTCal.ZernikeBeam(w1*beam_coeff[νlist[idx]] + w2*beam_coeff[νlist[idx+1]])
+    if idx == length(νlist)
+        return TTCal.ZernikeBeam(beam_coeff[νlist[idx]])
+    else
+        w1 = uconvert(NoUnits, (νlist[idx+1]-ν)/(νlist[idx+1]-νlist[idx]))
+        w2 = 1 - w1
+        return TTCal.ZernikeBeam(w1*beam_coeff[νlist[idx]] + w2*beam_coeff[νlist[idx+1]])
+    end
 end
 
 beam_coeff = Dict(36.528u"MHz" => [ 0.538556463745644,     -0.46866163121041965,
