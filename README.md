@@ -23,6 +23,6 @@ make
 | Name    | Documentation                                |
 |---------|----------------------------------------------|
 | TTCal   | http://mweastwood.info/TTCal.jl/             |
-| BPJSpec | http://mweastwood.info/TTCal.jl/             |
+| BPJSpec | http://mweastwood.info/BPJSpec.jl/latest/    |
 | DADA2MS | https://github.com/sabourke/dada2ms          |
 | WSClean | https://sourceforge.net/p/wsclean/wiki/Home/ |
