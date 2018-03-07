@@ -1,13 +1,14 @@
-.PHONY: all raw mmodes transfer
+.PHONY: all raw m-modes transfer-matrix
 
 BIN=../../bin
 LIB=../../lib
 LAUNCH=$(BIN)/launch.jl
 
-all: mmodes
+all: dirty-map
 raw: .pipeline/raw-data
-mmodes: .pipeline/m-modes
-transfer: .pipeline/transfer-matrix
+m-modes: .pipeline/m-modes
+dirty-map: .pipeline/dirty-map
+transfer-matrix: .pipeline/transfer-matrix
 
 .pipeline/raw-data: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
 	$(LAUNCH) --local-workers 8 $^
@@ -31,6 +32,10 @@ transfer: .pipeline/transfer-matrix
 .pipeline/m-modes: .pipeline/folded-visibilities \
 		$(LIB)/031-getmmodes.jl project.yml m-modes.yml
 	$(LAUNCH) $(filter-out $<,$^)
+
+.pipeline/dirty-map: .pipeline/m-modes .pipeline/transfer-matrix \
+		$(LIB)/032-tikhonov.jl project.yml tikhonov.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
 
 .pipeline/transfer-matrix: .pipeline/raw-data \
 		$(LIB)/100-transfer-matrix.jl project.yml transfer-matrix.yml
