@@ -49,11 +49,6 @@ function transfermatrix(project, config; simulation="")
     Ω, err = hcubature(x -> beam_model(x[1], x[2])*cos(x[2]), [0, 0], [2π, π/2])
     @show Ω
 
-    if simulation != ""
-        path = joinpath(path, "transfer-matrix-"*simulation)
-    else
-        path = joinpath(path, "transfer-matrix")
-    end
     transfermatrix = BPJSpec.HierarchicalTransferMatrix(joinpath(path, config.output),
                                                         bpjspec_metadata, lmax=config.lmax)
     BPJSpec.compute!(transfermatrix, beam_model)
