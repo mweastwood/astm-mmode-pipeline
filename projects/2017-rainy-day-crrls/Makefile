@@ -1,11 +1,12 @@
-.PHONY: all raw transfer
+.PHONY: all raw mmodes transfer
 
 BIN=../../bin
 LIB=../../lib
 LAUNCH=$(BIN)/launch.jl
 
-all: .pipeline/folded-visibilities
+all: mmodes
 raw: .pipeline/raw-data
+mmodes: .pipeline/m-modes
 transfer: .pipeline/transfer-matrix
 
 .pipeline/raw-data: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
@@ -25,6 +26,10 @@ transfer: .pipeline/transfer-matrix
 
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
 		$(LIB)/030-fold.jl project.yml folded-data.yml
+	$(LAUNCH) $(filter-out $<,$^)
+
+.pipeline/m-modes: .pipeline/folded-visibilities \
+		$(LIB)/031-getmmodes.jl project.yml m-modes.yml
 	$(LAUNCH) $(filter-out $<,$^)
 
 .pipeline/transfer-matrix: .pipeline/raw-data \
