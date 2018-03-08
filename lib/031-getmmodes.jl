@@ -1,6 +1,5 @@
 module Driver
 
-using JLD2
 using ProgressMeter
 using TTCal
 using BPJSpec
@@ -25,30 +24,37 @@ function go(project_file, config_file)
     config  = load(config_file)
     getmmodes(project, config)
     if config.delete_input
-        rm(joinpath(Project.workspace(project), config.input*".jld2"))
+        rm(joinpath(Project.workspace(project), config.input), recursive=true)
     end
     Project.touch(project, config.output)
 end
 
 function getmmodes(project, config)
     path = Project.workspace(project)
-    jldopen(joinpath(path, config.input*".jld2"), "r") do input_file
-        ttcal_metadata   = input_file["metadata"]
-        bpjspec_metadata = BPJSpec.from_ttcal(ttcal_metadata)
-        mmodes = MModes(joinpath(path, config.output), bpjspec_metadata, config.mmax)
-        prg = Progress(Nfreq(ttcal_metadata))
-        for index = 1:Nfreq(ttcal_metadata)
-            _getmmodes(mmodes, input_file[o6d(index)], index)
-            next!(prg)
+    input  = FBlockMatrix(joinpath(path, config.input))
+    output = MModes(MultipleFiles(joinpath(path, config.output)), config.mmax,
+                    BPJSpec.frequencies(input), BPJSpec.bandwidth(input))
+
+    queue = collect(1:length(BPJSpec.frequencies(input)))
+    pool  = CachingPool(workers())
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
+
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            frequency = shift!(queue)
+            remotecall_wait(_getmmodes, pool, input, output, frequency)
+            increment()
         end
     end
 end
 
-function _getmmodes(mmodes, array, index)
+function _getmmodes(input, output, frequency)
     # put time on the fast axis
-    transposed_array = permutedims(array, (2, 1))
+    transposed_array = permutedims(input[frequency], (2, 1))
     # compute the m-modes
-    BPJSpec.compute!(mmodes, transposed_array, mmodes.metadata.frequencies[index])
+    compute!(output, transposed_array, frequency)
 end
 
 o6d(i) = @sprintf("%06d", i)

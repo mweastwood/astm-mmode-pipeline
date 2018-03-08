@@ -32,7 +32,7 @@ transfer-matrix: .pipeline/transfer-matrix
 
 .pipeline/m-modes: .pipeline/folded-visibilities \
 		$(LIB)/031-getmmodes.jl project.yml m-modes.yml
-	$(LAUNCH) $(filter-out $<,$^)
+	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
 .pipeline/dirty-map: .pipeline/m-modes .pipeline/transfer-matrix \
 		$(LIB)/032-tikhonov.jl project.yml tikhonov.yml
