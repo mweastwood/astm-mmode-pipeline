@@ -32,8 +32,8 @@ end
 function tikhonov(project, config)
     path = Project.workspace(project)
     mmodes = MModes(joinpath(path, config.input))
-    transfermatrix = HierarchicalTransferMatrix(joinpath(path, config.transfermatrix))
-    alm = BPJSpec.tikhonov(transfermatrix, mmodes, config.regularization)
+    transfermatrix = TransferMatrix(joinpath(path, config.transfermatrix))
+    alm = BPJSpec.tikhonov(transfermatrix, mmodes, regularization=config.regularization)
     jldopen(joinpath(path, config.output_alm*".jld2"), "w") do file
         file["alm"] = alm
     end
