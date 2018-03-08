@@ -46,5 +46,6 @@ if args["local-workers"] !== nothing || args["remote-workers"] !== nothing
     end
 end
 
+info("Starting computation")
 Driver.go(args["args"]...)
 

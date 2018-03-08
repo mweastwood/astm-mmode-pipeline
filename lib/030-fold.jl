@@ -1,8 +1,10 @@
 module Driver
 
-using JLD2
+using FileIO, JLD2
 using ProgressMeter
 using TTCal
+using BPJSpec
+using Unitful
 using YAML
 
 include("Project.jl")
@@ -27,29 +29,40 @@ end
 
 function fold(project, config)
     path = Project.workspace(project)
-    jldopen(joinpath(path, config.input*".jld2"), "r") do input_file
-        metadata = input_file["metadata"]
-        jldopen(joinpath(path, config.output*".jld2"), "w") do output_file
-            output_file["metadata"] = metadata
-            for frequency = 1:Nfreq(metadata)
-                fold(input_file, output_file, metadata, frequency, config.integrations_per_day)
-            end
+    metadata = FileIO.load(joinpath(path, config.input*".jld2"), "metadata")
+
+    ν  = metadata.frequencies
+    Δν = fill(24u"kHz", length(ν))
+    output = FBlockMatrix(MultipleFiles(joinpath(path, config.output)), ν, Δν)
+
+    queue = collect(1:length(ν))
+    pool  = CachingPool(workers())
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
+
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            frequency = shift!(queue)
+            remotecall_wait(fold, pool, project, config, output,
+                            Nbase(metadata), Ntime(metadata), frequency)
+            increment()
         end
     end
 end
 
-function fold(input_file, output_file, metadata, frequency, integrations_per_day)
-    output  = zeros(Complex128, Nbase(metadata), integrations_per_day)
-    weights = zeros(       Int, Nbase(metadata), integrations_per_day)
-    prg = Progress(Ntime(metadata))
-    for time = 1:Ntime(metadata)
-        data = input_file[o6d(time)]
-        pack!(output, weights, data, frequency, time, integrations_per_day)
-        next!(prg)
+function fold(project, config, output_matrix, Nbase, Ntime, frequency)
+    output  = zeros(Complex128, Nbase, config.integrations_per_day)
+    weights = zeros(       Int, Nbase, config.integrations_per_day)
+    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do input_file
+        for time = 1:Ntime
+            data = input_file[o6d(time)]
+            pack!(output, weights, data, frequency, time, config.integrations_per_day)
+        end
     end
     output ./= weights
     output[isnan.(output)] = 0
-    output_file[o6d(frequency)] = output
+    output_matrix[frequency] = output
 end
 
 function pack!(output, weights, data, frequency, time, integrations_per_day)

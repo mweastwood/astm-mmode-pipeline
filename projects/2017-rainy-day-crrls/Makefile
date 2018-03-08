@@ -1,4 +1,4 @@
-.PHONY: all raw m-modes transfer-matrix
+.PHONY: all raw fold m-modes transfer-matrix
 
 BIN=../../bin
 LIB=../../lib
@@ -6,6 +6,7 @@ LAUNCH=$(BIN)/launch.jl
 
 all: dirty-map
 raw: .pipeline/raw-data
+fold: .pipeline/folded-visibilities
 m-modes: .pipeline/m-modes
 dirty-map: .pipeline/dirty-map
 transfer-matrix: .pipeline/transfer-matrix
@@ -27,7 +28,7 @@ transfer-matrix: .pipeline/transfer-matrix
 
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
 		$(LIB)/030-fold.jl project.yml folded-data.yml
-	$(LAUNCH) $(filter-out $<,$^)
+	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
 .pipeline/m-modes: .pipeline/folded-visibilities \
 		$(LIB)/031-getmmodes.jl project.yml m-modes.yml
@@ -39,5 +40,5 @@ transfer-matrix: .pipeline/transfer-matrix
 
 .pipeline/transfer-matrix: .pipeline/raw-data \
 		$(LIB)/100-transfer-matrix.jl project.yml transfer-matrix.yml
-	$(LAUNCH) --local-workers 8 $(filter-out $<,$^)
+	$(LAUNCH) --remote-workers 4 $(filter-out $<,$^)
 
