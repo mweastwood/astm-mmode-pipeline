@@ -23,8 +23,8 @@ function parse_commandline()
     return parse_args(s)
 end
 
-args = parse_commandline()
-path = abspath(normpath(args["driver"]))
+const args = parse_commandline()
+const path = abspath(normpath(args["driver"]))
 include(path)
 
 function main(args)
