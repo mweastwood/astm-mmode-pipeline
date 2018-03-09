@@ -1,6 +1,5 @@
 output: raw-visibilities
-output_times: times
-output_frequencies: frequencies
+output_metadata: metadata
 subbands:
     17: [36, 55, 75, 95]
     18: [5, 25, 46, 66, 87, 108]
