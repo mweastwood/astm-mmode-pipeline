@@ -1,15 +1,20 @@
 module Driver
 
 using CasaCore.Tables
+using CasaCore.Measures
 using JLD2
 using ProgressMeter
 using TTCal
+using BPJSpec
 using YAML
 
 include("Project.jl")
 include("DADA2MS.jl")
 
 struct Config
+    output :: String
+    output_times       :: String
+    output_frequencies :: String
     subbands :: Dict{Int, Vector{Int}}
 end
 
@@ -26,7 +31,8 @@ function load(file)
             subbands[subband] = value
         end
     end
-    Config(subbands)
+    Config(dict["output"], dict["output_times"],
+           dict["output_frequencies"], subbands)
 end
 
 function go(project_file, dada2ms_file, config_file)
@@ -34,10 +40,12 @@ function go(project_file, dada2ms_file, config_file)
     dada2ms = DADA2MS.load(dada2ms_file)
     config  = load(config_file)
     getdata(project, dada2ms, config)
-    Project.touch(project, "raw-data")
+    Project.touch(project, config.output)
 end
 
 function getdata(project, dada2ms, config)
+    path = Project.workspace(project)
+
     # load the list of files for each subband
     for subband in keys(config.subbands)
         DADA2MS.load!(dada2ms, subband)
@@ -50,29 +58,45 @@ function getdata(project, dada2ms, config)
     prg = Progress(length(queue))
     increment() = (lock(lck); next!(prg); unlock(lck))
 
-    jldopen(joinpath(Project.workspace(project), "raw-visibilities.jld2"), "w") do file
-        metadata_list = Vector{TTCal.Metadata}(Ntime)
-        @sync for worker in workers()
-            @async while length(queue) > 0
-                index = shift!(queue)
-                data, metadata = remotecall_fetch(_getdata, pool, dada2ms, config, index)
-                file[o6d(index)] = data
-                metadata_list[index] = metadata
-                increment()
-            end
+    Project.set_stripe_count(project, config.output, 1)
+    BlockMatrix = BPJSpec.BlockMatrix{Array{Complex64, 3}, 1} # block type
+    metadata    = BPJSpec.NoMetadata(Ntime)
+    output = BlockMatrix(MultipleFiles(joinpath(path, config.output)), metadata)
+    output_times = Vector{Epoch}(Ntime)
+
+    # The master process will personally do the first integration
+    index = shift!(queue)
+    data, metadata = internal_getdata(dada2ms, config, index)
+    output[index] = data
+    output_times[index] = metadata.times[1]
+    output_frequencies  = metadata.frequencies
+    increment()
+
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            index = shift!(queue)
+            time = remotecall_fetch(getdata!, pool, output, dada2ms, config, index)
+            increment()
         end
-        master_metadata = metadata_list[1]
-        for metadata in metadata_list[2:end]
-            TTCal.merge!(master_metadata, metadata, axis=:time)
-        end
-        file["metadata"] = master_metadata
     end
+
+    jldopen(joinpath(path, config.output_times), true, true, true, IOStream) do file
+        file["times"]  = times
+    end
+    jldopen(joinpath(path, config.output_frequencies), true, true, true, IOStream) do file
+        file["frequencies"]  = frequencies
+    end
+
     nothing
 end
 
-o6d(i) = @sprintf("%06d", i)
+function getdata!(output, dada2ms, config, index)
+    data, metadata = internal_getdata(dada2ms, config, index)
+    output[index] = data
+    metadata.times[1]
+end
 
-function _getdata(dada2ms, config, index)
+function internal_getdata(dada2ms, config, index)
     subbands = sort(collect(keys(config.subbands)))
     data, metadata = run_dada2ms(dada2ms, config, first(subbands), index)
     for subband in subbands[2:end]

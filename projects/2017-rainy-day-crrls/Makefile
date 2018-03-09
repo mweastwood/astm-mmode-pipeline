@@ -5,14 +5,14 @@ LIB=../../lib
 LAUNCH=$(BIN)/launch.jl
 
 all: dirty-map
-raw: .pipeline/raw-data
+raw: .pipeline/raw-visibilities
 fold: .pipeline/folded-visibilities
 m-modes: .pipeline/m-modes
 dirty-map: .pipeline/dirty-map
 transfer-matrix: .pipeline/transfer-matrix
 
-.pipeline/raw-data: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
-	$(LAUNCH) --local-workers 8 $^
+.pipeline/raw-visibilities: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
+	$(LAUNCH) --remote-workers 2 $^
 
 .pipeline/flagged-visibilities: .pipeline/raw-data \
 		$(LIB)/002-flag.jl project.yml raw-flags.yml
