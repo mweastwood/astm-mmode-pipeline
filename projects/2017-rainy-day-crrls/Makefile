@@ -19,15 +19,15 @@ dirty-map: .pipeline/dirty-map
 	$(LAUNCH) --remote-workers 2 $^
 
 .pipeline/flagged-visibilities: .pipeline/raw-visibilities \
-		$(LIB)/002-flag.jl project.yml raw-flags.yml
+		$(LIB)/001-flag.jl project.yml raw-flags.yml
 	$(LAUNCH) $(filter-out $<,$^)
 
 .pipeline/calibrated-visibilities: .pipeline/flagged-visibilities \
-		$(LIB)/003-calibrate.jl project.yml wsclean.yml calibrated-data.yml
+		$(LIB)/002-calibrate.jl project.yml wsclean.yml calibrated-data.yml
 	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
 .pipeline/flagged-calibrated-visibilities: .pipeline/calibrated-visibilities \
-		$(LIB)/002-flag.jl project.yml calibrated-flags.yml
+		$(LIB)/001-flag.jl project.yml calibrated-flags.yml
 	$(LAUNCH) $(filter-out $<,$^)
 
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
