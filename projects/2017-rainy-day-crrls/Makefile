@@ -1,20 +1,24 @@
-.PHONY: all raw fold m-modes transfer-matrix
+.PHONY: all raw calibrate fold m-modes transfer-matrix dirty-map
 
 BIN=../../bin
 LIB=../../lib
-LAUNCH=$(BIN)/launch.jl
+JULIA=julia-0.6 --color=yes
+LAUNCH=$(JULIA) $(BIN)/launch.jl
 
 all: dirty-map
 raw: .pipeline/raw-visibilities
+flag: .pipeline/flagged-visibilities
+
+calibrate: .pipeline/calibrated-visibilities
 fold: .pipeline/folded-visibilities
 m-modes: .pipeline/m-modes
-dirty-map: .pipeline/dirty-map
 transfer-matrix: .pipeline/transfer-matrix
+dirty-map: .pipeline/dirty-map
 
 .pipeline/raw-visibilities: $(LIB)/000-getdata.jl project.yml dada2ms.yml raw-data.yml
 	$(LAUNCH) --remote-workers 2 $^
 
-.pipeline/flagged-visibilities: .pipeline/raw-data \
+.pipeline/flagged-visibilities: .pipeline/raw-visibilities \
 		$(LIB)/002-flag.jl project.yml raw-flags.yml
 	$(LAUNCH) $(filter-out $<,$^)
 

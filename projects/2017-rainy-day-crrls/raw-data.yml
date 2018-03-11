@@ -3,5 +3,5 @@ output_metadata: metadata
 subbands:
     17: [36, 55, 75, 95]
     18: [5, 25, 46, 66, 87, 108]
-    19: 19
+    #19: 19 # this channel seems to be hit by terrible RFI in the second half of the day
 

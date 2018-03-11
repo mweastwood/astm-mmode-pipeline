@@ -73,9 +73,7 @@ function getdata(project, dada2ms, config)
     for _metadata in metadata[2:end]
         TTCal.merge!(master_metadata, _metadata, axis=:time)
     end
-    jldopen(joinpath(path, config.output_metadata), true, true, true, IOStream) do file
-        file["metadata"] = master_metadata
-    end
+    Project.save(project, config.output_metadata, "metadata", master_metadata)
 
     nothing
 end

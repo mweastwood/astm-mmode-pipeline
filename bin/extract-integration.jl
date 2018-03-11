@@ -3,6 +3,7 @@
 using ArgParse
 using JLD2
 
+include("../lib/Matrices.jl")
 include("../lib/Datasets.jl")
 include("../lib/CreateMeasurementSet.jl")
 
@@ -32,12 +33,18 @@ function main()
     input = args["input"]
     output = args["output"]
     integration = args["integration"]
-    jldopen(input, "r") do file
-        data = file[o6d(integration)]
-        metadata = file["metadata"]
-        dataset = Datasets.array_to_ttcal(data, metadata, integration)
-        CreateMeasurementSet.create(dataset, output)
+
+    visibilities = Matrices.Visibilities(input)
+    data = visibilities[integration]
+
+    metadata_path = joinpath(dirname(input), "metadata.jld2")
+    metadata = jldopen(metadata_path, false, false, false, IOStream) do file
+        file["metadata"]
     end
+
+    dataset = Datasets.array_to_ttcal(data, metadata, integration)
+    CreateMeasurementSet.create(dataset, output)
+
     println("Try imaging the measurement set with:")
     name = joinpath(dirname(output), "test")
     println("\$ wsclean -size 2048 2048 -scale 0.0625 -weight uniform -name $name $output")

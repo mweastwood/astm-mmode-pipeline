@@ -5,6 +5,7 @@ This module includes functions for working with OVRO-LWA datasets on the ASTM.
 """
 module Project
 
+using JLD2
 using YAML
 
 struct ProjectMetadata
@@ -41,6 +42,18 @@ function set_stripe_count(project, directory, N)
     path = joinpath(workspace(project), directory)
     isdir(path) || mkpath(path)
     run(`lfs setstripe -c $N $path`)
+end
+
+function load(project, filename, objectname)
+    jldopen(joinpath(workspace(project), filename*".jld2"), false, false, false, IOStream) do file
+        return file[objectname]
+    end
+end
+
+function save(project, filename, objectname, object)
+    jldopen(joinpath(workspace(project), filename*".jld2"), true, true, true, IOStream) do file
+        file[objectname] = object
+    end
 end
 
 #baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)

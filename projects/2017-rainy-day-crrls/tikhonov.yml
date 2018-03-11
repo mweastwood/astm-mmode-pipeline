@@ -2,6 +2,6 @@ input: m-modes
 output-alm: dirty-alm
 output-map: dirty-map
 transfer-matrix: transfer-matrix
-regularization: 0.01
+regularization: 1000
 nside: 512
 

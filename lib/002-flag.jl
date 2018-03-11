@@ -6,18 +6,22 @@ using TTCal
 using Dierckx
 using Unitful # for ustrip
 using YAML
+using UnicodePlots
 #using PyPlot
 
 include("Project.jl")
+include("Matrices.jl")
 
 struct Config
     input  :: String
     output :: String
+    output_accumulated :: String
+    metadata :: String
+    special_baselines :: Vector{Int}
     a_priori_antenna_flags  :: Vector{Int}
     a_priori_baseline_flags :: Vector{Tuple{Int, Int}}
     baseline_flag_threshold    :: Int
     integration_flag_threshold :: Int
-    integration_variance_flag_threshold :: Int
 end
 
 function load(file)
@@ -27,9 +31,9 @@ function load(file)
     a_priori_baseline_flags = haskey(dict, "a-priori-baseline-flags") ?
                                 do_the_splits.(dict["a-priori-baseline-flags"]) :
                                 Tuple{Int, Int}[]
-    Config(dict["input"], dict["output"], a_priori_antenna_flags, a_priori_baseline_flags,
-           dict["baseline-flag-threshold"], dict["integration-flag-threshold"],
-           dict["integration-variance-flag-threshold"])
+    Config(dict["input"], dict["output"], dict["output-accumulated"], dict["metadata"],
+           dict["special-baselines"], a_priori_antenna_flags, a_priori_baseline_flags,
+           dict["baseline-flag-threshold"], dict["integration-flag-threshold"])
 end
 
 struct Flags
@@ -53,48 +57,39 @@ end
 
 function flag(project, config)
     local flags
-    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do file
-        metadata = file["metadata"]
-        flags = Flags(metadata)
-        a_priori_flags!(flags, config, metadata)
+    path = Project.workspace(project)
+    metadata = Project.load(project, config.metadata, "metadata")
+    input  = Matrices.Visibilities(joinpath(path, config.input))
+    output = Matrices.Visibilities(joinpath(path, config.output), Ntime(metadata))
 
-        data = accumulate_frequency(file, metadata, flags)
-        if config.baseline_flag_threshold > 0
-            apply_baseline_flags!(data, flags, metadata, config.baseline_flag_threshold)
-        end
-        if config.integration_flag_threshold > 0
-            apply_integration_flags!(data, flags, config.integration_flag_threshold, windowed=true)
-        end
+    flags = Flags(metadata)
+    a_priori_flags!(flags, config, metadata)
 
-        if config.integration_variance_flag_threshold > 0
-            data = accumulate_frequency(file, metadata, flags)
-            apply_integration_flags!(data, flags, config.integration_variance_flag_threshold,
-                                     windowed=false)
-        end
+    data = accumulate_frequency(input, metadata, flags)
+    Project.save(project, config.output_accumulated, "data", data)
+    #data = Project.load(project, config.output_accumulated, "data")
+
+    if config.baseline_flag_threshold > 0
+        apply_baseline_flags!(data, flags, metadata, config.baseline_flag_threshold)
     end
-    output(project, flags, config.input, config.output)
+    if config.integration_flag_threshold > 0
+        apply_integration_flags!(data, flags, config.integration_flag_threshold,
+                                 config.special_baselines, windowed=true)
+    end
+
+    write_output(project, flags, input, output, metadata)
     flags
 end
 
-function output(project, flags, input, output)
-    path = Project.workspace(project)
-    jldopen(joinpath(path, input*".jld2"), "r") do input_file
-        metadata = input_file["metadata"]
-        jldopen(joinpath(path, output*".jld2"), "w") do output_file
-            prg = Progress(Ntime(metadata))
-            for time = 1:Ntime(metadata)
-                raw_data = input_file[o6d(time)]
-                apply!(raw_data, flags, time)
-                output_file[o6d(time)] = raw_data
-                next!(prg)
-            end
-            output_file["metadata"] = metadata
-            output_file["flags"] = flags
-        end
+function write_output(project, flags, input, output, metadata)
+    prg = Progress(Ntime(metadata))
+    for time = 1:Ntime(metadata)
+        raw_data = input[time]
+        apply!(raw_data, flags, time)
+        output[time] = raw_data
+        next!(prg)
     end
 end
-
-o6d(i) = @sprintf("%06d", i)
 
 ####################################################################################################
 
@@ -112,19 +107,19 @@ function apply!(data, flags, time)
     end
 end
 
-function apply_to_transpose!(data, flags, frequency)
-    Npol, Nbase, Ntime = size(data)
-    for α = 1:Nbase
-        if flags.baseline_flags[α] || flags.channel_flags[α, frequency]
-            data[:, α, :] = 0
-        end
-        for time = 1:Ntime
-            if flags.integration_flags[α, time]
-                data[:, α, time] = 0
-            end
-        end
-    end
-end
+#function apply_to_transpose!(data, flags, frequency)
+#    Npol, Nbase, Ntime = size(data)
+#    for α = 1:Nbase
+#        if flags.baseline_flags[α] || flags.channel_flags[α, frequency]
+#            data[:, α, :] = 0
+#        end
+#        for time = 1:Ntime
+#            if flags.integration_flags[α, time]
+#                data[:, α, time] = 0
+#            end
+#        end
+#    end
+#end
 
 ####################################################################################################
 
@@ -146,33 +141,17 @@ end
 #    output
 #end
 
-function accumulate_frequency(file, metadata, flags)
+function accumulate_frequency(visibilities, metadata, flags)
     output = zeros(Complex128, Nbase(metadata), Ntime(metadata))
     count  = zeros(       Int, Nbase(metadata), Ntime(metadata))
     prg = Progress(Ntime(metadata))
     for time = 1:Ntime(metadata)
-        data = file[o6d(time)]
+        data = visibilities[time]
         apply!(data, flags, time)
         @views output[:, time] .+= squeeze(sum(data[1, :, :], 1), 1)
         @views output[:, time] .+= squeeze(sum(data[2, :, :], 1), 1)
         @views count[:, time]  .+= squeeze(sum(data[1, :, :] .!= 0, 1), 1)
         @views count[:, time]  .+= squeeze(sum(data[2, :, :] .!= 0, 1), 1)
-        next!(prg)
-    end
-    count[count .== 0] .= 1
-    output ./= count
-    output
-end
-
-function accumulate_frequency_variance(file, metadata, flags)
-    output = zeros(Complex128, Nbase(metadata), Ntime(metadata))
-    count  = zeros(       Int, Nbase(metadata), Ntime(metadata))
-    prg = Progress(Ntime(metadata))
-    for time = 1:Ntime(metadata)
-        data = file[o6d(time)]
-        apply!(data, flags, time)
-        @views output[:, time] .+= squeeze(std(data, (1, 2)), (1, 2))
-        @views count[:, time]  .+= squeeze(sum(data .!= 0, (1, 2)), (1, 2))
         next!(prg)
     end
     count[count .== 0] .= 1
@@ -203,27 +182,30 @@ function apply_baseline_flags!(data, flags, metadata, threshold)
     b = ustrip.([norm(metadata.positions[ant1] - metadata.positions[ant2])
                  for ant1 = 1:Nant(metadata) for ant2 = ant1:Nant(metadata)])
 
-    #figure(1); clf()
-    #of = copy(f)
-    #f = flags.baseline_flags
-    #plot(b, y, "k.")
+    original_y = copy(y)
+    original_flags = y .== 0
 
     Nbase = length(y)
-    prg = Progress(Nbase)
     for α = 1:Nbase
         flags.baseline_flags[α] |= flag_this_baseline(b, y, α, threshold)
-        next!(prg)
     end
 
-    #plot(b[f], y[f], "r.")
-    #plot(b[of], y[of], "b.")
+    final_flags = y .== 0
+    new_flags = final_flags .& .!original_flags
+
+    plt = scatterplot(b[.!final_flags], y[.!final_flags], width=100, name="unflagged")
+    scatterplot!(plt, b[new_flags], original_y[new_flags], name="new flags")
+    title!(plt, "Baseline Flags")
+    xlabel!(plt, "Baseline Length / m")
+    println(plt)
 
     flags
 end
 
 function flag_this_baseline(b, y, α, threshold)
     y[α] == 0 && return false
-    me = y[α]
+    me   = y[α]
+    me_b = b[α]
 
     # select baselines within 10% of this current baseline
     w = b[α]*0.9 .< b .< b[α]*1.1
@@ -240,34 +222,24 @@ function flag_this_baseline(b, y, α, threshold)
     σ = median(abs.(δ))
     flag = me .> m + threshold*σ
 
-    #figure(1); clf()
-    #plot(b, y, "k.")
-    #axhline(m+10σ)
-
     flag
 end
 
 ####################################################################################################
 
-function apply_integration_flags!(data, flags, threshold; windowed=false)
+function apply_integration_flags!(data, flags, threshold, special_baselines; windowed=false)
     Nbase, Ntime = size(data)
-    # Problem integrations to check by hand:
-    # * 30741 - the longest baseline
-    # * 19520 - problematic baseline at integration 763
-    # * 314 - erroneously flagged at integration 2000 (when using unwindowed median)
-    # * 4228
-    prg = Progress(Nbase)
     for α = 1:Nbase
         time_series = data[α, :]
         if !all(time_series .== 0)
-            flags.integration_flags[α, :] = threshold_flag(time_series, threshold, windowed)
+            flags.integration_flags[α, :] = threshold_flag(time_series, threshold, windowed,
+                                                           special_baselines, α)
         end
-        next!(prg)
     end
     flags
 end
 
-function threshold_flag(data, threshold, windowed)
+function threshold_flag(data, threshold, windowed, special_baselines, α)
     x = 1:length(data)
     y = abs.(data)
     f = y .== 0
@@ -290,10 +262,13 @@ function threshold_flag(data, threshold, windowed)
     deviation = abs.(y .- z)
     flags = deviation .> threshold .* mad
 
-    #figure(1); clf()
-    #plot(x, y, "k-")
-    #plot(x, z, "b-")
-    #plot(x, z+threshold*mad, "r-")
+    if α in special_baselines
+        plt = scatterplot(x[.!flags], y[.!flags], width=100, name="unflagged")
+        scatterplot!(plt, x[flags], y[flags], name="flagged")
+        title!(plt, @sprintf("Baseline %d", α))
+        xlabel!(plt, "Integration / #")
+        println(plt)
+    end
 
     flags
 end
