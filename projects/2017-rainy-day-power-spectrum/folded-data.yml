@@ -1,4 +1,5 @@
 input: flagged-calibrated-visibilities
 output: folded-visibilities
+metadata: metadata
 integrations-per-day: 6628
 

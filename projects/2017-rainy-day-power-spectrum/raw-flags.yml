@@ -1,8 +1,15 @@
 input: raw-visibilities
 output: flagged-visibilities
+output-accumulated: accumulated-raw-visibilities
+metadata: metadata
+bits: 64
 baseline-flag-threshold: 15
 integration-flag-threshold: 15
-integration-variance-flag-threshold: 0
+special-baselines: # these baselines will be plotted
+    - 314 # erroneously flagged at integration 2000 (when using unwindowed median)
+    - 4228
+    - 19520 # problematic at integration 763
+    - 30741 # longest baseline
 a-priori-antenna-flags:
     - 1 # spikes
     - 10 # time-series of B is shitty

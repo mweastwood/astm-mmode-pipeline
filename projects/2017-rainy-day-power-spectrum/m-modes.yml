@@ -1,0 +1,5 @@
+input: folded-visibilities
+output: m-modes
+mmax: 200
+delete_input: false
+
