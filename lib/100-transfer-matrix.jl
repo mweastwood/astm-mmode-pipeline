@@ -10,7 +10,7 @@ using YAML
 include("Project.jl")
 
 struct Config
-    input  :: String
+    metadata :: String
     output :: String
     coeff  :: Vector{Float64}
     lmax   :: Int
@@ -19,7 +19,7 @@ end
 function load(file)
     dict = YAML.load(open(file))
     # TODO: allow lmax to be computed from the maximum baseline length
-    Config(dict["input"], dict["output"], dict["coeff"], dict["lmax"])
+    Config(dict["metadata"], dict["output"], dict["coeff"], dict["lmax"])
 end
 
 function go(project_file, config_file)
@@ -31,7 +31,7 @@ end
 
 function transfermatrix(project, config; simulation="")
     path = Project.workspace(project)
-    ttcal_metadata = FileIO.load(joinpath(path, config.input*".jld2"), "metadata")
+    ttcal_metadata = Project.load(project, config.metadata, "metadata")
     frame = ReferenceFrame(ttcal_metadata)
     ttcal_metadata.phase_centers[1] = measure(frame, ttcal_metadata.phase_centers[1], dir"ITRF")
     if simulation != ""

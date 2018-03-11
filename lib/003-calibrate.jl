@@ -8,13 +8,17 @@ using Unitful
 using YAML
 
 include("Project.jl")
-include("Datasets.jl")
 include("CreateMeasurementSet.jl")
 include("WSClean.jl")
+include("BPJSpecVisibilities.jl")
+include("TTCalDatasets.jl")
+using .BPJSpecVisibilities
+using .TTCalDatasets
 
 struct Config
     input  :: String
     output :: String
+    metadata :: String
     skymodel :: String
     test_image :: String
     integrations :: Vector{Int}
@@ -35,7 +39,7 @@ function load(file)
     else
         integrations = dict["integrations"]
     end
-    Config(dict["input"], dict["output"],
+    Config(dict["input"], dict["output"], dict["metadata"],
            joinpath(dirname(file), dict["sky-model"]), dict["test-image"],
            integrations, dict["maxiter"], dict["tolerance"], dict["minuvw"],
            dict["delete-input"])
@@ -47,7 +51,7 @@ function go(project_file, wsclean_file, config_file)
     config  = load(config_file)
     calibrate(project, wsclean, config)
     if config.delete_input
-        rm(joinpath(Project.workspace(project), config.input*".jld2"))
+        Project.rm(project, config.input)
     end
     Project.touch(project, config.output)
 end
@@ -75,16 +79,14 @@ end
 ####################################################################################################
 
 function read_raw_visibilities(project, config)
-    local dataset
-    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do file
-        metadata = file["metadata"]
-        TTCal.slice!(metadata, config.integrations, axis=:time)
-        dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-        prg = Progress(length(config.integrations))
-        for (i, j) in enumerate(config.integrations)
-            pack!(dataset, file[o6d(j)], i)
-            next!(prg)
-        end
+    input = Visibilities64(project, config.input)
+    metadata = Project.load(project, config.metadata, "metadata")
+    TTCal.slice!(metadata, config.integrations, axis=:time)
+    dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
+    prg = Progress(length(config.integrations))
+    for (i, j) in enumerate(config.integrations)
+        pack!(dataset, input[j], i)
+        next!(prg)
     end
     dataset
 end
@@ -103,41 +105,32 @@ function pack!(dataset, array, index)
     end
 end
 
-o6d(i) = @sprintf("%06d", i)
-
 ####################################################################################################
 
 function apply_the_calibration(project, config, calibration)
-    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do input_file
-        metadata = input_file["metadata"]
+    metadata = Project.load(project, config.metadata, "metadata")
+    input  = Visibilities64(project, config.input)
+    output = Visibilities128(project, config.output, Ntime(metadata))
 
-        pool  = CachingPool(workers())
-        queue = collect(1:Ntime(metadata))
-        lck = ReentrantLock()
-        prg = Progress(length(queue))
-        increment() = (lock(lck); next!(prg); unlock(lck))
+    pool  = CachingPool(workers())
+    queue = collect(1:Ntime(metadata))
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
 
-        jldopen(joinpath(Project.workspace(project), config.output*".jld2"), "w") do output_file
-            output_file["calibration"] = calibration
-            output_file["metadata"] = metadata
-            @sync for worker in workers()
-                @async while length(queue) > 0
-                    index = pop!(queue)
-                    raw_data = input_file[o6d(index)]
-                    calibrated_data = remotecall_fetch(do_the_work, pool, raw_data, metadata,
-                                                       index, calibration)
-                    output_file[o6d(index)] = calibrated_data
-                    increment()
-                end
-            end
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            index = pop!(queue)
+            remotecall_wait(do_the_work, pool, input, output, metadata, calibration, index)
+            increment()
         end
     end
 end
 
-function do_the_work(data, metadata, time, calibration)
-    dataset = Datasets.array_to_ttcal(data, metadata, time)
+function do_the_work(input, output, metadata, calibration, index)
+    dataset = array_to_ttcal(input[index], metadata, index)
     applycal!(dataset, calibration)
-    Datasets.ttcal_to_array(dataset)
+    output[index] = ttcal_to_array(dataset)
 end
 
 ####################################################################################################

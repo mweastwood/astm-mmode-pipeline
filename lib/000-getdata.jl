@@ -8,8 +8,9 @@ using TTCal
 using YAML
 
 include("Project.jl")
-include("Matrices.jl")
 include("DADA2MS.jl")
+include("BPJSpecVisibilities.jl")
+using .BPJSpecVisibilities
 
 struct Config
     output :: String
@@ -42,8 +43,6 @@ function go(project_file, dada2ms_file, config_file)
 end
 
 function getdata(project, dada2ms, config)
-    path = Project.workspace(project)
-
     # load the list of files for each subband
     for subband in keys(config.subbands)
         DADA2MS.load!(dada2ms, subband)
@@ -57,7 +56,7 @@ function getdata(project, dada2ms, config)
     increment() = (lock(lck); next!(prg); unlock(lck))
 
     Project.set_stripe_count(project, config.output, 1)
-    output = Matrices.Visibilities(joinpath(path, config.output), Ntime)
+    output = Visibilities64(project, config.output, Ntime)
     metadata = Vector{TTCal.Metadata}(Ntime)
 
     @sync for worker in workers()

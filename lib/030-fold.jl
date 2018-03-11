@@ -8,16 +8,20 @@ using Unitful
 using YAML
 
 include("Project.jl")
+include("BPJSpecVisibilities.jl")
+using .BPJSpecVisibilities
 
 struct Config
     input  :: String
     output :: String
+    metadata :: String
     integrations_per_day :: Int
 end
 
 function load(file)
     dict = YAML.load(open(file))
-    Config(dict["input"], dict["output"], dict["integrations-per-day"])
+    Config(dict["input"], dict["output"], dict["metadata"],
+           dict["integrations-per-day"])
 end
 
 function go(project_file, config_file)
@@ -29,7 +33,7 @@ end
 
 function fold(project, config)
     path = Project.workspace(project)
-    metadata = FileIO.load(joinpath(path, config.input*".jld2"), "metadata")
+    metadata = Project.load(project, config.metadata, "metadata")
 
     ν  = metadata.frequencies
     Δν = fill(24u"kHz", length(ν))
@@ -54,11 +58,9 @@ end
 function fold(project, config, output_matrix, Nbase, Ntime, frequency)
     output  = zeros(Complex128, Nbase, config.integrations_per_day)
     weights = zeros(       Int, Nbase, config.integrations_per_day)
-    jldopen(joinpath(Project.workspace(project), config.input*".jld2"), "r") do input_file
-        for time = 1:Ntime
-            data = input_file[o6d(time)]
-            pack!(output, weights, data, frequency, time, config.integrations_per_day)
-        end
+    input = Visibilities128(project, config.input)
+    for time = 1:Ntime
+        pack!(output, weights, input[time], frequency, time, config.integrations_per_day)
     end
     output ./= weights
     output[isnan.(output)] = 0
@@ -79,8 +81,6 @@ function pack!(output, weights, data, frequency, time, integrations_per_day)
         end
     end
 end
-
-o6d(i) = @sprintf("%06d", i)
 
 end
 

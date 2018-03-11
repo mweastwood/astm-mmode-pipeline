@@ -1,5 +1,6 @@
 input: flagged-visibilities
 output: calibrated-visibilities
+metadata: metadata
 sky-model: calibration-sky-model.json
 test-image: calibration
 integrations: 1640:1660

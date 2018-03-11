@@ -24,7 +24,7 @@ dirty-map: .pipeline/dirty-map
 
 .pipeline/calibrated-visibilities: .pipeline/flagged-visibilities \
 		$(LIB)/003-calibrate.jl project.yml wsclean.yml calibrated-data.yml
-	$(LAUNCH) --local-workers 8 $(filter-out $<,$^)
+	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
 .pipeline/flagged-calibrated-visibilities: .pipeline/calibrated-visibilities \
 		$(LIB)/002-flag.jl project.yml calibrated-flags.yml

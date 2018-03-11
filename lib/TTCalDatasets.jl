@@ -1,5 +1,7 @@
 "Define some helper functions for converting between arrays and TTCal Datasets."
-module Datasets
+module TTCalDatasets
+
+export array_to_ttcal, ttcal_to_array
 
 using TTCal
 

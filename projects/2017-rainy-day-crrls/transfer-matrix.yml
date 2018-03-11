@@ -1,4 +1,4 @@
-input: raw-visibilities
+metadata: metadata
 output: transfer-matrix
 coeff:
     - 0.5494343726261235

@@ -2,6 +2,7 @@ input: raw-visibilities
 output: flagged-visibilities
 output-accumulated: accumulated-raw-visibilities
 metadata: metadata
+bits: 64
 baseline-flag-threshold: 15
 integration-flag-threshold: 15
 special-baselines: # these baselines will be plotted
