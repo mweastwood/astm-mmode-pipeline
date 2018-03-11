@@ -59,9 +59,9 @@ end
 function rm(project, filename)
     path = joinpath(workspace(project), filename)
     if isdir(path)
-        rm(path, recursive=true)
+        Base.rm(path, recursive=true)
     else
-        rm(path)
+        Base.rm(path)
     end
 end
 
