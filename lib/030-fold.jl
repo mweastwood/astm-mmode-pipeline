@@ -1,6 +1,5 @@
 module Driver
 
-using FileIO, JLD2
 using ProgressMeter
 using TTCal
 using BPJSpec
@@ -31,54 +30,98 @@ function go(project_file, config_file)
     Project.touch(project, config.output)
 end
 
+# NOTE
+# ====
+# We'd like to do the folding with a single pass through the dataset. This means we'd really like to
+# read the data once, and write it to disk at the correct location before moving on. Generally mmap
+# would be a useful tool here, but lustre has problems with mmap. It would also be nice if JLD2 let
+# us read/write to arbitrary parts of a matrix, but it does not. Therefore we will use a binary
+# format here and simply seek to the correct location whenever necessary.
+
 function fold(project, config)
-    path = Project.workspace(project)
     metadata = Project.load(project, config.metadata, "metadata")
+    path = joinpath(Project.workspace(project), config.output)
+    isdir(path) || mkpath(path)
 
     ν  = metadata.frequencies
     Δν = fill(24u"kHz", length(ν))
-    output = FBlockMatrix(MultipleFiles(joinpath(path, config.output)), ν, Δν)
+    output = FBlockMatrix(MultipleFiles(path), ν, Δν)
 
-    queue = collect(1:length(ν))
-    pool  = CachingPool(workers())
-    lck = ReentrantLock()
-    prg = Progress(length(queue))
-    increment() = (lock(lck); next!(prg); unlock(lck))
-
-    @sync for worker in workers()
-        @async while length(queue) > 0
-            frequency = shift!(queue)
-            remotecall_wait(fold, pool, project, config, output,
-                            Nbase(metadata), Ntime(metadata), frequency)
-            increment()
-        end
-    end
-end
-
-function fold(project, config, output_matrix, Nbase, Ntime, frequency)
-    output  = zeros(Complex128, Nbase, config.integrations_per_day)
-    weights = zeros(       Int, Nbase, config.integrations_per_day)
+    # Open all of the files
     input = Visibilities128(project, config.input)
-    for time = 1:Ntime
-        pack!(output, weights, input[time], frequency, time, config.integrations_per_day)
+    numerator_files   = [open(joinpath(path, @sprintf("%04d.numerator",   β)), "w+")
+                            for β = 1:Nfreq(metadata)]
+    denominator_files = [open(joinpath(path, @sprintf("%04d.denominator", β)), "w+")
+                            for β = 1:Nfreq(metadata)]
+
+    prg = Progress(Nfreq(metadata))
+    for β = 1:Nfreq(metadata)
+        write(  numerator_files[β], zeros(Complex128, Nbase(metadata), config.integrations_per_day))
+        write(denominator_files[β], zeros(       Int, Nbase(metadata), config.integrations_per_day))
+        next!(prg)
     end
-    output ./= weights
-    output[isnan.(output)] = 0
-    output_matrix[frequency] = output
+
+    try
+        prg = Progress(Ntime(metadata))
+        for idx = 1:Ntime(metadata)
+            _fold(numerator_files, denominator_files, input, config.integrations_per_day, idx)
+            next!(prg)
+        end
+        normalize!(output, numerator_files, denominator_files, metadata, config)
+    finally
+        foreach(close,   numerator_files)
+        foreach(close, denominator_files)
+        for β = 1:Nfreq(metadata)
+            rm(joinpath(path, @sprintf("%04d.numerator",   β)), force=true)
+            rm(joinpath(path, @sprintf("%04d.denominator", β)), force=true)
+        end
+    end
 end
 
-function pack!(output, weights, data, frequency, time, integrations_per_day)
-    i = mod1(time, integrations_per_day)
-    Nbase = size(output, 1)
-    for α = 1:Nbase
-        xx = data[1, frequency, α]
-        yy = data[2, frequency, α]
-        if xx != 0 && yy != 0
-            output[α, i]  += xx
-            output[α, i]  += yy
-            output[α, i]  /= 2 # we take the convention I = (xx+yy)/2
-            weights[α, i] += 1
-        end
+function _fold(numerator_files, denominator_files, input, integrations_per_day, idx)
+    data = input[idx]
+    for β = 1:length(numerator_files)
+        xx = view(data, 1, β, :)
+        yy = view(data, 2, β, :)
+        pack!(numerator_files[β], denominator_files[β], xx, yy, integrations_per_day, idx)
+    end
+    nothing
+end
+
+function pack!(numerator_file, denominator_file, xx, yy, integrations_per_day, idx)
+    Nbase = length(xx)
+    idx = mod1(idx, integrations_per_day)
+    offset1 = Nbase*(idx-1)*sizeof(Complex128)
+    offset2 = Nbase*(idx-1)*sizeof(Int)
+
+    I = 0.5 .* (xx .+ yy)
+    w = Int.((xx .!= 0) .& (yy .!= 0))
+
+    seek(  numerator_file, offset1)
+    seek(denominator_file, offset2)
+    I′ = read(  numerator_file, Complex128, Nbase)
+    w′ = read(denominator_file,        Int, Nbase)
+
+    seek(  numerator_file, offset1)
+    seek(denominator_file, offset2)
+    write(  numerator_file, I.+I′)
+    write(denominator_file, w.+w′)
+
+    nothing
+end
+
+function normalize!(output, numerator_files, denominator_files, metadata, config)
+    sz  = (Nbase(metadata), config.integrations_per_day)
+    prg = Progress(Nfreq(metadata))
+    for β = 1:Nfreq(metadata)
+        seek(  numerator_files[β], 0)
+        seek(denominator_files[β], 0)
+        numerator   = read(  numerator_files[β], Complex128, sz)
+        denominator = read(denominator_files[β],        Int, sz)
+        numerator ./= denominator
+        numerator[isnan.(numerator)] .= 0
+        output[β] = numerator
+        next!(prg)
     end
 end
 

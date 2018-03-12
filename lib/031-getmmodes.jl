@@ -57,7 +57,5 @@ function _getmmodes(input, output, frequency)
     compute!(output, transposed_array, frequency)
 end
 
-o6d(i) = @sprintf("%06d", i)
-
 end
 

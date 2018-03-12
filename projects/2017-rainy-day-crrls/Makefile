@@ -8,7 +8,6 @@ LAUNCH=$(JULIA) $(BIN)/launch.jl
 all: dirty-map
 raw: .pipeline/raw-visibilities
 flag: .pipeline/flagged-visibilities
-
 calibrate: .pipeline/calibrated-visibilities
 fold: .pipeline/folded-visibilities
 m-modes: .pipeline/m-modes
@@ -32,7 +31,7 @@ dirty-map: .pipeline/dirty-map
 
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
 		$(LIB)/030-fold.jl project.yml folded-data.yml
-	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
+	$(LAUNCH) $(filter-out $<,$^)
 
 .pipeline/m-modes: .pipeline/folded-visibilities \
 		$(LIB)/031-getmmodes.jl project.yml m-modes.yml
