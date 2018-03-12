@@ -31,7 +31,7 @@ dirty-map: .pipeline/dirty-map
 
 .pipeline/folded-visibilities: .pipeline/flagged-calibrated-visibilities \
 		$(LIB)/030-fold.jl project.yml folded-data.yml
-	$(LAUNCH) $(filter-out $<,$^)
+	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
 .pipeline/m-modes: .pipeline/folded-visibilities \
 		$(LIB)/031-getmmodes.jl project.yml m-modes.yml

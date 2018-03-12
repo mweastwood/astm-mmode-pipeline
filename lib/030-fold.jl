@@ -67,7 +67,7 @@ function fold(project, config)
             _fold(numerator_files, denominator_files, input, config.integrations_per_day, idx)
             next!(prg)
         end
-        normalize!(output, numerator_files, denominator_files, metadata, config)
+        normalize!(output, project, config, metadata)
     finally
         foreach(close,   numerator_files)
         foreach(close, denominator_files)
@@ -110,18 +110,34 @@ function pack!(numerator_file, denominator_file, xx, yy, integrations_per_day, i
     nothing
 end
 
-function normalize!(output, numerator_files, denominator_files, metadata, config)
-    sz  = (Nbase(metadata), config.integrations_per_day)
-    prg = Progress(Nfreq(metadata))
-    for β = 1:Nfreq(metadata)
-        seek(  numerator_files[β], 0)
-        seek(denominator_files[β], 0)
-        numerator   = read(  numerator_files[β], Complex128, sz)
-        denominator = read(denominator_files[β],        Int, sz)
-        numerator ./= denominator
-        numerator[isnan.(numerator)] .= 0
-        output[β] = numerator
-        next!(prg)
+function normalize!(output, project, config, metadata)
+    size = (Nbase(metadata), config.integrations_per_day)
+    path = joinpath(Project.workspace(project), config.output)
+
+    queue = collect(1:Nfreq(metadata))
+    pool  = CachingPool(workers())
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
+
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            frequency = shift!(queue)
+            remotecall_wait(_normalize!, pool, output, path, size, frequency)
+            increment()
+        end
+    end
+end
+
+function _normalize!(output, path, size, frequency)
+    open(joinpath(path, @sprintf("%04d.denominator", frequency)), "r") do denominator_file
+        open(joinpath(path, @sprintf("%04d.numerator", frequency)), "r") do numerator_file
+            numerator   = read(  numerator_file, Complex128, size)
+            denominator = read(denominator_file,        Int, size)
+            numerator ./= denominator
+            numerator[isnan.(numerator)] .= 0
+            output[frequency] = numerator
+        end
     end
 end
 
