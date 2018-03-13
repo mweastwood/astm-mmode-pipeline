@@ -55,3 +55,7 @@ average: .pipeline/averaged-m-modes
 		$(LIB)/102-propagate-flags.jl project.yml flagged-m-modes.yml
 	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
+.pipeline/noise-covariance-matrix: .pipeline/flagged-m-modes \
+		$(LIB)/103-noise-covariance-matrix.jl project.yml noise-covariance-matrix.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
+
