@@ -2,28 +2,47 @@ module Driver
 
 using BPJSpec
 using FileIO, JLD2
-using ProgressMeter
 using Unitful, UnitfulAstro
+using ProgressMeter
+using YAML
 
-include("../lib/Common.jl"); using .Common
+include("Project.jl")
 
-function covariance(spw, name; ps=:spherical)
-    path  = getdir(spw, name)
-    path′ = joinpath(path, "basis-covariance-matrices")
+struct Config
+    input  :: String
+    output :: String
+    powerspectrum :: String
+end
+
+function load(file)
+    dict = YAML.load(open(file))
+    Config(dict["input"], dict["output"], dict["power-spectrum"])
+end
+
+function go(project_file, config_file)
+    project = Project.load(project_file)
+    config  = load(config_file)
+    basis_covariance(project, config)
+    Project.touch(project, config.output)
+end
+
+function basis_covariance(project, config)
+    path = Project.workspace(project)
+    path′ = joinpath(path, config.output)
     isdir(path′) || mkdir(path′)
 
-    if ps == :spherical
+    if config.powerspectrum == "spherical"
         model = fiducial1d()
-    elseif ps == :cylindrical
+    elseif config.powerspectrum == "cylindrical"
         model = fiducial2d()
     else
-        error("unknown power spectrum type $ps")
+        error("unknown power spectrum type $(config.powerspectrum)")
     end
 
-    transfermatrix = TransferMatrix(joinpath(path, "transfer-matrix-averaged"))
-    lmax        = transfermatrix.mmax
-    frequencies = transfermatrix.frequencies
-    bandwidth   = transfermatrix.bandwidth
+    mmodes = BPJSpec.load(joinpath(path, config.input))
+    lmax        = mmodes.mmax
+    frequencies = mmodes.frequencies
+    bandwidth   = mmodes.bandwidth
 
     queue = collect(1:length(model.power))
     pool  = CachingPool(workers())
@@ -48,7 +67,9 @@ function do_the_thing(path, lmax, frequencies, bandwidth, model, idx)
     model.power[:]   = 0u"K^2*Mpc^3"
     model.power[idx] = 1u"K^2*Mpc^3"
     file = joinpath(path, @sprintf("%03d", idx))
-    AngularCovarianceMatrix(file, lmax, frequencies, bandwidth, model)
+    matrix = BPJSpec.create(AngularCovarianceMatrix, SingleFile(file),
+                            lmax, frequencies, bandwidth)
+    compute!(matrix, model)
     nothing
 end
 

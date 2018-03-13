@@ -1,0 +1,4 @@
+input: averaged-m-modes
+output: basis-covariance-matrices
+power-spectrum: spherical
+

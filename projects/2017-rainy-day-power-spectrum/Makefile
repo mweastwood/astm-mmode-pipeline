@@ -76,3 +76,7 @@ average: .pipeline/averaged-m-modes
 		$(LIB)/112-foreground-filter.jl project.yml foreground-filter.yml
 	$(LAUNCH) --remote-workers 3 $(filter-out .pipeline/%,$^)
 
+.pipeline/basis-covariance-matrices: .pipeline/averaged-m-modes \
+		$(LIB)/120-basis-covariance-matrices.jl project.yml basis-covariance-matrices.yml
+	$(LAUNCH) --remote-workers 3 $(filter-out .pipeline/%,$^)
+
