@@ -1,5 +1,6 @@
 input-m-modes: m-modes
 input-transfer-matrix: transfer-matrix
+permuted-m-modes: permuted-m-modes
 output-m-modes: averaged-m-modes
 output-transfer-matrix: averaged-transfer-matrix
 Navg: 10

@@ -1,0 +1,5 @@
+input-m-modes: averaged-m-modes
+input-transfer-matrix: averaged-transfer-matrix
+output-m-modes: flagged-m-modes
+output-transfer-matrix: flagged-transfer-matrix
+

@@ -8,6 +8,7 @@ include("Project.jl")
 struct Config
     input_mmodes :: String
     input_transfermatrix :: String
+    permuted_mmodes :: String
     output_mmodes :: String
     output_transfermatrix :: String
     Navg :: Int # the number of channels to average together
@@ -18,7 +19,7 @@ end
 
 function load(file)
     dict = YAML.load(open(file))
-    Config(dict["input-m-modes"], dict["input-transfer-matrix"],
+    Config(dict["input-m-modes"], dict["input-transfer-matrix"], dict["permuted-m-modes"],
            dict["output-m-modes"], dict["output-transfer-matrix"], dict["Navg"])
 end
 
@@ -33,11 +34,15 @@ function average(project, config)
     path = Project.workspace(project)
     average = BPJSpec.average_frequency_channels
 
-    mmodes  =  BPJSpec.load(joinpath(path, config.input_mmodes))
-    storage = MultipleFiles(joinpath(path, config.output_mmodes))
-    mmodes′ = average(mmodes, config.Navg, storage=storage, progress=true)
+    mmodes         = BPJSpec.load(joinpath(path, config.input_mmodes))
+    transfermatrix = BPJSpec.load(joinpath(path, config.input_transfermatrix))
 
-    transfermatrix  = BPJSpec.load(joinpath(path, config.input_transfermatrix))
+    storage = MultipleFiles(joinpath(path, config.permuted_mmodes))
+    mmodes′ = BPJSpec.permute_mmodes(mmodes, transfermatrix, storage=storage, progress=true)
+
+    storage = MultipleFiles(joinpath(path, config.output_mmodes))
+    mmodes″ = average(mmodes′, config.Navg, storage=storage, progress=true)
+
     storage = MultipleFiles(joinpath(path, config.output_transfermatrix))
     transfermatrix′ = average(transfermatrix, config.Navg, storage=storage, progress=true)
 end

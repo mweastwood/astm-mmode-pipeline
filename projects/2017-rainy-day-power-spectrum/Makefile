@@ -51,3 +51,7 @@ average: .pipeline/averaged-m-modes
 		$(LIB)/101-average-channels.jl project.yml averaged-m-modes.yml
 	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
 
+.pipeline/flagged-m-modes: .pipeline/averaged-m-modes \
+		$(LIB)/102-propagate-flags.jl project.yml flagged-m-modes.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
+
