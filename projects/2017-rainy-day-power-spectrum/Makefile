@@ -71,3 +71,8 @@ average: .pipeline/averaged-m-modes
 		$(LIB)/111-signal-covariance-matrix.jl project.yml signal-covariance-matrix.yml
 	$(LAUNCH) $(filter-out .pipeline/%,$^)
 
+.pipeline/filtered-m-modes: .pipeline/compressed-m-modes \
+		.pipeline/foreground-covariance-matrix .pipeline/signal-covariance-matrix \
+		$(LIB)/112-foreground-filter.jl project.yml foreground-filter.yml
+	$(LAUNCH) --remote-workers 3 $(filter-out .pipeline/%,$^)
+
