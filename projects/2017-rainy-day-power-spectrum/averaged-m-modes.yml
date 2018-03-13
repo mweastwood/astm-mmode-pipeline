@@ -1,0 +1,6 @@
+input-m-modes: m-modes
+input-transfer-matrix: transfer-matrix
+output-m-modes: averaged-m-modes
+output-transfer-matrix: averaged-transfer-matrix
+Navg: 10
+
