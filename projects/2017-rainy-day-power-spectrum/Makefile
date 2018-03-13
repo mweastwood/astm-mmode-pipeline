@@ -74,9 +74,13 @@ average: .pipeline/averaged-m-modes
 .pipeline/filtered-m-modes: .pipeline/compressed-m-modes \
 		.pipeline/foreground-covariance-matrix .pipeline/signal-covariance-matrix \
 		$(LIB)/112-foreground-filter.jl project.yml foreground-filter.yml
-	$(LAUNCH) --remote-workers 3 $(filter-out .pipeline/%,$^)
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
 
 .pipeline/basis-covariance-matrices: .pipeline/averaged-m-modes \
 		$(LIB)/120-basis-covariance-matrices.jl project.yml basis-covariance-matrices.yml
-	$(LAUNCH) --remote-workers 3 $(filter-out .pipeline/%,$^)
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+
+.pipeline/fisher-matrix: .pipeline/basis-covariance-matrices .pipeline/filtered-m-modes \
+		$(LIB)/121-fisher-matrix.jl project.yml fisher-matrix.yml
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
 
