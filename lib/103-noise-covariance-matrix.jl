@@ -32,8 +32,8 @@ function noise_covariance(project, config)
     path = Project.workspace(project)
 
     mmodes = BPJSpec.load(joinpath(path, config.input))
-    matrix = BPJSpec.create(NoiseCovarianceMatrix, mmodes.mmax,
-                            mmodes.frequencies, mmodes.bandwidth)
+    matrix = BPJSpec.create(NoiseCovarianceMatrix, MultipleFiles(joinpath(path, config.output)),
+                            mmodes.mmax, mmodes.frequencies, mmodes.bandwidth)
 
     noisemodel = BPJSpec.NoiseModel(config.Tsys*u"K", config.integration_time*u"s",
                                     config.number_of_integrations, config.beam_solid_angle*u"sr")

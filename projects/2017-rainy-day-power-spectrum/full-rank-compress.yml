@@ -1,0 +1,7 @@
+input-m-modes: flagged-m-modes
+input-transfer-matrix: flagged-transfer-matrix
+input-noise-matrix: noise-covariance-matrix
+output-m-modes: compressed-m-modes
+output-transfer-matrix: compressed-transfer-matrix
+output-noise-matrix: compressed-noise-covariance-matrix
+

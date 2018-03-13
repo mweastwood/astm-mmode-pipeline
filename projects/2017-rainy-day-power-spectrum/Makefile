@@ -59,3 +59,7 @@ average: .pipeline/averaged-m-modes
 		$(LIB)/103-noise-covariance-matrix.jl project.yml noise-covariance-matrix.yml
 	$(LAUNCH) --remote-workers 1 $(filter-out $<,$^)
 
+.pipeline/compressed-m-modes: .pipeline/flagged-m-modes .pipeline/noise-covariance-matrix \
+		$(LIB)/104-full-rank-compress.jl project.yml full-rank-compress.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
+
