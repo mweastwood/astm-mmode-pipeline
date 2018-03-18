@@ -84,3 +84,12 @@ average: .pipeline/averaged-m-modes
 		$(LIB)/121-fisher-matrix.jl project.yml fisher-matrix.yml
 	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
 
+.pipeline/noise-bias: .pipeline/basis-covariance-matrices .pipeline/filtered-m-modes \
+		$(LIB)/122-noise-bias.jl project.yml noise-bias.yml
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
+
+.pipeline/quadratic-estimator: .pipeline/basis-covariance-matrices .pipeline/filtered-m-modes \
+		.pipeline/fisher-matrix .pipeline/noise-bias \
+		$(LIB)/123-quadratic-estimator.jl project.yml quadratic-estimator.yml
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
+
