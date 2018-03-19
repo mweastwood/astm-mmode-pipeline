@@ -10,9 +10,7 @@ using YAML
 include("Project.jl")
 include("CreateMeasurementSet.jl")
 include("WSClean.jl")
-include("BPJSpecVisibilities.jl")
 include("TTCalDatasets.jl")
-using .BPJSpecVisibilities
 using .TTCalDatasets
 
 struct Config

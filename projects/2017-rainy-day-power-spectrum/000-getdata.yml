@@ -1,4 +1,4 @@
-output: raw-visibilities
+output: 000-raw-data
 output_metadata: metadata
 subbands:
     # Note: we exclude channels 7 and 11 because they don't seem to calibrate very well

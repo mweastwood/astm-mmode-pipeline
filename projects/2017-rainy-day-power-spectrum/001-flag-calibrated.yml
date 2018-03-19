@@ -1,8 +1,7 @@
-input: calibrated-visibilities
-output: flagged-calibrated-visibilities
+input: 002-calibrated-data
+output: 001-flagged-calibrated-data
 output-accumulated: accumulated-calibrated-visibilities
 metadata: metadata
-bits: 128
 baseline-flag-threshold: 10
 integration-flag-threshold: 10
 special-baselines: # these baselines will be plotted

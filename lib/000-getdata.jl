@@ -5,12 +5,11 @@ using CasaCore.Measures
 using JLD2
 using ProgressMeter
 using TTCal
+using BPJSpec
 using YAML
 
 include("Project.jl")
 include("DADA2MS.jl")
-include("BPJSpecVisibilities.jl")
-using .BPJSpecVisibilities
 
 struct Config
     output :: String
@@ -55,8 +54,10 @@ function getdata(project, dada2ms, config)
     prg = Progress(length(queue))
     increment() = (lock(lck); next!(prg); unlock(lck))
 
+    path = Project.workspace(project)
     Project.set_stripe_count(project, config.output, 1)
-    output = Visibilities64(project, config.output, Ntime)
+    output = create(BPJSpec.SimpleBlockArray{Complex64, 3},
+                    MultipleFiles(joinpath(path, config.output)), Ntime)
     metadata = Vector{TTCal.Metadata}(Ntime)
 
     @sync for worker in workers()

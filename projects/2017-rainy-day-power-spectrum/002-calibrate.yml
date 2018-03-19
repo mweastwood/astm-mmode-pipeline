@@ -1,8 +1,8 @@
-input: flagged-visibilities
-output: calibrated-visibilities
+input: 001-flagged-raw-data
+output: 002-calibrated-data
 metadata: metadata
 sky-model: calibration-sky-model.json
-test-image: calibration
+test-image: 002-calibration-image
 integrations: 1640:1660
 maxiter: 50
 tolerance: 1e-3

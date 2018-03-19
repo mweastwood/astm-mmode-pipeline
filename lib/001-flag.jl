@@ -3,22 +3,19 @@ module Driver
 using FileIO, JLD2
 using ProgressMeter
 using TTCal
+using BPJSpec
 using Dierckx
 using Unitful # for ustrip
 using YAML
 using UnicodePlots
-#using PyPlot
 
 include("Project.jl")
-include("BPJSpecVisibilities.jl")
-using .BPJSpecVisibilities
 
 struct Config
     input  :: String
     output :: String
     output_accumulated :: String
     metadata :: String
-    bits :: Int
     special_baselines :: Vector{Int}
     a_priori_antenna_flags  :: Vector{Int}
     a_priori_baseline_flags :: Vector{Tuple{Int, Int}}
@@ -34,7 +31,7 @@ function load(file)
                                 do_the_splits.(dict["a-priori-baseline-flags"]) :
                                 Tuple{Int, Int}[]
     Config(dict["input"], dict["output"], dict["output-accumulated"],
-           dict["metadata"], dict["bits"], dict["special-baselines"],
+           dict["metadata"], dict["special-baselines"],
            a_priori_antenna_flags, a_priori_baseline_flags,
            dict["baseline-flag-threshold"], dict["integration-flag-threshold"])
 end
@@ -59,14 +56,10 @@ function go(project_file, config_file)
 end
 
 function flag(project, config)
+    path = Project.workspace(project)
     metadata = Project.load(project, config.metadata, "metadata")
-    if config.bits == 128
-        input  = Visibilities128(project, config.input)
-        output = Visibilities128(project, config.output, Ntime(metadata))
-    else
-        input  = Visibilities64(project, config.input)
-        output = Visibilities64(project, config.output, Ntime(metadata))
-    end
+    input  = BPJSpec.load(joinpath(path, config.input))
+    output = similar(input)
 
     flags = Flags(metadata)
     a_priori_flags!(flags, config, metadata)
