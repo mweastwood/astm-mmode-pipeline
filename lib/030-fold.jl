@@ -7,8 +7,6 @@ using Unitful
 using YAML
 
 include("Project.jl")
-include("BPJSpecVisibilities.jl")
-using .BPJSpecVisibilities
 
 struct Config
     input  :: String
@@ -39,16 +37,16 @@ end
 # format here and simply seek to the correct location whenever necessary.
 
 function fold(project, config)
+    path = Project.workspace(project)
     metadata = Project.load(project, config.metadata, "metadata")
-    path = joinpath(Project.workspace(project), config.output)
-    isdir(path) || mkpath(path)
+    isdir(joinpath(path, config.output)) || mkpath(joinpath(path, config.output))
 
     ν  = metadata.frequencies
     Δν = fill(24u"kHz", length(ν))
-    output = FBlockMatrix(MultipleFiles(path), ν, Δν)
+    output = create(FBlockMatrix, MultipleFiles(path), ν, Δν)
 
     # Open all of the files
-    input = Visibilities128(project, config.input)
+    input = BPJSpec.load(joinpath(path, config.input))
     numerator_files   = [open(joinpath(path, @sprintf("%04d.numerator",   β)), "w+")
                             for β = 1:Nfreq(metadata)]
     denominator_files = [open(joinpath(path, @sprintf("%04d.denominator", β)), "w+")

@@ -15,6 +15,7 @@ struct Config
     input  :: String
     output :: String
     output_accumulated :: String
+    output_flags :: String
     metadata :: String
     special_baselines :: Vector{Int}
     a_priori_antenna_flags  :: Vector{Int}
@@ -30,7 +31,7 @@ function load(file)
     a_priori_baseline_flags = haskey(dict, "a-priori-baseline-flags") ?
                                 do_the_splits.(dict["a-priori-baseline-flags"]) :
                                 Tuple{Int, Int}[]
-    Config(dict["input"], dict["output"], dict["output-accumulated"],
+    Config(dict["input"], dict["output"], dict["output-accumulated"], dict["output-flags"],
            dict["metadata"], dict["special-baselines"],
            a_priori_antenna_flags, a_priori_baseline_flags,
            dict["baseline-flag-threshold"], dict["integration-flag-threshold"])
@@ -59,7 +60,7 @@ function flag(project, config)
     path = Project.workspace(project)
     metadata = Project.load(project, config.metadata, "metadata")
     input  = BPJSpec.load(joinpath(path, config.input))
-    output = similar(input)
+    output = similar(input, MultipleFiles(joinpath(path, config.output)))
 
     flags = Flags(metadata)
     a_priori_flags!(flags, config, metadata)
@@ -75,19 +76,34 @@ function flag(project, config)
         apply_integration_flags!(data, flags, config.integration_flag_threshold,
                                  config.special_baselines, windowed=true)
     end
+    Project.save(project, config.output_flags, "flags", flags)
+    #flags = Project.load(project, config.output_flags, "flags")
 
+    Project.set_stripe_count(project, config.output, 1)
     write_output(project, flags, input, output, metadata)
     flags
 end
 
 function write_output(project, flags, input, output, metadata)
-    prg = Progress(Ntime(metadata))
-    for time = 1:Ntime(metadata)
-        raw_data = input[time]
-        apply!(raw_data, flags, time)
-        output[time] = raw_data
-        next!(prg)
+    queue = collect(1:Ntime(metadata))
+    pool  = CachingPool(workers())
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
+
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            index = shift!(queue)
+            remotecall_wait(_write_output, pool, input, output, flags, index)
+            increment()
+        end
     end
+end
+
+function _write_output(input, output, flags, index)
+    raw_data = input[index]
+    apply!(raw_data, flags, index)
+    output[index] = raw_data
 end
 
 ####################################################################################################

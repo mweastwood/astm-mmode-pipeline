@@ -4,6 +4,7 @@ using CasaCore.Measures
 using JLD2
 using ProgressMeter
 using TTCal
+using BPJSpec
 using Unitful
 using YAML
 
@@ -77,7 +78,8 @@ end
 ####################################################################################################
 
 function read_raw_visibilities(project, config)
-    input = Visibilities64(project, config.input)
+    path = Project.workspace(project)
+    input = BPJSpec.load(joinpath(path, config.input))
     metadata = Project.load(project, config.metadata, "metadata")
     TTCal.slice!(metadata, config.integrations, axis=:time)
     dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
@@ -106,9 +108,12 @@ end
 ####################################################################################################
 
 function apply_the_calibration(project, config, calibration)
+    path = Project.workspace(project)
+    Project.set_stripe_count(project, config.output, 1)
     metadata = Project.load(project, config.metadata, "metadata")
-    input  = Visibilities64(project, config.input)
-    output = Visibilities128(project, config.output, Ntime(metadata))
+    input  = BPJSpec.load(joinpath(path, config.input))
+    output = create(BPJSpec.SimpleBlockArray{Complex128, 3},
+                    MultipleFiles(joinpath(path, config.output)), Ntime(metadata))
 
     pool  = CachingPool(workers())
     queue = collect(1:Ntime(metadata))
