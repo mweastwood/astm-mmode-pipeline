@@ -43,13 +43,13 @@ function fold(project, config)
 
     ν  = metadata.frequencies
     Δν = fill(24u"kHz", length(ν))
-    output = create(FBlockMatrix, MultipleFiles(path), ν, Δν)
+    output = create(FBlockMatrix, MultipleFiles(joinpath(path, config.output)), ν, Δν)
 
     # Open all of the files
     input = BPJSpec.load(joinpath(path, config.input))
-    numerator_files   = [open(joinpath(path, @sprintf("%04d.numerator",   β)), "w+")
+    numerator_files   = [open(joinpath(path, config.output, @sprintf("%04d.numerator",   β)), "w+")
                             for β = 1:Nfreq(metadata)]
-    denominator_files = [open(joinpath(path, @sprintf("%04d.denominator", β)), "w+")
+    denominator_files = [open(joinpath(path, config.output, @sprintf("%04d.denominator", β)), "w+")
                             for β = 1:Nfreq(metadata)]
 
     prg = Progress(Nfreq(metadata))
@@ -59,20 +59,18 @@ function fold(project, config)
         next!(prg)
     end
 
-    try
-        prg = Progress(Ntime(metadata))
-        for idx = 1:Ntime(metadata)
-            _fold(numerator_files, denominator_files, input, config.integrations_per_day, idx)
-            next!(prg)
-        end
-        normalize!(output, project, config, metadata)
-    finally
-        foreach(close,   numerator_files)
-        foreach(close, denominator_files)
-        for β = 1:Nfreq(metadata)
-            rm(joinpath(path, @sprintf("%04d.numerator",   β)), force=true)
-            rm(joinpath(path, @sprintf("%04d.denominator", β)), force=true)
-        end
+    prg = Progress(Ntime(metadata))
+    for idx = 1:Ntime(metadata)
+        _fold(numerator_files, denominator_files, input, config.integrations_per_day, idx)
+        next!(prg)
+    end
+    normalize!(output, project, config, metadata)
+
+    foreach(close,   numerator_files)
+    foreach(close, denominator_files)
+    for β = 1:Nfreq(metadata)
+        rm(joinpath(path, @sprintf("%04d.numerator",   β)), force=true)
+        rm(joinpath(path, @sprintf("%04d.denominator", β)), force=true)
     end
 end
 

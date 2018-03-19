@@ -28,7 +28,7 @@ LAUNCH=$(JULIA) $(BIN)/launch.jl
 
 .pipeline/001-flagged-calibrated-data: .pipeline/002-calibrated-data \
 		$(LIB)/001-flag.jl project.yml 001-flag-calibrated.yml
-	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
 
 .pipeline/030-folded-data: .pipeline/001-flagged-calibrated-data \
 		$(LIB)/030-fold.jl project.yml 030-fold.yml
