@@ -1,5 +1,6 @@
 metadata: metadata
-output: transfer-matrix
+output: 100-transfer-matrix
+output-hierarchy: hierarchy
 coeff:
     - 0.5494343726261235
     - -0.4422544222256613
@@ -10,6 +11,5 @@ coeff:
     - -0.020645215922528007
     - -0.0007547051500611155
     - -0.02480903125367872
-lmax:
-    200
+lmax: 200
 

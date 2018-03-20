@@ -1,14 +1,9 @@
-#.PHONY: all raw calibrate fold m-modes transfer-matrix dirty-map average
-
-#all: average
-#raw: .pipeline/raw-visibilities
-#flag: .pipeline/flagged-visibilities
-#calibrate: .pipeline/calibrated-visibilities
-#fold: .pipeline/folded-visibilities
-#m-modes: .pipeline/m-modes
-#transfer-matrix: .pipeline/transfer-matrix
-#dirty-map: .pipeline/dirty-map
-#average: .pipeline/averaged-m-modes
+.PHONY: all raw calibrate transfer-matrix dirty-map
+all: dirty-map
+raw: .pipeline/000-raw-data
+calibrate: .pipeline/002-calibrated-data
+transfer-matrix: .pipeline/100-transfer-matrix
+dirty-map: .pipeline/032-dirty-map
 
 BIN=../../bin
 LIB=../../lib
@@ -34,7 +29,7 @@ LAUNCH=$(JULIA) $(BIN)/launch.jl
 		$(LIB)/030-fold.jl project.yml 030-fold.yml
 	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
 
-.pipeline/031-m-modes: .pipeline/030-folded-data \
+.pipeline/031-m-modes: .pipeline/030-folded-data .pipeline/100-transfer-matrix \
 		$(LIB)/031-getmmodes.jl project.yml 031-getmmodes.yml
 	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
 

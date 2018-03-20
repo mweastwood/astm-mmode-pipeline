@@ -12,6 +12,7 @@ include("Project.jl")
 struct Config
     metadata :: String
     output :: String
+    output_hierarchy :: String
     coeff  :: Vector{Float64}
     lmax   :: Int
 end
@@ -19,7 +20,7 @@ end
 function load(file)
     dict = YAML.load(open(file))
     # TODO: allow lmax to be computed from the maximum baseline length
-    Config(dict["metadata"], dict["output"], dict["coeff"], dict["lmax"])
+    Config(dict["metadata"], dict["output"], dict["output-hierarchy"], dict["coeff"], dict["lmax"])
 end
 
 function go(project_file, config_file)
@@ -32,8 +33,6 @@ end
 function transfermatrix(project, config; simulation="")
     path = Project.workspace(project)
     ttcal_metadata = Project.load(project, config.metadata, "metadata")
-    frame = ReferenceFrame(ttcal_metadata)
-    ttcal_metadata.phase_centers[1] = measure(frame, ttcal_metadata.phase_centers[1], dir"ITRF")
     if simulation != ""
         positions = simulate(simulation, ttcal_metadata)
         resize!(ttcal_metadata.positions, length(positions))
@@ -49,9 +48,11 @@ function transfermatrix(project, config; simulation="")
     Ω, err = hcubature(x -> beam_model(x[1], x[2])*cos(x[2]), [0, 0], [2π, π/2])
     @show Ω
 
-    transfermatrix = BPJSpec.TransferMatrix(joinpath(path, config.output),
-                                            bpjspec_metadata, lmax=config.lmax)
-    BPJSpec.compute!(transfermatrix, beam_model, progress=true)
+    transfermatrix = create(TransferMatrix, joinpath(path, config.output),
+                            bpjspec_metadata, beam_model,
+                            lmax=config.lmax, rm=true, progress=true)
+    Project.save(project, config.output_hierarchy, "hierarchy", transfermatrix.storage.hierarchy)
+    transfermatrix
 end
 
 function beam(coeff, threshold, azimuth, elevation)

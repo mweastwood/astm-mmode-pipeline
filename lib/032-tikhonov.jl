@@ -31,16 +31,20 @@ end
 
 function tikhonov(project, config)
     path = Project.workspace(project)
-    mmodes = MModes(joinpath(path, config.input))
-    transfermatrix = TransferMatrix(joinpath(path, config.transfermatrix))
-    alm = BPJSpec.tikhonov(transfermatrix, mmodes, regularization=config.regularization)
-    jldopen(joinpath(path, config.output_alm*".jld2"), "w") do file
-        file["alm"] = alm
-    end
+    mmodes = BPJSpec.load(joinpath(path, config.input))
+    transfermatrix = BPJSpec.load(joinpath(path, config.transfermatrix))
+    alm = BPJSpec.tikhonov(transfermatrix, mmodes, regularization=config.regularization, mfs=true)
+    Project.save(project, config.output_alm, "alm", alm)
+    #alm = Project.load(project, config.output_alm, "alm")
+
     # create a Healpix map
-    _alm = Alm(Complex128, alm.lmax, alm.mmax)
-    for m = 1:alm.lmax, l = m:alm.mmax
-        @lm _alm[l, m] = alm[l, m]
+    lmax = mmax = alm.mmax
+    _alm = Alm(Complex128, lmax, mmax)
+    for m = 1:lmax
+        block = alm[m]
+        for l = m:mmax
+            @lm _alm[l, m] = block[l - m + 1]
+        end
     end
     map = alm2map(_alm, config.nside)
     writehealpix(joinpath(path, config.output_map*".fits"), map, replace=true)
