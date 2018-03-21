@@ -1,0 +1,33 @@
+output: 000-raw-data
+output_metadata: metadata
+subbands:
+    0: all
+    1: all
+    2: all
+    3: all
+    4: all
+    5: all
+    6: all
+    7: all
+    8: all
+    9: all
+    10: all
+    11: all
+    12: all
+    13: all
+    14: all
+    15: all
+    16: all
+    17: all
+    18: all
+    19: all
+    20: all
+    21: all
+times:
+    - 5
+pol:
+    - true # xx
+    - true # xy
+    - true # yx
+    - true # yy
+

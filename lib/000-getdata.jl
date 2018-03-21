@@ -15,9 +15,11 @@ struct Config
     output :: String
     output_metadata :: String
     subbands :: Dict{Int, Vector{Int}}
+    times :: Vector{Int}
+    keep :: Vector{Bool}
 end
 
-function load(file)
+function load(file, dada2ms)
     dict = YAML.load(open(file))
     subbands = Dict{Int, Vector{Int}}()
     for (key, value) in dict["subbands"]
@@ -29,26 +31,25 @@ function load(file)
         else
             subbands[subband] = value
         end
+        DADA2MS.load!(dada2ms, subband)
     end
-    Config(dict["output"], dict["output_metadata"], subbands)
+    times = get(dict, "times", collect(1:DADA2MS.number(dada2ms)))
+    Config(dict["output"], dict["output_metadata"], subbands, times,
+           get(dict, "pol", [true, false, false, true]))
 end
 
 function go(project_file, dada2ms_file, config_file)
     project = Project.load(project_file)
     dada2ms = DADA2MS.load(dada2ms_file)
-    config  = load(config_file)
+    config  = load(config_file, dada2ms)
     getdata(project, dada2ms, config)
     Project.touch(project, config.output)
 end
 
 function getdata(project, dada2ms, config)
     # load the list of files for each subband
-    for subband in keys(config.subbands)
-        DADA2MS.load!(dada2ms, subband)
-    end
 
-    Ntime = DADA2MS.number(dada2ms)
-    queue = collect(1:Ntime)
+    queue = collect(1:length(config.times))
     pool  = CachingPool(workers())
     lck = ReentrantLock()
     prg = Progress(length(queue))
@@ -57,13 +58,14 @@ function getdata(project, dada2ms, config)
     path = Project.workspace(project)
     Project.set_stripe_count(project, config.output, 1)
     output = create(BPJSpec.SimpleBlockArray{Complex64, 3},
-                    MultipleFiles(joinpath(path, config.output)), Ntime)
-    metadata = Vector{TTCal.Metadata}(Ntime)
+                    MultipleFiles(joinpath(path, config.output)), length(queue))
+    metadata = Vector{TTCal.Metadata}(length(queue))
 
     @sync for worker in workers()
         @async while length(queue) > 0
             index = shift!(queue)
-            _metadata = remotecall_fetch(getdata!, pool, output, dada2ms, config, index)
+            time  = config.times[index]
+            _metadata = remotecall_fetch(getdata!, pool, output, dada2ms, config, index, time)
             metadata[index] = _metadata
             increment()
         end
@@ -78,8 +80,8 @@ function getdata(project, dada2ms, config)
     nothing
 end
 
-function getdata!(output, dada2ms, config, index)
-    data, metadata = internal_getdata(dada2ms, config, index)
+function getdata!(output, dada2ms, config, index, time)
+    data, metadata = internal_getdata(dada2ms, config, time)
     output[index] = data
     metadata
 end
@@ -96,13 +98,12 @@ function internal_getdata(dada2ms, config, index)
 end
 
 function run_dada2ms(dada2ms, config, subband, index)
-    keep = [true; false; false; true]
     channels = config.subbands[subband]
     ms = DADA2MS.run(dada2ms, subband, index)
     raw_data = ms["DATA"] :: Array{Complex64, 3}
     metadata = TTCal.Metadata(ms)
     TTCal.slice!(metadata, channels, axis=:frequency)
-    data = raw_data[keep, channels, :]
+    data = raw_data[config.keep, channels, :]
     Tables.delete(ms)
     data, metadata
 end

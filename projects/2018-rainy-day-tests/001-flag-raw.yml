@@ -1,0 +1,73 @@
+input: 000-raw-data
+output: 001-flagged-raw-data
+output-accumulated: 001-accumulated-raw-data
+output-flags: 001-raw-data-flags
+metadata: metadata
+channel-flag-threshold: 0 # there are kinks in the spectra from the application of digital gains
+baseline-flag-threshold: 10
+integration-flag-threshold: 0
+special-antennas:
+    - 2
+    - 57
+    - 185
+    - 239
+a-priori-antenna-flags:
+    # Antenna flags from Larry D'Addario
+    # * both polarizations dead
+    - 105
+    - 179
+    - 223
+    - 226
+    # * one polarization dead
+    - 78
+    - 83
+    - 88
+    - 146
+    - 158
+    - 162
+    - 169
+    - 198
+    - 220
+    - 221
+    - 237
+    # * other antenna flags from Marin
+    - 1
+    - 10 # maybe doesn't need
+    - 96 # maybe doesn't need
+    - 149
+    - 165 # weird-ish
+    - 204 # maybe doesn't need
+    - 217 # maybe doesn't need
+    - 225
+    - 248 # LEDA
+    - 249 # LEDA
+    - 250 # LEDA
+    - 251 # LEDA
+    - 252 # LEDA
+    - 253 # LEDA
+    - 254 # LEDA
+    - 255 # LEDA
+    - 256 # LEDA
+a-priori-channel-flags:
+    - 6
+    - 89
+    - 91
+    - 93
+    - 111
+    - 211
+    - 938
+    - 1041
+    - 1091
+    - 1186
+    - 2360
+    - 2388
+    - 2389
+    - 2390
+    - 2391
+    - 2392
+    - 2393
+    - 2394
+    - 2395
+    - 2396
+    - 2398
+

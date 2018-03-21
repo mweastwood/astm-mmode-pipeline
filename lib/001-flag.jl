@@ -17,9 +17,12 @@ struct Config
     output_accumulated :: String
     output_flags :: String
     metadata :: String
+    special_antennas :: Vector{Int}
     special_baselines :: Vector{Int}
     a_priori_antenna_flags  :: Vector{Int}
     a_priori_baseline_flags :: Vector{Tuple{Int, Int}}
+    a_priori_channel_flags  :: Vector{Int}
+    channel_flag_threshold     :: Int
     baseline_flag_threshold    :: Int
     integration_flag_threshold :: Int
 end
@@ -31,10 +34,17 @@ function load(file)
     a_priori_baseline_flags = haskey(dict, "a-priori-baseline-flags") ?
                                 do_the_splits.(dict["a-priori-baseline-flags"]) :
                                 Tuple{Int, Int}[]
+    a_priori_channel_flags  = get(dict, "a-priori-channel-flags", Int[])
     Config(dict["input"], dict["output"], dict["output-accumulated"], dict["output-flags"],
-           dict["metadata"], dict["special-baselines"],
-           a_priori_antenna_flags, a_priori_baseline_flags,
-           dict["baseline-flag-threshold"], dict["integration-flag-threshold"])
+           dict["metadata"],
+           get(dict, "special-antennas", Int[]),
+           get(dict, "special-baselines", Int[]),
+           a_priori_antenna_flags,
+           a_priori_baseline_flags,
+           a_priori_channel_flags,
+           dict["channel-flag-threshold"],
+           dict["baseline-flag-threshold"],
+           dict["integration-flag-threshold"])
 end
 
 struct Flags
@@ -63,19 +73,36 @@ function flag(project, config)
     output = similar(input, MultipleFiles(joinpath(path, config.output)))
 
     flags = Flags(metadata)
+
+    println("Applying a-priori flags")
     a_priori_flags!(flags, config, metadata)
+
+    if config.channel_flag_threshold > 0
+        println("Flagging frequency channels using the auto-correlations")
+        autos = grab_auto_correlations(input, metadata, flags)
+        apply_channel_flags!(autos, flags, metadata,
+                             config.channel_flag_threshold,
+                             config.special_antennas)
+    end
+
+    println("Flagging auto-correlations") # now that we are done using them
+    flag_autos!(flags, config, metadata)
 
     data = accumulate_frequency(input, metadata, flags)
     Project.save(project, config.output_accumulated, "data", data)
     #data = Project.load(project, config.output_accumulated, "data")
 
     if config.baseline_flag_threshold > 0
+        println("Flagging baselines based on visibility amplitude as a function of baseline length")
         apply_baseline_flags!(data, flags, metadata, config.baseline_flag_threshold)
     end
+
     if config.integration_flag_threshold > 0
+        println("Flagging integrations based on the time series of each visibility")
         apply_integration_flags!(data, flags, config.integration_flag_threshold,
                                  config.special_baselines, windowed=true)
     end
+
     Project.save(project, config.output_flags, "flags", flags)
     #flags = Project.load(project, config.output_flags, "flags")
 
@@ -163,10 +190,36 @@ function accumulate_frequency(visibilities, metadata, flags)
     for time = 1:Ntime(metadata)
         data = visibilities[time]
         apply!(data, flags, time)
-        @views output[:, time] .+= squeeze(sum(data[1, :, :], 1), 1)
-        @views output[:, time] .+= squeeze(sum(data[2, :, :], 1), 1)
-        @views count[:, time]  .+= squeeze(sum(data[1, :, :] .!= 0, 1), 1)
-        @views count[:, time]  .+= squeeze(sum(data[2, :, :] .!= 0, 1), 1)
+        # TODO: this assumes xx is first and yy is last
+        @views output[:, time] .+= squeeze(sum(data[  1, :, :], 1), 1)
+        @views output[:, time] .+= squeeze(sum(data[end, :, :], 1), 1)
+        @views count[:, time]  .+= squeeze(sum(data[  1, :, :] .!= 0, 1), 1)
+        @views count[:, time]  .+= squeeze(sum(data[end, :, :] .!= 0, 1), 1)
+        next!(prg)
+    end
+    count[count .== 0] .= 1
+    output ./= count
+    output
+end
+
+function grab_auto_correlations(visibilities, metadata, flags)
+    output = zeros(Float64, Nfreq(metadata), Nant(metadata))
+    count  = zeros(    Int, Nfreq(metadata), Nant(metadata))
+    prg = Progress(Ntime(metadata))
+    for time = 1:Ntime(metadata)
+        data = visibilities[time]
+        apply!(data, flags, time)
+        α = 1
+        for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
+            # TODO: this assumes xx is first and yy is last
+            if ant1 == ant2
+                @views output[:, ant1] .+= abs.(data[  1, :, α])
+                @views output[:, ant1] .+= abs.(data[end, :, α])
+                @views count[:, ant1]  .+= data[  1, :, α] .!= 0
+                @views count[:, ant1]  .+= data[end, :, α] .!= 0
+            end
+            α += 1
+        end
         next!(prg)
     end
     count[count .== 0] .= 1
@@ -179,15 +232,46 @@ end
 function a_priori_flags!(flags, config, metadata)
     α = 1
     for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
-        if ((ant1 == ant2) || (ant1 in config.a_priori_antenna_flags)
-                           || (ant2 in config.a_priori_antenna_flags)
-                           || ((ant1, ant2) in config.a_priori_baseline_flags)
-                           || ((ant2, ant1) in config.a_priori_baseline_flags))
+        if ((ant1 in config.a_priori_antenna_flags)
+                || (ant2 in config.a_priori_antenna_flags)
+                || ((ant1, ant2) in config.a_priori_baseline_flags)
+                || ((ant2, ant1) in config.a_priori_baseline_flags))
+            flags.baseline_flags[α] = true
+        end
+        α += 1
+    end
+    for β in config.a_priori_channel_flags
+        flags.channel_flags[:, β] = true
+    end
+    flags
+end
+
+function flag_autos!(flags, config, metadata)
+    α = 1
+    for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
+        if ant1 == ant2
             flags.baseline_flags[α] = true
         end
         α += 1
     end
     flags
+end
+
+####################################################################################################
+
+function apply_channel_flags!(autos, flags, metadata, threshold, special_antennas)
+    for ant = 1:Nant(metadata)
+        spectrum = autos[:, ant]
+        if !all(spectrum .== 0)
+            my_flags = threshold_flag(spectrum, threshold, windowed=true,
+                                      scale=10, plot=ant in special_antennas,
+                                      title=@sprintf("Antenna %d", ant),
+                                      xlabel="Channel #")
+            for β in find(my_flags)
+                flags.channel_flags[:, β] = true
+            end
+        end
+    end
 end
 
 ####################################################################################################
@@ -247,41 +331,44 @@ function apply_integration_flags!(data, flags, threshold, special_baselines; win
     for α = 1:Nbase
         time_series = data[α, :]
         if !all(time_series .== 0)
-            flags.integration_flags[α, :] = threshold_flag(time_series, threshold, windowed,
-                                                           special_baselines, α)
+            flags.integration_flags[α, :] = threshold_flag(time_series, threshold,
+                                                           windowed=windowed,
+                                                           scale=10,
+                                                           plot=α in special_baselines,
+                                                           title=@sprintf("Baseline %d", α),
+                                                           xlabel="Integration #")
         end
     end
     flags
 end
 
-function threshold_flag(data, threshold, windowed, special_baselines, α)
+####################################################################################################
+
+function threshold_flag(data, threshold; windowed=false, scale=10,
+                        plot=false, xlabel="", title="")
     x = 1:length(data)
     y = abs.(data)
     f = y .== 0
-    knots = x[.!f][2:10:end-1]
-    spline = Spline1D(x[.!f], y[.!f], knots)
-    z = spline.(x)
-    deviation = abs.(y .- z)
-    if windowed
-        mad = windowed_mad(deviation)
-    else
-        mad = median(deviation)
+
+    local flags, mad
+    for idx = 1:2
+        knots = x[.!f][2:scale:end-1]
+        spline = Spline1D(x[.!f], y[.!f], knots)
+        z = spline.(x)
+        deviation = abs.(y .- z)
+
+        if idx == 1
+            mad = windowed ? windowed_mad(deviation) : median(deviation)
+        end
+
+        flags = deviation .> threshold .* mad
     end
-    flags = deviation .> threshold .* mad
 
-    # iterate on the spline once
-    f .|= flags
-    knots = x[.!f][2:10:end-1]
-    spline = Spline1D(x[.!f], y[.!f], knots)
-    z = spline.(x)
-    deviation = abs.(y .- z)
-    flags = deviation .> threshold .* mad
-
-    if α in special_baselines
+    if plot
         plt = scatterplot(x[.!flags], y[.!flags], width=100, name="unflagged")
         scatterplot!(plt, x[flags], y[flags], name="flagged")
-        title!(plt, @sprintf("Baseline %d", α))
-        xlabel!(plt, "Integration / #")
+        title!(plt, title)
+        xlabel!(plt, xlabel)
         println(plt)
     end
 

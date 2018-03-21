@@ -1,0 +1,10 @@
+input: 001-flagged-raw-data
+metadata: metadata
+sky-model: calibration-sky-model.json
+test-image: 002-calibration-image
+integrations: 1:1
+maxiter: 50
+tolerance: 1e-3
+minuvw: 15.0
+delete-input: true
+

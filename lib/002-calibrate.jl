@@ -38,7 +38,7 @@ function load(file)
     else
         integrations = dict["integrations"]
     end
-    Config(dict["input"], dict["output"], dict["metadata"],
+    Config(dict["input"], get(dict, "output", ""), dict["metadata"],
            joinpath(dirname(file), dict["sky-model"]), dict["test-image"],
            integrations, dict["maxiter"], dict["tolerance"], dict["minuvw"],
            dict["delete-input"])
@@ -52,7 +52,9 @@ function go(project_file, wsclean_file, config_file)
     if config.delete_input
         Project.rm(project, config.input)
     end
-    Project.touch(project, config.output)
+    if config.output != ""
+        Project.touch(project, config.output)
+    end
 end
 
 function calibrate(project, wsclean, config)
@@ -60,7 +62,9 @@ function calibrate(project, wsclean, config)
     dataset, calibration = solve_for_the_calibration(project, config)
     ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
     WSClean.run(wsclean, ms, joinpath(path, config.test_image))
-    apply_the_calibration(project, config, calibration)
+    if config.output != ""
+        apply_the_calibration(project, config, calibration)
+    end
 end
 
 function solve_for_the_calibration(project, config)
@@ -92,11 +96,12 @@ function read_raw_visibilities(project, config)
 end
 
 function pack!(dataset, array, index)
+    T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
     for frequency = 1:Nfreq(dataset)
         visibilities = dataset[frequency, index]
         α = 1
         for antenna1 = 1:Nant(dataset), antenna2 = antenna1:Nant(dataset)
-            J = TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
+            J = pack_jones_matrix(array, frequency, α, T)
             if J.xx != 0 && J.yy != 0
                 visibilities[antenna1, antenna2] = J
             end
@@ -131,8 +136,10 @@ function apply_the_calibration(project, config, calibration)
 end
 
 function do_the_work(input, output, metadata, calibration, index)
-    dataset = array_to_ttcal(input[index], metadata, index)
-    applycal!(dataset, calibration)
+    array = input[index]
+    T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
+    dataset = array_to_ttcal(input[index], metadata, index, T)
+    applycal!(dataset, calibration, T)
     output[index] = ttcal_to_array(dataset)
 end
 

@@ -2,6 +2,7 @@
 module TTCalDatasets
 
 export array_to_ttcal, ttcal_to_array
+export pack_jones_matrix, unpack_jones_matrix!
 
 using TTCal
 
@@ -23,6 +24,10 @@ function array_to_ttcal(array, metadata, time, T=TTCal.Dual)
     ttcal_dataset
 end
 
+function pack_jones_matrix(array, frequency, α, ::Type{TTCal.Full})
+    TTCal.JonesMatrix(array[1, frequency, α], array[2, frequency, α],
+                      array[3, frequency, α], array[4, frequency, α])
+end
 function pack_jones_matrix(array, frequency, α, ::Type{TTCal.Dual})
     TTCal.DiagonalJonesMatrix(array[1, frequency, α], array[2, frequency, α])
 end
@@ -47,6 +52,12 @@ function ttcal_to_array(ttcal_dataset)
     data
 end
 
+function unpack_jones_matrix!(data, frequency, α, J, ::Type{TTCal.Full})
+    data[1, frequency, α] = J.xx
+    data[2, frequency, α] = J.xy
+    data[3, frequency, α] = J.yx
+    data[4, frequency, α] = J.yy
+end
 function unpack_jones_matrix!(data, frequency, α, J, ::Type{TTCal.Dual})
     data[1, frequency, α] = J.xx
     data[2, frequency, α] = J.yy
