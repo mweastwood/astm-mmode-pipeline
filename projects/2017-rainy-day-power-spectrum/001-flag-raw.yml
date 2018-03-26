@@ -3,6 +3,7 @@ output: 001-flagged-raw-data
 output-accumulated: 001-accumulated-raw-data
 output-flags: 001-raw-data-flags
 metadata: metadata
+channel-flag-threshold: 0
 baseline-flag-threshold: 15
 integration-flag-threshold: 15
 special-baselines: # these baselines will be plotted

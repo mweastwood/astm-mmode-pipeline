@@ -139,7 +139,7 @@ function do_the_work(input, output, metadata, calibration, index)
     array = input[index]
     T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
     dataset = array_to_ttcal(input[index], metadata, index, T)
-    applycal!(dataset, calibration, T)
+    applycal!(dataset, calibration)
     output[index] = ttcal_to_array(dataset)
 end
 
