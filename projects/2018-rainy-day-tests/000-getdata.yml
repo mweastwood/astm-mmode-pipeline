@@ -23,11 +23,11 @@ subbands:
     19: all
     20: all
     21: all
-times:
-    - 5
+times: 31430:38057
 pol:
     - true # xx
     - true # xy
     - true # yx
     - true # yy
+accumulate: true
 

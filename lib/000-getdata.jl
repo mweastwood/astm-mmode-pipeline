@@ -12,11 +12,12 @@ include("Project.jl")
 include("DADA2MS.jl")
 
 struct Config
-    output :: String
+    output          :: String
     output_metadata :: String
-    subbands :: Dict{Int, Vector{Int}}
-    times :: Vector{Int}
-    keep :: Vector{Bool}
+    subbands        :: Dict{Int, Vector{Int}}
+    times           :: Vector{Int}
+    keep            :: Vector{Bool} # which polarizations to keep
+    accumulate      :: Bool # whether to accumulate the visibilities (time smearing)
 end
 
 function load(file, dada2ms)
@@ -31,24 +32,37 @@ function load(file, dada2ms)
         else
             subbands[subband] = value
         end
+        # load the list of files for each subband
         DADA2MS.load!(dada2ms, subband)
     end
-    times = get(dict, "times", collect(1:DADA2MS.number(dada2ms)))
-    Config(dict["output"], dict["output_metadata"], subbands, times,
-           get(dict, "pol", [true, false, false, true]))
+    if haskey(dict, "times")
+        if dict["times"] isa AbstractString
+            endpoints = parse.(Int, split(dict["times"], ":"))
+            times = collect(endpoints[1]:endpoints[2])
+        else
+            times = dict["times"]
+        end
+    else
+        times = collect(1:DADA2MS.number(dada2ms))
+    end
+    keep  = get(dict, "pol", [true, false, false, true])
+    accumulate = get(dict, "accumulate", false)
+    Config(dict["output"], dict["output_metadata"], subbands, times, keep, accumulate)
 end
 
 function go(project_file, dada2ms_file, config_file)
     project = Project.load(project_file)
     dada2ms = DADA2MS.load(dada2ms_file)
     config  = load(config_file, dada2ms)
-    getdata(project, dada2ms, config)
+    if config.accumulate
+        getdata_accumulate(project, dada2ms, config)
+    else
+        getdata(project, dada2ms, config)
+    end
     Project.touch(project, config.output)
 end
 
 function getdata(project, dada2ms, config)
-    # load the list of files for each subband
-
     queue = collect(1:length(config.times))
     pool  = CachingPool(workers())
     lck = ReentrantLock()
@@ -84,6 +98,58 @@ function getdata!(output, dada2ms, config, index, time)
     data, metadata = internal_getdata(dada2ms, config, time)
     output[index] = data
     metadata
+end
+
+function getdata_accumulate(project, dada2ms, config)
+    warn("accumulating visibilities by averaging over time")
+
+    queue = collect(1:length(config.times))
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
+
+    path = Project.workspace(project)
+    data, metadata = internal_getdata(dada2ms, config, shift!(queue))
+    increment()
+
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            input  = RemoteChannel()
+            output = RemoteChannel()
+            remotecall(getdata_accumulate_remote_processing_loop, worker,
+                       input, output, dada2ms, config, size(data))
+
+            try
+                while length(queue) > 0
+                    put!(input, shift!(queue))
+                    take!(output) # wait for the operation to finish
+                    increment()
+                end
+            finally
+                put!(input, 0)
+                data .+= take!(output)
+            end
+        end
+    end
+
+    Project.save(project, config.output, "data", data)
+    Project.save(project, config.output_metadata, "metadata", metadata)
+
+    nothing
+end
+
+function getdata_accumulate_remote_processing_loop(input, output, dada2ms, config, size)
+    data = zeros(Complex64, size)
+    while true
+        idx = take!(input)
+        if idx == 0
+            put!(output, data)
+            break
+        else
+            data .+= internal_getdata(dada2ms, config, idx)[1]
+            put!(output, nothing)
+        end
+    end
 end
 
 function internal_getdata(dada2ms, config, index)
