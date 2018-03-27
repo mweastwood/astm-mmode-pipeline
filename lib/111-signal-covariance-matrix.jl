@@ -29,11 +29,10 @@ function signal_covariance(project, config)
     mmodes = BPJSpec.load(joinpath(path, config.input))
     lmax = mmodes.mmax
 
-    signal = BPJSpec.create(AngularCovarianceMatrix,
-                            SingleFile(joinpath(path, config.output)),
-                            lmax, mmodes.frequencies, mmodes.bandwidth)
-
-    compute!(signal, fiducial_signal_model(), progress=true)
+    signal = BPJSpec.create(AngularCovarianceMatrix, SingleFile(joinpath(path, config.output)),
+                            fiducial_signal_model(),
+                            lmax, mmodes.frequencies, mmodes.bandwidth,
+                            rm=true, progress=true)
 end
 
 function fiducial_signal_model()

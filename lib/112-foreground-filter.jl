@@ -11,30 +11,29 @@ struct Config
     input_mmodes :: String
     input_transfermatrix :: String
     input_noisematrix :: String
-    input_foregroundmatrix :: String
     input_signalmatrix :: String
-    output_observed_foregroundmatrix :: String
-    output_observed_signalmatrix :: String
-    output_foreground_filter :: String
-    output_filtered_signalmatrix :: String
-    output_filtered_noisematrix :: String
-    output_whitening_matrix :: String
+    input_foregroundmatrix :: String
     output_mmodes :: String
     output_transfermatrix :: String
-    output_covariancematrix :: String
+    output_covariance :: String
+    output_foreground_filter :: String
+    output_noise_whitener :: String
     threshold :: Float64
 end
 
 function load(file)
     dict = YAML.load(open(file))
-    Config(dict["input-m-modes"], dict["input-transfer-matrix"], dict["input-noise-matrix"],
-           dict["input-foreground-matrix"], dict["input-signal-matrix"],
-           dict["output-observed-foreground-matrix"], dict["output-observed-signal-matrix"],
+    Config(dict["input-m-modes"],
+           dict["input-transfer-matrix"],
+           dict["input-noise-matrix"],
+           dict["input-signal-matrix"],
+           dict["input-foreground-matrix"],
+           dict["output-m-modes"],
+           dict["output-transfer-matrix"],
+           dict["output-covariance-matrix"],
            dict["output-foreground-filter"],
-           dict["output-filtered-signal-matrix"], dict["output-filtered-noise-matrix"],
-           dict["output-whitening-matrix"],
-           dict["output-m-modes"], dict["output-transfer-matrix"],
-           dict["output-covariance-matrix"], dict["threshold"])
+           dict["output-noise-whitener"],
+           dict["threshold"])
 end
 
 function go(project_file, config_file)
@@ -47,31 +46,27 @@ end
 function foreground_filter(project, config)
     path = Project.workspace(project)
 
-    mmodes           = BPJSpec.load(joinpath(path, config.input_mmodes))
-    transfermatrix   = BPJSpec.load(joinpath(path, config.input_transfermatrix))
-    noisematrix      = BPJSpec.load(joinpath(path, config.input_noisematrix))
-    foregroundmatrix = BPJSpec.load(joinpath(path, config.input_foregroundmatrix))
-    signalmatrix     = BPJSpec.load(joinpath(path, config.input_signalmatrix))
+    input_mmodes           = BPJSpec.load(joinpath(path, config.input_mmodes))
+    input_transfermatrix   = BPJSpec.load(joinpath(path, config.input_transfermatrix))
+    input_noisematrix      = BPJSpec.load(joinpath(path, config.input_noisematrix))
+    input_signalmatrix     = BPJSpec.load(joinpath(path, config.input_signalmatrix))
+    input_foregroundmatrix = BPJSpec.load(joinpath(path, config.input_foregroundmatrix))
 
-    MF = MultipleFiles # for brevity
-    j  = joinpath      # for brefity as well
-    observed_foregroundmatrix_storage = MF(j(path, config.output_observed_foregroundmatrix))
-    observed_signalmatrix_storage     = MF(j(path, config.output_observed_signalmatrix))
-    foreground_filter_storage         = MF(j(path, config.output_foreground_filter))
-    filtered_signalmatrix_storage     = MF(j(path, config.output_filtered_signalmatrix))
-    filtered_noisematrix_storage      = MF(j(path, config.output_filtered_noisematrix))
-    whitening_matrix_storage          = MF(j(path, config.output_whitening_matrix))
-    mmodes_storage                    = MF(j(path, config.output_mmodes))
-    transfermatrix_storage            = MF(j(path, config.output_transfermatrix))
-    covariancematrix_storage          = MF(j(path, config.output_covariancematrix))
+    function c(T, name)
+        create(T, MultipleFiles(joinpath(path, name)), input_mmodes.mmax)
+    end
 
-    BPJSpec.kltransforms(mmodes, transfermatrix, noisematrix, foregroundmatrix, signalmatrix,
-                         observed_foregroundmatrix_storage, observed_signalmatrix_storage,
-                         foreground_filter_storage,
-                         filtered_signalmatrix_storage, filtered_noisematrix_storage,
-                         whitening_matrix_storage,
-                         mmodes_storage, transfermatrix_storage, covariancematrix_storage,
-                         threshold=config.threshold)
+    output_mmodes            = c(MBlockVector, config.output_mmodes)
+    output_transfermatrix    = c(MBlockMatrix, config.output_transfermatrix)
+    output_covariance        = c(MBlockMatrix, config.output_covariance)
+    output_foreground_filter = c(MBlockMatrix, config.output_foreground_filter)
+    output_noise_whitener    = c(MBlockMatrix, config.output_noise_whitener)
+
+    foreground_filter!(output_mmodes, output_transfermatrix, output_covariance,
+                       output_foreground_filter, output_noise_whitener,
+                       input_mmodes, input_transfermatrix, input_noisematrix,
+                       input_signalmatrix, input_foregroundmatrix,
+                       threshold=config.threshold, tempdir=joinpath(path, "tmp"), cleanup=true)
 end
 
 end

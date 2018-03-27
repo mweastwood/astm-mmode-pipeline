@@ -1,0 +1,4 @@
+input: 100-transfer-matrix
+output: 101-averaged-transfer-matrix
+Navg: 10
+

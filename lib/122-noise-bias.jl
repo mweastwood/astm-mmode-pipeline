@@ -35,12 +35,7 @@ function bias(project, config)
     covariancematrix = BPJSpec.load(joinpath(path, config.input_covariancematrix))
 
     model = FileIO.load(joinpath(path′, "FIDUCIAL.jld2"), "model")
-    basis = BPJSpec.AngularCovarianceMatrix[]
-    for idx = 1:length(model.power)
-        file = joinpath(path′, @sprintf("%03d", idx))
-        basismatrix = BPJSpec.load(file)
-        push!(basis, basismatrix)
-    end
+    basis = [BPJSpec.load(joinpath(path′, @sprintf("%03d", idx))) for idx = 1:length(model.power)]
 
     b = BPJSpec.noise_bias(transfermatrix, covariancematrix, basis,
                            iterations=config.iterations)

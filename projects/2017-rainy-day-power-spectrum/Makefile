@@ -1,9 +1,11 @@
-.PHONY: all raw calibrate transfer-matrix dirty-map
-all: dirty-map
+.PHONY: all raw calibrate dirty-map transfer-matrix fisher-matrix power-spectrum
+all: dirty-map power-spectrum
 raw: .pipeline/000-raw-data
 calibrate: .pipeline/002-calibrated-data
-transfer-matrix: .pipeline/100-transfer-matrix
 dirty-map: .pipeline/032-dirty-map
+transfer-matrix: .pipeline/100-transfer-matrix
+fisher-matrix: .pipeline/121-fisher-matrix
+power-spectrum: .pipeline/123-quadratic-estimator
 
 BIN=../../bin
 LIB=../../lib
@@ -41,49 +43,52 @@ LAUNCH=$(JULIA) $(BIN)/launch.jl
 		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix.yml
 	$(LAUNCH) --remote-workers 4 $(filter-out .pipeline/%,$^)
 
-#.pipeline/averaged-m-modes: .pipeline/m-modes .pipeline/transfer-matrix \
-#		$(LIB)/101-average-channels.jl project.yml averaged-m-modes.yml
-#	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/flagged-m-modes: .pipeline/averaged-m-modes \
-#		$(LIB)/102-propagate-flags.jl project.yml flagged-m-modes.yml
-#	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/noise-covariance-matrix: .pipeline/flagged-m-modes \
-#		$(LIB)/103-noise-covariance-matrix.jl project.yml noise-covariance-matrix.yml
-#	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/compressed-m-modes: .pipeline/flagged-m-modes .pipeline/noise-covariance-matrix \
-#		$(LIB)/104-full-rank-compress.jl project.yml full-rank-compress.yml
-#	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/foreground-covariance-matrix: .pipeline/averaged-m-modes \
-#		$(LIB)/110-foreground-covariance-matrix.jl project.yml foreground-covariance-matrix.yml
-#	$(LAUNCH) $(filter-out .pipeline/%,$^)
-#
-#.pipeline/signal-covariance-matrix: .pipeline/averaged-m-modes \
-#		$(LIB)/111-signal-covariance-matrix.jl project.yml signal-covariance-matrix.yml
-#	$(LAUNCH) $(filter-out .pipeline/%,$^)
-#
-#.pipeline/filtered-m-modes: .pipeline/compressed-m-modes \
-#		.pipeline/foreground-covariance-matrix .pipeline/signal-covariance-matrix \
-#		$(LIB)/112-foreground-filter.jl project.yml foreground-filter.yml
-#	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/basis-covariance-matrices: .pipeline/averaged-m-modes \
-#		$(LIB)/120-basis-covariance-matrices.jl project.yml basis-covariance-matrices.yml
-#	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/fisher-matrix: .pipeline/basis-covariance-matrices .pipeline/filtered-m-modes \
-#		$(LIB)/121-fisher-matrix.jl project.yml fisher-matrix.yml
-#	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
-#
-#.pipeline/noise-bias: .pipeline/basis-covariance-matrices .pipeline/filtered-m-modes \
-#		$(LIB)/122-noise-bias.jl project.yml noise-bias.yml
-#	$(LAUNCH) $(filter-out .pipeline/%,$^)
-#
-#.pipeline/quadratic-estimator: .pipeline/basis-covariance-matrices .pipeline/filtered-m-modes \
-#		.pipeline/fisher-matrix .pipeline/noise-bias \
-#		$(LIB)/123-quadratic-estimator.jl project.yml quadratic-estimator.yml
-#	$(LAUNCH) $(filter-out .pipeline/%,$^)
+.pipeline/101-averaged-m-modes: .pipeline/031-m-modes \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
+
+.pipeline/101-averaged-transfer-matrix: .pipeline/100-transfer-matrix \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-transfer-matrix.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
+
+.pipeline/102-noise-covariance-matrix: .pipeline/000-raw-data .pipeline/100-transfer-matrix \
+		.pipeline/101-averaged-transfer-matrix \
+		$(LIB)/102-noise-covariance-matrix.jl project.yml 101-noise-covariance-matrix.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
+
+.pipeline/103-compressed-m-modes: .pipeline/101-averaged-m-modes \
+		.pipeline/101-averaged-transfer-matrix .pipeline/102-noise-covariance-matrix \
+		$(LIB)/103-full-rank-compress.jl project.yml 103-full-rank-compress.yml
+	$(LAUNCH) --remote-workers 1 $(filter-out .pipeline/%,$^)
+
+.pipeline/110-foreground-covariance-matrix: .pipeline/101-averaged-m-modes \
+		$(LIB)/110-foreground-covariance-matrix.jl project.yml 110-foreground-covariance-matrix.yml
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
+
+.pipeline/111-signal-covariance-matrix: .pipeline/101-averaged-m-modes \
+		$(LIB)/111-signal-covariance-matrix.jl project.yml 111-signal-covariance-matrix.yml
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
+
+.pipeline/112-filtered-m-modes: .pipeline/103-compressed-m-modes \
+		.pipeline/110-foreground-covariance-matrix .pipeline/111-signal-covariance-matrix \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter.yml
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+
+.pipeline/120-basis-covariance-matrices: .pipeline/101-averaged-m-modes \
+		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices.yml
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+
+.pipeline/121-fisher-matrix: .pipeline/120-basis-covariance-matrices \
+	    .pipeline/112-filtered-m-modes \
+		$(LIB)/121-fisher-matrix.jl project.yml 121-fisher-matrix.yml
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+
+.pipeline/122-noise-bias: .pipeline/120-basis-covariance-matrices .pipeline/112-filtered-m-modes \
+		$(LIB)/122-noise-bias.jl project.yml 122-noise-bias.yml
+	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+
+.pipeline/123-quadratic-estimator: .pipeline/120-basis-covariance-matrices \
+		.pipeline/112-filtered-m-modes .pipeline/121-fisher-matrix .pipeline/122-noise-bias \
+		$(LIB)/123-quadratic-estimator.jl project.yml 123-quadratic-estimator.yml
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
 

@@ -1,8 +1,0 @@
-input-basis: basis-covariance-matrices
-input-mmodes: filtered-m-modes
-input-transfer-matrix: filtered-transfer-matrix
-input-covariance-matrix: filtered-covariance-matrix
-input-fisher-matrix: fisher-matrix
-input-noise-bias: noise-bias
-output: quadratic-estimator
-

@@ -1,0 +1,4 @@
+input: 102-averaged-m-modes
+output: 120-basis-covariance-matrices
+power-spectrum: spherical
+

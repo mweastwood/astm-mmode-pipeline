@@ -1,6 +1,0 @@
-input-basis: basis-covariance-matrices
-input-transfer-matrix: filtered-transfer-matrix
-input-covariance-matrix: filtered-covariance-matrix
-output: fisher-matrix
-iterations: 1000
-

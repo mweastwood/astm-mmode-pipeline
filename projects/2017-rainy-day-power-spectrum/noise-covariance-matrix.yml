@@ -1,7 +1,0 @@
-input: flagged-m-modes
-output: noise-covariance-matrix
-Tsys: 2000
-integration-time: 13
-number-of-integrations: 7756
-beam-solid-angle: 2.441
-
