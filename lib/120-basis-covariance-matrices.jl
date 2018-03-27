@@ -68,7 +68,7 @@ function do_the_thing(path, lmax, frequencies, bandwidth, model, idx)
     model.power[idx] = 1u"K^2*Mpc^3"
     file = joinpath(path, @sprintf("%03d", idx))
     matrix = BPJSpec.create(AngularCovarianceMatrix, SingleFile(file),
-                            model, lmax, frequencies, bandwidth)
+                            model, lmax, frequencies, bandwidth, rm=true)
     nothing
 end
 
