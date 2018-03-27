@@ -1,0 +1,8 @@
+input-basis: 120-basis-covariance-matrices
+input-mmodes: 124-injected-m-modes
+input-transfer-matrix: 112-filtered-transfer-matrix
+input-covariance-matrix: 112-filtered-covariance-matrix
+input-fisher-matrix: 121-fisher-matrix
+input-noise-bias: 122-noise-bias
+output: 123-injected-quadratic-estimator
+

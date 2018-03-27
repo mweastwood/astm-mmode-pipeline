@@ -37,16 +37,13 @@ function quadratic_estimator(project, config)
     mmodes           = BPJSpec.load(joinpath(path, config.input_mmodes))
     transfermatrix   = BPJSpec.load(joinpath(path, config.input_transfermatrix))
     covariancematrix = BPJSpec.load(joinpath(path, config.input_covariancematrix))
-    @time cache!(mmodes)
-    @time cache!(transfermatrix)
-    @time cache!(covariancematrix)
 
     model = FileIO.load(joinpath(path′, "FIDUCIAL.jld2"), "model")
     basis = [BPJSpec.load(joinpath(path′, @sprintf("%03d", idx))) for idx = 1:length(model.power)]
-    @time foreach(cache!, basis)
 
-    F = FileIO.load(joinpath(path, config.input_fishermatrix*".jld2"), "matrix")
-    b = FileIO.load(joinpath(path, config.input_noisebias*".jld2"),    "bias")
+    F = Project.load(project, config.input_fishermatrix, "matrix")
+    b = Project.load(project, config.input_noisebias,    "bias")
+
     println("Computing q")
     @time q = q_estimator(mmodes, transfermatrix, covariancematrix, basis)
 

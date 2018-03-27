@@ -28,16 +28,13 @@ function foreground_covariance(project, config)
     mmodes = BPJSpec.load(joinpath(path, config.input))
     lmax = mmodes.mmax
 
-    points   = BPJSpec.create(AngularCovarianceMatrix, NoFile(),
-                              BPJSpec.extragalactic_point_sources(),
-                              lmax, mmodes.frequencies, mmodes.bandwidth,
-                              progress=true)
-    galactic = BPJSpec.create(AngularCovarianceMatrix, NoFile(),
-                              BPJSpec.galactic_synchrotron(),
-                              lmax, mmodes.frequencies, mmodes.bandwidth,
-                              progress=true)
+    points   = create(AngularCovarianceMatrix, NoFile(), BPJSpec.extragalactic_point_sources(),
+                      lmax, mmodes.frequencies, mmodes.bandwidth, progress=true)
+    galactic = create(AngularCovarianceMatrix, NoFile(), BPJSpec.galactic_synchrotron(),
+                      lmax, mmodes.frequencies, mmodes.bandwidth, progress=true)
 
-    foregrounds = ProgressBar(similar(points, SingleFile(joinpath(path, config.output))))
+    foregrounds = create(LBlockMatrix, SingleFile(joinpath(path, config.output)),
+                         lmax, mmodes.frequencies, mmodes.bandwidth, rm=true) |> ProgressBar
     @. foregrounds = points + galactic
 end
 
