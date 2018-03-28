@@ -25,7 +25,6 @@ function go(project_file, config_file)
     project = Project.load(project_file)
     config  = load(config_file)
     inject(project, config)
-    Project.touch(project, config.output)
 end
 
 function inject(project, config)

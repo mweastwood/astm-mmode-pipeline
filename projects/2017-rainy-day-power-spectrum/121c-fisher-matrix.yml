@@ -1,0 +1,6 @@
+input-basis: 120-basis-covariance-matrices
+input-transfer-matrix: 112c-filtered-transfer-matrix
+input-covariance-matrix: 112c-filtered-covariance-matrix
+output: 121c-fisher-matrix
+iterations: 1000
+

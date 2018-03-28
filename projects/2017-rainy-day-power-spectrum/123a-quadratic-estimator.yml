@@ -1,0 +1,8 @@
+input-basis: 120-basis-covariance-matrices
+input-mmodes: 112a-filtered-m-modes
+input-transfer-matrix: 112a-filtered-transfer-matrix
+input-covariance-matrix: 112a-filtered-covariance-matrix
+input-fisher-matrix: 121a-fisher-matrix
+input-noise-bias: 122a-noise-bias
+output: 123a-quadratic-estimator
+

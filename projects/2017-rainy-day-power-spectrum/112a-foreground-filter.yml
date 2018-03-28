@@ -1,0 +1,12 @@
+input-m-modes: 103-compressed-m-modes
+input-transfer-matrix: 103-compressed-transfer-matrix
+input-noise-matrix: 103-compressed-noise-covariance-matrix
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112a-filtered-m-modes
+output-transfer-matrix: 112a-filtered-transfer-matrix
+output-covariance-matrix: 112a-filtered-covariance-matrix
+output-foreground-filter: 112a-foreground-filter
+output-noise-whitener: 112a-noise-whitener
+threshold: 0.0
+

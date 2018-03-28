@@ -24,7 +24,6 @@ function go(project_file, config_file)
     project = Project.load(project_file)
     config  = load(config_file)
     fisher(project, config)
-    Project.touch(project, config.output)
 end
 
 function fisher(project, config)

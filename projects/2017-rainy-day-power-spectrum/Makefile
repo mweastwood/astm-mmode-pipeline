@@ -1,17 +1,49 @@
-.PHONY: all raw calibrate dirty-map transfer-matrix fisher-matrix power-spectrum signal-injection
-all: dirty-map power-spectrum signal-injection
+.PHONY: all
+all: dirty-map power-spectrum
+
+.PHONY: raw
 raw: .pipeline/000-raw-data
+
+.PHONY: calibrate
 calibrate: .pipeline/002-calibrated-data
+
+.PHONY: dirty-map
 dirty-map: .pipeline/032-dirty-map
+
+.PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
+
+.PHONY: fisher-matrix
 fisher-matrix: .pipeline/121-fisher-matrix
-power-spectrum: .pipeline/123-quadratic-estimator
-signal-injection: .pipeline/123-injected-quadratic-estimator
+
+.PHONY: power-spectrum
+power-spectrum: \
+	.pipeline/123a-quadratic-estimator \
+	.pipeline/123b-quadratic-estimator \
+	.pipeline/123c-quadratic-estimator
+
+#.PHONY: signal-injection
+#signal-injection: .pipeline/123-injected-quadratic-estimator
 
 BIN=../../bin
 LIB=../../lib
 JULIA=julia-0.6 --color=yes
 LAUNCH=$(JULIA) $(BIN)/launch.jl
+
+define launch
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
+	touch $@
+endef
+
+define launch-remote
+	$(LAUNCH) --remote-workers $(1) $(filter-out .pipeline/%,$^)
+	touch $@
+endef
+
+# Some of these targets require significant resources on a machine and so we cannot reliably run
+# anything in parallel. Currently there is no way to mark specific targets as ".NOTPARALLEL", so for
+# now we have to mark the entire Makefile.
+.NOTPARALLEL:
 
 ####################################################################################################
 # DATA REDUCTION
@@ -71,45 +103,60 @@ LAUNCH=$(JULIA) $(BIN)/launch.jl
 ####################################################################################################
 # FOREGROUND FILTERING AND QUADRATIC ESTIMATOR
 
-.pipeline/110-foreground-covariance-matrix: .pipeline/101-averaged-m-modes \
-		$(LIB)/110-foreground-covariance-matrix.jl project.yml 110-foreground-covariance-matrix.yml
-	$(LAUNCH) $(filter-out .pipeline/%,$^)
+.pipeline/110-foreground-covariance-matrix: \
+		$(LIB)/110-foreground-covariance-matrix.jl project.yml 110-foreground-covariance-matrix.yml \
+		.pipeline/101-averaged-m-modes
+	$(launch)
 
-.pipeline/111-signal-covariance-matrix: .pipeline/101-averaged-m-modes \
-		$(LIB)/111-signal-covariance-matrix.jl project.yml 111-signal-covariance-matrix.yml
-	$(LAUNCH) $(filter-out .pipeline/%,$^)
+.pipeline/111-signal-covariance-matrix: \
+		$(LIB)/111-signal-covariance-matrix.jl project.yml 111-signal-covariance-matrix.yml \
+		.pipeline/101-averaged-m-modes
+	$(launch)
 
-.pipeline/112-filtered-m-modes: .pipeline/103-compressed-m-modes \
-		.pipeline/110-foreground-covariance-matrix .pipeline/111-signal-covariance-matrix \
-		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter.yml
-	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+.pipeline/112%-foreground-filter: \
+		$(LIB)/112-foreground-filter.jl project.yml 112%-foreground-filter.yml \
+		.pipeline/103-compressed-m-modes \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
 
-.pipeline/120-basis-covariance-matrices: .pipeline/101-averaged-m-modes \
-		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices.yml
-	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+.pipeline/120-basis-covariance-matrices: \
+		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices.yml \
+		.pipeline/101-averaged-m-modes
+	$(call launch-remote,2)
 
-.pipeline/121-fisher-matrix: .pipeline/120-basis-covariance-matrices \
-	    .pipeline/112-filtered-m-modes \
-		$(LIB)/121-fisher-matrix.jl project.yml 121-fisher-matrix.yml
-	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+.pipeline/121%-fisher-matrix: \
+		$(LIB)/121-fisher-matrix.jl project.yml 121%-fisher-matrix.yml \
+	    .pipeline/112%-foreground-filter \
+		.pipeline/120-basis-covariance-matrices
+	$(call launch-remote,2)
 
-.pipeline/122-noise-bias: .pipeline/120-basis-covariance-matrices .pipeline/112-filtered-m-modes \
-		$(LIB)/122-noise-bias.jl project.yml 122-noise-bias.yml
-	$(LAUNCH) --remote-workers 2 $(filter-out .pipeline/%,$^)
+.pipeline/122%-noise-bias: \
+		$(LIB)/122-noise-bias.jl project.yml 122%-noise-bias.yml \
+		.pipeline/112%-foreground-filter \
+		.pipeline/120-basis-covariance-matrices
+	$(call launch-remote,2)
 
-.pipeline/123-quadratic-estimator: .pipeline/120-basis-covariance-matrices \
-		.pipeline/112-filtered-m-modes .pipeline/121-fisher-matrix .pipeline/122-noise-bias \
-		$(LIB)/123-quadratic-estimator.jl project.yml 123-quadratic-estimator.yml
-	$(LAUNCH) $(filter-out .pipeline/%,$^)
+.pipeline/123%-quadratic-estimator: \
+		$(LIB)/123-quadratic-estimator.jl project.yml 123%-quadratic-estimator.yml \
+		.pipeline/112%-foreground-filter \
+		.pipeline/120-basis-covariance-matrices \
+		.pipeline/121%-fisher-matrix \
+		.pipeline/122%-noise-bias
+	$(launch)
 
-.pipeline/124-injected-m-modes: .pipeline/103-compressed-m-modes \
-		.pipeline/112-filtered-m-modes \
-		$(LIB)/124-signal-injection.jl project.yml 124-signal-injection.yml
-	$(LAUNCH) $(filter-out .pipeline/%,$^)
-
-.pipeline/123-injected-quadratic-estimator: .pipeline/120-basis-covariance-matrices \
-		.pipeline/112-filtered-m-modes .pipeline/121-fisher-matrix .pipeline/122-noise-bias \
-		.pipeline/124-injected-m-modes \
-		$(LIB)/123-quadratic-estimator.jl project.yml 123-injected-quadratic-estimator.yml
-	$(LAUNCH) $(filter-out .pipeline/%,$^)
+#.pipeline/124-injected-m-modes: \
+#		$(LIB)/124-signal-injection.jl project.yml 124-signal-injection.yml \
+#		.pipeline/103-compressed-m-modes \
+#		.pipeline/112-foreground-filter
+#	$(launch)
+#
+#.pipeline/123-injected-quadratic-estimator: \
+#		$(LIB)/123-quadratic-estimator.jl project.yml 123-injected-quadratic-estimator.yml \
+#		.pipeline/112-foreground-filter \
+#		.pipeline/121-fisher-matrix \
+#		.pipeline/122-noise-bias \
+#		.pipeline/120-basis-covariance-matrices \
+#		.pipeline/124-injected-m-modes
+#	$(launch)
 

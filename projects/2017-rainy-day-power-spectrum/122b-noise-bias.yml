@@ -1,0 +1,6 @@
+input-basis: 120-basis-covariance-matrices
+input-transfer-matrix: 112b-filtered-transfer-matrix
+input-covariance-matrix: 112b-filtered-covariance-matrix
+output: 122b-noise-bias
+iterations: 1000
+
