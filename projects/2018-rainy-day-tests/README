@@ -1,0 +1,35 @@
+Calibrate the accumulated datasets with:
+
+julia> function getdataset(spw)
+           metadata = load(@sprintf("000-accumulated-metadata-spw%02d.jld2", spw), "metadata")
+           dataset  = TTCalDatasets.array_to_ttcal(load(@sprintf("000-accumulated-raw-data-spw%02d.jld2", spw), "data"), metadata, 1)
+           # apply the calibration
+           bcal = Tables.open(@sprintf("/lustre/mmanders/2018-03-20_100hr_run/BCAL_20180326/%02d-T1al.bcal", spw))
+           cparam = bcal["CPARAM"]
+           flags  = bcal["FLAG"]
+           Tables.close(bcal)
+           for β = 1:Nfreq(dataset)
+               visibilities = dataset[β, 1]
+               for ant1 = 1:Nant(dataset), ant2 = ant1:Nant(dataset)
+                   if flags[1, β, ant1] || flags[2, β, ant1] || flags[1, β, ant2] || flags[2, β, ant2]
+                       TTCal.flag!(visibilities, ant1, ant2)
+                       continue
+                   end
+                   V = visibilities[ant1, ant2]
+                   J1 = TTCal.JonesMatrix(cparam[1, β, ant1], 0, 0, cparam[2, β, ant1])
+                   J2 = TTCal.JonesMatrix(cparam[1, β, ant2], 0, 0, cparam[2, β, ant2])
+                   visibilities[ant1, ant2] = J1\V/J2'
+               end
+           end
+           dataset
+       end
+       dataset = getdataset(0)
+       for spw = 1:21
+           _dataset = getdataset(spw)
+           TTCal.merge!(dataset, _dataset, axis=:frequency)
+       end
+
+julia> ms = CreateMeasurementSet.create(dataset, "000-accumulated-raw-data-full-band.ms")
+       Tables.close(ms)
+closed::CasaCore.Tables.TableStatus = 0
+

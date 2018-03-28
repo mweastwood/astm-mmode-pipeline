@@ -1,0 +1,11 @@
+output: 000-accumulated-raw-data-spw01
+output_metadata: 000-accumulated-metadata-spw01
+subbands:
+    1: all
+times: 31430:38057
+pol:
+    - true # xx
+    - true # xy
+    - true # yx
+    - true # yy
+accumulate: true
