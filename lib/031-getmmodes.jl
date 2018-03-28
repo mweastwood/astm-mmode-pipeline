@@ -13,12 +13,15 @@ struct Config
     metadata :: String
     hierarchy :: String
     delete_input :: Bool
+    option :: String
 end
 
 function load(file)
     dict = YAML.load(open(file))
+    option = get(dict, "option", "all")
     Config(dict["input"], dict["output"],
-           dict["metadata"], dict["hierarchy"], dict["delete_input"])
+           dict["metadata"], dict["hierarchy"],
+           dict["delete_input"], option)
 end
 
 function go(project_file, config_file)
@@ -28,7 +31,6 @@ function go(project_file, config_file)
     if config.delete_input
         rm(joinpath(Project.workspace(project), config.input), recursive=true)
     end
-    Project.touch(project, config.output)
 end
 
 function getmmodes(project, config)
@@ -50,15 +52,41 @@ function getmmodes(project, config)
     @sync for worker in workers()
         @async while length(queue) > 0
             frequency = shift!(queue)
-            remotecall_wait(_getmmodes, pool, input, output, hierarchy, frequency)
+            remotecall_wait(_getmmodes, pool, input, output, hierarchy, frequency, config.option)
             increment()
         end
     end
+
+    # fix the phase of the m-modes in cases where we have moved the time origin
+    if config.option == "even-odd"
+        dϕ = -π/Ntime
+        @. mmodes *= cis(dϕ)
+    elseif config.option == "even"
+        dϕ = -2π/Ntime
+        @. mmodes *= cis(dϕ)
+    end
 end
 
-function _getmmodes(input, output, hierarchy, frequency)
+function _getmmodes(input, output, hierarchy, frequency, option)
+    array = input[frequency]
+    Ntime = size(array, 2)
+    if option == "even-odd"
+        # difference odd and even integrations
+        array = array[:, 2:2:end] - array[:, 1:2:end]
+        dϕ = -π/Ntime
+    elseif option == "odd"
+        # select only odd integrations
+        array = array[:, 1:2:end]
+        dϕ = 0.0
+    elseif option == "even"
+        # select only even integrations
+        array = array[:, 2:2:end]
+        dϕ = -2π/Ntime
+    else
+        dϕ = 0.0
+    end
     # put time on the fast axis
-    transposed_array = permutedims(input[frequency], (2, 1))
+    transposed_array = permutedims(array, (2, 1))
     # compute the m-modes
     compute!(MModes, output, hierarchy, transposed_array, frequency)
 end

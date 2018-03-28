@@ -8,7 +8,11 @@ raw: .pipeline/000-raw-data
 calibrate: .pipeline/002-calibrated-data
 
 .PHONY: dirty-map
-dirty-map: .pipeline/032-dirty-map
+dirty-map: \
+	.pipeline/032-dirty-map-everything \
+	.pipeline/032-dirty-map-odd \
+	.pipeline/032-dirty-map-even \
+	.pipeline/032-dirty-map-even-odd
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
@@ -75,15 +79,15 @@ endef
 		.pipeline/001-flagged-calibrated-data
 	$(call launch-remote,1)
 
-.pipeline/031-m-modes: \
-		$(LIB)/031-getmmodes.jl project.yml 031-getmmodes.yml \
+.pipeline/031-m-modes%: \
+		$(LIB)/031-getmmodes.jl project.yml 031-getmmodes%.yml \
 		.pipeline/030-folded-data \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
-.pipeline/032-dirty-map: \
-		$(LIB)/032-tikhonov.jl project.yml 032-tikhonov.yml \
-		.pipeline/031-m-modes \
+.pipeline/032-dirty-map%: \
+		$(LIB)/032-tikhonov.jl project.yml 032-tikhonov%.yml \
+		.pipeline/031-m-modes% \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
