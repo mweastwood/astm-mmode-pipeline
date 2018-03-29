@@ -9,13 +9,24 @@ calibrate: .pipeline/002-calibrated-data
 
 .PHONY: dirty-map
 dirty-map: \
-	.pipeline/032-dirty-map-everything \
+	.pipeline/032-dirty-map-all \
 	.pipeline/032-dirty-map-odd \
-	.pipeline/032-dirty-map-even \
-	.pipeline/032-dirty-map-even-odd
+	.pipeline/032-dirty-map-even
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
+
+.PHONY: average
+average: \
+	.pipeline/101-averaged-m-modes-all \
+	.pipeline/101-averaged-m-modes-odd \
+	.pipeline/101-averaged-m-modes-even
+
+.PHONY: compress
+compress: \
+	.pipeline/103-full-rank-compression-all \
+	.pipeline/103-full-rank-compression-odd \
+	.pipeline/103-full-rank-compression-even
 
 .PHONY: fisher-matrix
 fisher-matrix: .pipeline/121-fisher-matrix
@@ -96,9 +107,9 @@ endef
 		.pipeline/000-raw-data
 	$(call launch-remote,4)
 
-.pipeline/101-averaged-m-modes: \
-		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes.yml \
-		.pipeline/031-m-modes
+.pipeline/101-averaged-m-modes%: \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes%.yml \
+		.pipeline/031-m-modes%
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-transfer-matrix: \
@@ -106,18 +117,18 @@ endef
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
-.pipeline/102-noise-covariance-matrix: \
-		$(LIB)/102-noise-covariance-matrix.jl project.yml 102-noise-covariance-matrix.yml \
+.pipeline/102-noise-covariance-matrix%: \
+		$(LIB)/102-noise-covariance-matrix.jl project.yml 102-noise-covariance-matrix%.yml \
 		.pipeline/000-raw-data \
 		.pipeline/100-transfer-matrix \
 		.pipeline/101-averaged-transfer-matrix
 	$(call launch-remote,1)
 
-.pipeline/103-compressed-m-modes: \
-		$(LIB)/103-full-rank-compress.jl project.yml 103-full-rank-compress.yml \
-		.pipeline/101-averaged-m-modes \
+.pipeline/103-full-rank-compression%: \
+		$(LIB)/103-full-rank-compress.jl project.yml 103-full-rank-compress%.yml \
+		.pipeline/101-averaged-m-modes% \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix
+		.pipeline/102-noise-covariance-matrix%
 	$(call launch-remote,1)
 
 ####################################################################################################

@@ -36,7 +36,8 @@ end
 function getmmodes(project, config)
     path = Project.workspace(project)
 
-    metadata  = BPJSpec.from_ttcal(Project.load(project, config.metadata, "metadata"))
+    ttcal_metadata = Project.load(project, config.metadata, "metadata")
+    metadata  = BPJSpec.from_ttcal(ttcal_metadata)
     hierarchy = Project.load(project, config.hierarchy, "hierarchy")
 
     input  = BPJSpec.load(joinpath(path, config.input))
@@ -58,32 +59,23 @@ function getmmodes(project, config)
     end
 
     # fix the phase of the m-modes in cases where we have moved the time origin
-    if config.option == "even-odd"
-        dϕ = -π/Ntime
-        @. mmodes *= cis(dϕ)
-    elseif config.option == "even"
-        dϕ = -2π/Ntime
-        @. mmodes *= cis(dϕ)
+    if config.option == "even"
+        println("fixing the phase")
+        dϕ = -2π/Ntime(ttcal_metadata)
+        fix(block) = block*cis(dϕ)
+        @. output = fix(output)
     end
 end
 
 function _getmmodes(input, output, hierarchy, frequency, option)
     array = input[frequency]
     Ntime = size(array, 2)
-    if option == "even-odd"
-        # difference odd and even integrations
-        array = array[:, 2:2:end] - array[:, 1:2:end]
-        dϕ = -π/Ntime
-    elseif option == "odd"
-        # select only odd integrations
-        array = array[:, 1:2:end]
-        dϕ = 0.0
+    odd  = @view array[:, 1:2:end]
+    even = @view array[:, 2:2:end]
+    if option == "odd"
+        array = odd
     elseif option == "even"
-        # select only even integrations
-        array = array[:, 2:2:end]
-        dϕ = -2π/Ntime
-    else
-        dϕ = 0.0
+        array = even
     end
     # put time on the fast axis
     transposed_array = permutedims(array, (2, 1))

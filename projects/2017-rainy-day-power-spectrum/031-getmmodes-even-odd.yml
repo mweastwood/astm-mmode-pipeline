@@ -1,7 +1,0 @@
-input: 030-folded-data
-output: 031-m-modes-even-odd
-metadata: metadata
-hierarchy: hierarchy
-delete_input: false
-option: even-odd
-
