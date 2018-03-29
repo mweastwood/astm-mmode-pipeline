@@ -46,21 +46,35 @@ function fisher(project, config)
     b = noise_bias(transfermatrix, covariancematrix, basis, iterations=config.iterations)
     q = q_estimator(mmodes, transfermatrix, covariancematrix, basis)
 
-    M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:uncorrelated)
-    W   = BPJSpec.window_functions(F, M⁻¹)
-    Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
-    σ   = sqrt.(diag(Σ))
-    p   = M⁻¹\(q-b)
+    unwindowed_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:unwindowed)
+    unwindowed_W   = BPJSpec.window_functions(F, M⁻¹)
+    unwindowed_Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
+    unwindowed_p   = M⁻¹\(q-b)
+
+    minvariance_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:minvariance)
+    minvariance_W   = BPJSpec.window_functions(F, M⁻¹)
+    minvariance_Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
+    minvariance_p   = M⁻¹\(q-b)
+
+    uncorrelated_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:uncorrelated)
+    uncorrelated_W   = BPJSpec.window_functions(F, M⁻¹)
+    uncorrelated_Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
+    uncorrelated_p   = M⁻¹\(q-b)
 
     save(joinpath(path, config.output*".jld2"),
-         "21-cm-signal-model", model,
-         "fisher-information", F,
-         "inverse-mixing-matrix", M⁻¹,
-         "window-functions", W,
-         "standard-errors", σ,
-         "noise-bias", b,
-         "q", q,
-         "p", p)
+         "21-cm-signal-model", model, "fisher-information", F, "noise-bias", b, "q", q,
+         "unwindowed-inverse-mixing-matrix",     unwindowed_M⁻¹,
+         "minvariance-inverse-mixing-matrix",   minvariance_M⁻¹,
+         "uncorrelated-inverse-mixing-matrix", uncorrelated_M⁻¹,
+         "unwindowed-window-functions",     unwindowed_W,
+         "minvariance-window-functions",   minvariance_W,
+         "uncorrelated-window-functions", uncorrelated_W,
+         "unwindowed-covariance",     unwindowed_Σ,
+         "minvariance-covariance",   minvariance_Σ,
+         "uncorrelated-covariance", uncorrelated_Σ,
+         "unwindowed-p",     unwindowed_p,
+         "minvariance-p",   minvariance_p,
+         "uncorrelated-p", uncorrelated_p)
 end
 
 end
