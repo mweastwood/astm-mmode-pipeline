@@ -3,10 +3,10 @@ input-transfer-matrix: 103-compressed-transfer-matrix
 input-noise-matrix: 103-compressed-noise-covariance-matrix
 input-foreground-matrix: 110-foreground-covariance-matrix
 input-signal-matrix: 111-signal-covariance-matrix
-output-m-modes: 112c-filtered-m-modes
-output-transfer-matrix: 112c-filtered-transfer-matrix
-output-covariance-matrix: 112c-filtered-covariance-matrix
-output-foreground-filter: 112c-foreground-filter
-output-noise-whitener: 112c-noise-whitener
+output-m-modes: 112-filtered-m-modes-mild
+output-transfer-matrix: 112-filtered-transfer-matrix-mild
+output-covariance-matrix: 112-filtered-covariance-matrix-mild
+output-foreground-filter: 112-foreground-filter-mild
+output-noise-whitener: 112-noise-whitener-mild
 threshold: 10.0
 

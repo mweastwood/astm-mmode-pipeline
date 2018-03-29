@@ -1,0 +1,7 @@
+input-basis: 120-basis-covariance-matrices
+input-m-modes: 112-filtered-m-modes-moderate
+input-transfer-matrix: 112-filtered-transfer-matrix-moderate
+input-covariance-matrix: 112-filtered-covariance-matrix-moderate
+output: 121-quadratic-estimator-moderate
+iterations: 1000
+
