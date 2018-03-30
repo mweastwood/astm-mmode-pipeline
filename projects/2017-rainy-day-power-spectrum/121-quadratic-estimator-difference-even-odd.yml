@@ -1,0 +1,7 @@
+input-basis: 120-basis-covariance-matrices
+input-m-modes: 113-differenced-m-modes-even-odd
+input-transfer-matrix: 113-differenced-transfer-matrix-even-odd
+input-covariance-matrix: 113-differenced-covariance-matrix-even-odd
+output: 121-quadratic-estimator-difference-even-odd
+iterations: 1000
+

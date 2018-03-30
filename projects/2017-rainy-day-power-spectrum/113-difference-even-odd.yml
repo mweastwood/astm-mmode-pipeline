@@ -1,0 +1,10 @@
+lhs-m-modes: 112-filtered-m-modes-moderate-even
+lhs-transfer-matrix: 112-filtered-transfer-matrix-moderate-even
+lhs-covariance-matrix: 112-filtered-covariance-matrix-moderate-even
+rhs-m-modes: 112-filtered-m-modes-moderate-odd
+rhs-transfer-matrix: 112-filtered-transfer-matrix-moderate-odd
+rhs-covariance-matrix: 112-filtered-covariance-matrix-moderate-odd
+output-m-modes: 113-differenced-m-modes-even-odd
+output-transfer-matrix: 113-differenced-transfer-matrix-even-odd
+output-covariance-matrix: 113-differenced-covariance-matrix-even-odd
+

@@ -50,6 +50,7 @@ power-spectrum: \
 	.pipeline/121-quadratic-estimator-moderate-all \
 	.pipeline/121-quadratic-estimator-moderate-odd \
 	.pipeline/121-quadratic-estimator-moderate-even \
+	.pipeline/121-quadratic-estimator-difference-even-odd \
 	.pipeline/121-quadratic-estimator-mild-all \
 	.pipeline/121-quadratic-estimator-extreme-all
 
@@ -174,6 +175,12 @@ endef
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/113-difference-even-odd: \
+		$(LIB)/113-difference-m-modes.jl project.yml 113-difference-even-odd.yml \
+		.pipeline/112-foreground-filter-moderate-odd \
+		.pipeline/112-foreground-filter-moderate-even
+	$(call launch-remote,2)
+
 .pipeline/120-basis-covariance-matrices: \
 		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices.yml \
 		.pipeline/101-averaged-m-modes
@@ -182,6 +189,12 @@ endef
 .pipeline/121-quadratic-estimator%: \
 		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator%.yml \
 	    .pipeline/112-foreground-filter% \
+		.pipeline/120-basis-covariance-matrices
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-difference-even-odd: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-difference-even-odd.yml \
+	    .pipeline/113-difference-even-odd \
 		.pipeline/120-basis-covariance-matrices
 	$(call launch-remote,4)
 
