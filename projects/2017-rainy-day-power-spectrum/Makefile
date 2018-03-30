@@ -183,7 +183,7 @@ endef
 		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator%.yml \
 	    .pipeline/112-foreground-filter% \
 		.pipeline/120-basis-covariance-matrices
-	$(call launch-remote,2)
+	$(call launch-remote,4)
 
 ##.pipeline/124-injected-m-modes: \
 ##		$(LIB)/124-signal-injection.jl project.yml 124-signal-injection.yml \

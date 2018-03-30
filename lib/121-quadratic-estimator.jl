@@ -47,19 +47,19 @@ function fisher(project, config)
     q = q_estimator(mmodes, transfermatrix, covariancematrix, basis)
 
     unwindowed_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:unwindowed)
-    unwindowed_W   = BPJSpec.window_functions(F, M⁻¹)
-    unwindowed_Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
-    unwindowed_p   = M⁻¹\(q-b)
+    unwindowed_W   = BPJSpec.window_functions(F, unwindowed_M⁻¹)
+    unwindowed_Σ   = BPJSpec.windowed_covariance(F, unwindowed_M⁻¹)
+    unwindowed_p   = unwindowed_M⁻¹\(q-b)
 
     minvariance_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:minvariance)
-    minvariance_W   = BPJSpec.window_functions(F, M⁻¹)
-    minvariance_Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
-    minvariance_p   = M⁻¹\(q-b)
+    minvariance_W   = BPJSpec.window_functions(F, minvariance_M⁻¹)
+    minvariance_Σ   = BPJSpec.windowed_covariance(F, minvariance_M⁻¹)
+    minvariance_p   = minvariance_M⁻¹\(q-b)
 
     uncorrelated_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:uncorrelated)
-    uncorrelated_W   = BPJSpec.window_functions(F, M⁻¹)
-    uncorrelated_Σ   = BPJSpec.windowed_covariance(F, M⁻¹)
-    uncorrelated_p   = M⁻¹\(q-b)
+    uncorrelated_W   = BPJSpec.window_functions(F, uncorrelated_M⁻¹)
+    uncorrelated_Σ   = BPJSpec.windowed_covariance(F, uncorrelated_M⁻¹)
+    uncorrelated_p   = uncorrelated_M⁻¹\(q-b)
 
     save(joinpath(path, config.output*".jld2"),
          "21-cm-signal-model", model, "fisher-information", F, "noise-bias", b, "q", q,
