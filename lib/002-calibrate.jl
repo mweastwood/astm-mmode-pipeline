@@ -15,15 +15,16 @@ include("TTCalDatasets.jl")
 using .TTCalDatasets
 
 struct Config
-    input  :: String
-    output :: String
-    metadata :: String
-    skymodel :: String
-    test_image :: String
+    input        :: String
+    output       :: String
+    output_calibration :: String
+    metadata     :: String
+    skymodel     :: String
+    test_image   :: String
     integrations :: Vector{Int}
-    maxiter   :: Int
-    tolerance :: Float64
-    minuvw    :: Float64
+    maxiter      :: Int
+    tolerance    :: Float64
+    minuvw       :: Float64
     delete_input :: Bool
 end
 
@@ -38,9 +39,16 @@ function load(file)
     else
         integrations = dict["integrations"]
     end
-    Config(dict["input"], get(dict, "output", ""), dict["metadata"],
-           joinpath(dirname(file), dict["sky-model"]), dict["test-image"],
-           integrations, dict["maxiter"], dict["tolerance"], dict["minuvw"],
+    Config(dict["input"],
+           get(dict, "output", ""),
+           get(dict, "output-calibration", ""),
+           dict["metadata"],
+           joinpath(dirname(file), dict["sky-model"]),
+           dict["test-image"],
+           integrations,
+           dict["maxiter"],
+           dict["tolerance"],
+           dict["minuvw"],
            dict["delete-input"])
 end
 
@@ -52,9 +60,6 @@ function go(project_file, wsclean_file, config_file)
     if config.delete_input
         Project.rm(project, config.input)
     end
-    if config.output != ""
-        Project.touch(project, config.output)
-    end
 end
 
 function calibrate(project, wsclean, config)
@@ -62,6 +67,9 @@ function calibrate(project, wsclean, config)
     dataset, calibration = solve_for_the_calibration(project, config)
     ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
     WSClean.run(wsclean, ms, joinpath(path, config.test_image))
+    if config.output_calibration != ""
+        Project.save(project, config.output_calibration, "calibration", calibration)
+    end
     if config.output != ""
         apply_the_calibration(project, config, calibration)
     end

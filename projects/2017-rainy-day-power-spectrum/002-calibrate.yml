@@ -1,5 +1,6 @@
 input: 001-flagged-raw-data
 output: 002-calibrated-data
+output-calibration: 002-calibration-solution
 metadata: metadata
 sky-model: calibration-sky-model.json
 test-image: 002-calibration-image
@@ -7,5 +8,5 @@ integrations: 1640:1660
 maxiter: 50
 tolerance: 1e-3
 minuvw: 15.0
-delete-input: true
+delete-input: false
 
