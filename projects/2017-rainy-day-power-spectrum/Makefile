@@ -17,7 +17,8 @@ m-modes: \
 dirty-map: \
 	.pipeline/032-dirty-map-all \
 	.pipeline/032-dirty-map-odd \
-	.pipeline/032-dirty-map-even
+	.pipeline/032-dirty-map-even \
+	.pipeline/032-dirty-channel-maps
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
@@ -117,6 +118,12 @@ endef
 .pipeline/032-dirty-map%: \
 		$(LIB)/032-tikhonov.jl project.yml 032-tikhonov%.yml \
 		.pipeline/031-m-modes% \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/032-dirty-channel-maps: \
+		$(LIB)/032-tikhonov.jl project.yml 032-tikhonov-channel-maps.yml \
+		.pipeline/031-m-modes-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
