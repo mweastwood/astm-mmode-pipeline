@@ -7,6 +7,12 @@ raw: .pipeline/000-raw-data
 .PHONY: calibrate
 calibrate: .pipeline/002-calibrated-data
 
+.PHONY: m-modes
+m-modes: \
+	.pipeline/031-m-modes-all \
+	.pipeline/031-m-modes-odd \
+	.pipeline/031-m-modes-even
+
 .PHONY: dirty-map
 dirty-map: \
 	.pipeline/032-dirty-map-all \

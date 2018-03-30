@@ -57,14 +57,6 @@ function getmmodes(project, config)
             increment()
         end
     end
-
-    # fix the phase of the m-modes in cases where we have moved the time origin
-    if config.option == "even"
-        println("fixing the phase")
-        dϕ = -2π/Ntime(ttcal_metadata)
-        fix(block) = block*cis(dϕ)
-        @. output = fix(output)
-    end
 end
 
 function _getmmodes(input, output, hierarchy, frequency, option)
@@ -74,13 +66,17 @@ function _getmmodes(input, output, hierarchy, frequency, option)
     even = @view array[:, 2:2:end]
     if option == "odd"
         array = odd
+        dϕ = 0.0
     elseif option == "even"
         array = even
+        dϕ = -2π/Ntime
+    else
+        dϕ = 0.0
     end
     # put time on the fast axis
     transposed_array = permutedims(array, (2, 1))
     # compute the m-modes
-    compute!(MModes, output, hierarchy, transposed_array, frequency)
+    compute!(MModes, output, hierarchy, transposed_array, frequency; dϕ=dϕ)
 end
 
 end
