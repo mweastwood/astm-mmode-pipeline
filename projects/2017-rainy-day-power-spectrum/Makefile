@@ -52,7 +52,8 @@ power-spectrum: \
 	.pipeline/121-quadratic-estimator-moderate-even \
 	.pipeline/121-quadratic-estimator-difference-even-odd \
 	.pipeline/121-quadratic-estimator-mild-all \
-	.pipeline/121-quadratic-estimator-extreme-all
+	.pipeline/121-quadratic-estimator-extreme-all \
+	.pipeline/121-quadratic-estimator-signal-injection
 
 #.PHONY: signal-injection
 #signal-injection: .pipeline/123-injected-quadratic-estimator
@@ -198,18 +199,15 @@ endef
 		.pipeline/120-basis-covariance-matrices
 	$(call launch-remote,4)
 
-##.pipeline/124-injected-m-modes: \
-##		$(LIB)/124-signal-injection.jl project.yml 124-signal-injection.yml \
-##		.pipeline/103-compressed-m-modes \
-##		.pipeline/112-foreground-filter
-##	$(launch)
-##
-##.pipeline/123-injected-quadratic-estimator: \
-##		$(LIB)/123-quadratic-estimator.jl project.yml 123-injected-quadratic-estimator.yml \
-##		.pipeline/112-foreground-filter \
-##		.pipeline/121-fisher-matrix \
-##		.pipeline/122-noise-bias \
-##		.pipeline/120-basis-covariance-matrices \
-##		.pipeline/124-injected-m-modes
-##	$(launch)
+.pipeline/122-signal-injection: \
+		$(LIB)/122-signal-injection.jl project.yml 122-signal-injection.yml \
+		.pipeline/112-foreground-filter-moderate-all
+	$(launch)
+
+.pipeline/121-quadratic-estimator-signal-injection: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-signal-injection.yml \
+	    .pipeline/112-foreground-filter-moderate-all \
+		.pipeline/120-basis-covariance-matrices \
+		.pipeline/122-signal-injection
+	$(launch)
 

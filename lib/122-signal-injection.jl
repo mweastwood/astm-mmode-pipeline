@@ -2,23 +2,26 @@ module Driver
 
 using BPJSpec
 using Unitful
+using FileIO, JLD2
 using YAML
 
 include("Project.jl")
 
 struct Config
-    input_mmodes :: String
-    input_transfermatrix :: String
-    output :: String
-    foreground_filter :: String
-    noise_whitener :: String
+    output                :: String
+    transfermatrix        :: String
+    foreground_filter     :: String
+    noise_whitener        :: String
     injection_temperature :: Float64
 end
 
 function load(file)
     dict = YAML.load(open(file))
-    Config(dict["input-m-modes"], dict["input-transfer-matrix"], dict["output"],
-           dict["foreground-filter"], dict["noise-whitener"], dict["injection-temperature"])
+    Config(dict["output"],
+           dict["transfer-matrix"],
+           dict["foreground-filter"],
+           dict["noise-whitener"],
+           dict["injection-temperature"])
 end
 
 function go(project_file, config_file)
@@ -30,32 +33,29 @@ end
 function inject(project, config)
     path = Project.workspace(project)
 
-    mmodes         = BPJSpec.load(joinpath(path, config.input_mmodes))
-    transfermatrix = BPJSpec.load(joinpath(path, config.input_transfermatrix))
+    transfermatrix    = BPJSpec.load(joinpath(path, config.transfermatrix))
     foreground_filter = BPJSpec.load(joinpath(path, config.foreground_filter))
     noise_whitener    = BPJSpec.load(joinpath(path, config.noise_whitener))
 
-    lmax = mmax = mmodes.mmax
-    frequencies = mmodes.frequencies
-    bandwidth   = mmodes.bandwidth
-    T = config.injection_temperature * u"mK"
+    lmax = mmax = transfermatrix.mmax
+    frequencies = transfermatrix.frequencies
+    bandwidth   = transfermatrix.bandwidth
+    temp = config.injection_temperature * u"mK"
 
-    covariance = create(AngularCovarianceMatrix, NoFile(), signal_model(T),
-                        lmax, frequencies, bandwidth, progress=true)
-    random = RandomBlockVector(covariance)
+    angularcovariance = create(AngularCovarianceMatrix, NoFile(), signal_model(temp),
+                               lmax, frequencies, bandwidth, progress=true)
+    random = RandomBlockVector(angularcovariance)
     signal = create(LMBlockVector, lmax, mmax, frequencies, bandwidth)
     @. signal = random
     signal′ = create(MFBlockVector, signal)
-    @show signal′[0, 1]
 
-    # TODO: add this injected signal to the measured m-modes
     intermediate  = create(MFBlockVector, NoFile(), mmax, frequencies, bandwidth)
     intermediate′ = ProgressBar(intermediate)
     @. intermediate′ = transfermatrix * signal′
 
     output  = create(MBlockVector, SingleFile(joinpath(path, config.output)), mmax, rm=true)
     output′ = ProgressBar(output)
-    @. output′ = BPJSpec.T(noise_whitener) * (BPJSpec.T(foreground_filter) * intermediate)
+    @. output′ = T(noise_whitener) * (T(foreground_filter) * intermediate)
 end
 
 function signal_model(temp)

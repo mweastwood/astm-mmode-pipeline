@@ -1,0 +1,6 @@
+output: 122-signal-injected-m-modes
+transfer-matrix: 103-compressed-transfer-matrix
+foreground-filter: 112-foreground-filter-moderate
+noise-whitener: 112-noise-whitener-moderate
+injection-temperature: 1e4
+

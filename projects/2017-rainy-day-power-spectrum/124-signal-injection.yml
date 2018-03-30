@@ -1,7 +1,0 @@
-input-m-modes: 103-compressed-m-modes
-input-transfer-matrix: 103-compressed-transfer-matrix
-output: 124-injected-m-modes
-foreground-filter: 112-foreground-filter
-noise-whitener: 112-noise-whitener
-injection-temperature: 1e4
-
