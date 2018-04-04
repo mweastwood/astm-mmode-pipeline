@@ -115,6 +115,7 @@ end
 function peel_and_measure_residuals!(input, output, metadata, sky, config, index)
     # TODO: before-after residuals? position measuring???
     result = peel_dry_run!(input, metadata, sky, config, index)
+    output[index] = ttcal_to_array(result)
     residuals = Dict(source.name => getfield.(TTCal.getspec(result, source), :I)
                      for source in sky.sources)
     residuals
