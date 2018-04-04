@@ -7,6 +7,9 @@ raw: .pipeline/000-raw-data
 .PHONY: calibrate
 calibrate: .pipeline/002-calibrated-data
 
+.PHONY: peel
+peel: .pipeline/020-peeled-data
+
 .PHONY: m-modes
 m-modes: \
 	.pipeline/031-m-modes-all \
@@ -61,7 +64,7 @@ power-spectrum: \
 
 BIN=../../bin
 LIB=../../lib
-JULIA=julia-0.6 --color=yes
+JULIA=julia-0.6 --color=yes -O3
 LAUNCH=$(JULIA) $(BIN)/launch.jl
 
 define launch
@@ -100,6 +103,11 @@ endef
 		$(LIB)/001-flag.jl project.yml 001-flag-calibrated.yml \
 		.pipeline/002-calibrated-data
 	$(launch)
+
+.pipeline/020-peeled-data: \
+		$(LIB)/020-peel.jl project.yml 020-peel.yml \
+		.pipeline/001-flagged-calibrated-data
+	$(call launch-remote,4)
 
 ####################################################################################################
 # M-MODE ANALYSIS BASICS AND IMAGING

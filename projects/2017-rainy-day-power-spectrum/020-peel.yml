@@ -1,0 +1,41 @@
+input: 001-flagged-calibrated-data
+output: 020-peeled-data
+output-residuals: 020-peeling-residuals
+metadata: metadata
+sky-model: peeling-sky-model.json
+strategy:
+    Cyg A:
+        category: bright
+        minimum-elevation: 10
+        minimum-flux: 1000
+    Cas A:
+        category: bright
+        minimum-elevation: 10
+        minimum-flux: 1000
+    Vir A:
+        category: bright
+        minimum-elevation: 30
+        minimum-flux: 1000
+    Tau A:
+        category: bright
+        minimum-elevation: 30
+        minimum-flux: 1000
+    Her A:
+        category: faint
+        minimum-elevation: 30
+        minimum-flux: 500
+    Hya A:
+        category: faint
+        minimum-elevation: 60
+        minimum-flux: 500
+    Per B:
+        category: faint
+        minimum-elevation: 60
+        minimum-flux: 500
+    3C 353:
+        category: faint
+        minimum-elevation: 60
+        minimum-flux: 500
+    Sun:
+        category: skip
+

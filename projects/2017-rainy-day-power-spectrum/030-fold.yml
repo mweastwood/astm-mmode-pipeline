@@ -1,4 +1,4 @@
-input: 001-flagged-calibrated-data
+input: 020-peeled-data
 output: 030-folded-data
 metadata: metadata
 integrations-per-day: 6628
