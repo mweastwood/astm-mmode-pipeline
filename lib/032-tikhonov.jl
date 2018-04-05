@@ -12,6 +12,7 @@ struct Config
     input :: String
     output_alm :: String
     output_map :: String
+    output_directory :: String
     transfermatrix :: String
     regularization :: Float64
     nside :: Int
@@ -23,6 +24,7 @@ function load(file)
     Config(dict["input"],
            dict["output-alm"],
            dict["output-map"],
+           get(dict, "output-directory", ""),
            dict["transfer-matrix"],
            dict["regularization"],
            dict["nside"],
@@ -56,11 +58,14 @@ function tikhonov(project, config)
         writehealpix(joinpath(path, config.output_map*".fits"), map, replace=true)
     else
         Nfreq = length(alm.frequencies)
+        if !isdir(joinpath(path, config.output_directory))
+            mkpath(joinpath(path, config.output_directory))
+        end
         prg = Progress(Nfreq)
         for β = 1:Nfreq
             map = create_map(alm, config.nside, β)
             filename = @sprintf("%s-%04d.fits", config.output_map, β)
-            writehealpix(joinpath(path, filename), map, replace=true)
+            writehealpix(joinpath(path, config.output_directory, filename), map, replace=true)
             next!(prg)
         end
     end
