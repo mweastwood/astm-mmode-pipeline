@@ -44,7 +44,7 @@ function fisher(project, config)
     model = FileIO.load(joinpath(path′, "FIDUCIAL.jld2"), "model")
     basis = [BPJSpec.load(joinpath(path′, @sprintf("%03d", idx))) for idx = 1:length(model.power)]
 
-    if config.input_fishermatrix == ""
+    if config.input_fishermatrix != ""
         F, b = FileIO.load(joinpath(path, config.input_fishermatrix*".jld2"),
                            "fisher-information", "noise-bias")
     else
