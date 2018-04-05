@@ -1,5 +1,5 @@
 .PHONY: all
-all: dirty-map power-spectrum
+all: dirty-maps power-spectrum
 
 .PHONY: raw
 raw: .pipeline/000-raw-data
@@ -16,12 +16,13 @@ m-modes: \
 	.pipeline/031-m-modes-odd \
 	.pipeline/031-m-modes-even
 
-.PHONY: dirty-map
-dirty-map: \
+.PHONY: dirty-maps
+dirty-maps: \
 	.pipeline/032-dirty-map-all \
 	.pipeline/032-dirty-map-odd \
 	.pipeline/032-dirty-map-even \
-	.pipeline/032-dirty-channel-maps
+	.pipeline/032-dirty-channel-maps \
+	.pipeline/033-difference-maps-even-odd
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
@@ -134,6 +135,12 @@ endef
 		.pipeline/031-m-modes-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
+
+.pipeline/033-difference-maps-even-odd: \
+		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
+		.pipeline/032-dirty-map-odd \
+		.pipeline/032-dirty-map-even
+	$(launch)
 
 .pipeline/100-transfer-matrix: \
 		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix.yml \
