@@ -7,6 +7,9 @@ raw: .pipeline/000-raw-data
 .PHONY: calibrate
 calibrate: .pipeline/002-calibrated-data
 
+.PHONY: fitrfi
+fitrfi: .pipeline/010-fitrfi
+
 .PHONY: peel
 peel: .pipeline/020-peeled-data
 
@@ -104,6 +107,11 @@ endef
 		$(LIB)/001-flag.jl project.yml 001-flag-calibrated.yml \
 		.pipeline/002-calibrated-data
 	$(launch)
+
+.pipeline/010-fitrfi: \
+		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \
+		.pipeline/001-flagged-calibrated-data
+	$(call launch-remote,1)
 
 .pipeline/020-peeled-data: \
 		$(LIB)/020-peel.jl project.yml 020-peel.yml \
