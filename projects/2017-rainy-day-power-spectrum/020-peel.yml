@@ -1,4 +1,4 @@
-input: 001-flagged-calibrated-data
+input: 011-rfi-subtracted-data
 output: 020-peeled-data
 output-residuals: 020-peeling-residuals
 metadata: metadata

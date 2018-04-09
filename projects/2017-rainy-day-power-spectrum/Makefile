@@ -10,6 +10,9 @@ calibrate: .pipeline/002-calibrated-data
 .PHONY: fitrfi
 fitrfi: .pipeline/010-fitrfi
 
+.PHONY: subrfi
+subrfi: .pipeline/011-subrfi
+
 .PHONY: peel
 peel: .pipeline/020-peeled-data
 
@@ -113,9 +116,15 @@ endef
 		.pipeline/001-flagged-calibrated-data
 	$(call launch-remote,1)
 
+.pipeline/011-subrfi: \
+		$(LIB)/011-subrfi.jl project.yml 011-subrfi.yml \
+		.pipeline/001-flagged-calibrated-data \
+		.pipeline/010-fitrfi
+	$(call launch-remote,1)
+
 .pipeline/020-peeled-data: \
 		$(LIB)/020-peel.jl project.yml 020-peel.yml \
-		.pipeline/001-flagged-calibrated-data
+		.pipeline/011-subrfi
 	$(call launch-remote,4)
 
 ####################################################################################################
@@ -123,7 +132,7 @@ endef
 
 .pipeline/030-folded-data: \
 		$(LIB)/030-fold.jl project.yml 030-fold.yml \
-		.pipeline/001-flagged-calibrated-data
+		.pipeline/020-peeled-data
 	$(call launch-remote,1)
 
 .pipeline/031-m-modes%: \
