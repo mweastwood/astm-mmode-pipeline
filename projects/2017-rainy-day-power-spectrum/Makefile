@@ -28,7 +28,8 @@ dirty-maps: \
 	.pipeline/032-dirty-map-odd \
 	.pipeline/032-dirty-map-even \
 	.pipeline/032-dirty-channel-maps \
-	.pipeline/033-difference-maps-even-odd
+	.pipeline/033-difference-maps-even-odd \
+	.pipeline/033-difference-maps-channels
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
@@ -157,6 +158,11 @@ endef
 		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
 		.pipeline/032-dirty-map-odd \
 		.pipeline/032-dirty-map-even
+	$(launch)
+
+.pipeline/033-difference-maps-channels: \
+		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-channels.yml \
+		.pipeline/032-dirty-channel-maps
 	$(launch)
 
 .pipeline/100-transfer-matrix: \
