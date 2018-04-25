@@ -3,6 +3,6 @@ hierarchy: hierarchy
 input: 101-averaged-transfer-matrix
 output: 102-noise-covariance-matrix-odd
 # Scale the system temperature to account for fewer integrations
-Tsys: 2828.42712474619 # 2000*sqrt(2)
+Tsys: 4949.747468305833 # 3500*sqrt(2)
 beam-solid-angle: 2.441
 
