@@ -105,8 +105,6 @@ end
 
 rms(X) = sqrt(mean(abs2.(X)))
 rms(X, N) = squeeze(sqrt.(mean(abs2.(X), N)), N)
-mad(X) = median(abs.(X))
-mad(X, N) = squeeze(median(abs.(X), N), N)
 
 function difference_all(V1, V2, V3)
     _, Nfreq, Nbase = size(V1)
