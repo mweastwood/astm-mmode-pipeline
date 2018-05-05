@@ -5,7 +5,7 @@ all: dirty-maps power-spectrum
 raw: .pipeline/000-raw-data
 
 .PHONY: calibrate
-calibrate: .pipeline/002-calibrated-data
+calibrate: .pipeline/003-calibrated-data
 
 .PHONY: fitrfi
 fitrfi: .pipeline/010-fitrfi
@@ -97,36 +97,48 @@ endef
 		$(LIB)/000-getdata.jl project.yml dada2ms.yml 000-getdata.yml
 	$(call launch-remote,2)
 
-.pipeline/001-flagged-raw-data: \
-		$(LIB)/001-flag.jl project.yml 001-flag-raw.yml \
+.pipeline/001-raw-transposed-data: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-raw.yml \
 		.pipeline/000-raw-data
+	$(call launch-remote,1)
+
+.pipeline/002-flagged-raw-data: \
+		$(LIB)/002-flag.jl project.yml 002-flag-raw.yml \
+		.pipeline/000-raw-data \
+		.pipeline/001-raw-transposed-data
+	$(call launch-remote,1)
+
+.pipeline/003-calibrated-data: \
+		$(LIB)/003-calibrate.jl project.yml wsclean.yml 003-calibrate.yml \
+		.pipeline/002-flagged-raw-data
+	$(call launch-remote,1)
+
+.pipeline/001-calibrated-transposed-data: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-calibrated.yml \
+		.pipeline/003-calibrated-data
+	$(call launch-remote,1)
+
+.pipeline/002-flagged-calibrated-data: \
+		$(LIB)/002-flag.jl project.yml 002-flag-calibrated.yml \
+		.pipeline/002-calibrated-data \
+		.pipeline/001-calibrated-transposed-data
 	$(launch)
 
-.pipeline/002-calibrated-data: \
-		$(LIB)/002-calibrate.jl project.yml wsclean.yml 002-calibrate.yml \
-		.pipeline/001-flagged-raw-data
-	$(call launch-remote,1)
-
-.pipeline/001-flagged-calibrated-data: \
-		$(LIB)/001-flag.jl project.yml 001-flag-calibrated.yml \
-		.pipeline/002-calibrated-data
-	$(launch)
-
-.pipeline/010-fitrfi: \
-		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \
-		.pipeline/001-flagged-calibrated-data
-	$(call launch-remote,1)
-
-.pipeline/011-subrfi: \
-		$(LIB)/011-subrfi.jl project.yml 011-subrfi.yml \
-		.pipeline/001-flagged-calibrated-data \
-		.pipeline/010-fitrfi
-	$(call launch-remote,1)
-
-.pipeline/020-peeled-data: \
-		$(LIB)/020-peel.jl project.yml 020-peel.yml \
-		.pipeline/011-subrfi
-	$(call launch-remote,4)
+#.pipeline/010-fitrfi: \
+#		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \
+#		.pipeline/001-flagged-calibrated-data
+#	$(call launch-remote,1)
+#
+#.pipeline/011-subrfi: \
+#		$(LIB)/011-subrfi.jl project.yml 011-subrfi.yml \
+#		.pipeline/001-flagged-calibrated-data \
+#		.pipeline/010-fitrfi
+#	$(call launch-remote,1)
+#
+#.pipeline/020-peeled-data: \
+#		$(LIB)/020-peel.jl project.yml 020-peel.yml \
+#		.pipeline/011-subrfi
+#	$(call launch-remote,4)
 
 ####################################################################################################
 # M-MODE ANALYSIS BASICS AND IMAGING
@@ -227,15 +239,20 @@ endef
 		.pipeline/112-foreground-filter-moderate-even
 	$(call launch-remote,2)
 
-.pipeline/120-basis-covariance-matrices: \
-		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices.yml \
+.pipeline/120-basis-covariance-matrices-spherical: \
+		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-spherical.yml \
+		.pipeline/101-averaged-m-modes
+	$(call launch-remote,2)
+
+.pipeline/120-basis-covariance-matrices-cylindrical: \
+		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-cylindrical.yml \
 		.pipeline/101-averaged-m-modes
 	$(call launch-remote,2)
 
 .pipeline/121-quadratic-estimator%: \
 		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator%.yml \
 	    .pipeline/112-foreground-filter% \
-		.pipeline/120-basis-covariance-matrices
+		.pipeline/120-basis-covariance-matrices-spherical
 	$(call launch-remote,4)
 
 .pipeline/121-quadratic-estimator-difference-even-odd: \

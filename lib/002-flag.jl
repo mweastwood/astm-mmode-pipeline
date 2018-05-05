@@ -235,7 +235,7 @@ insensitive to gain variations in the data.
 """
 function impulsive_event_flags!(flags, visibilities, metadata, threshold)
     lengths = baseline_lengths(metadata)
-    load(β) = (V = apply!(visibilities[idx], flags, idx); V[1, :, :] + V[2, :, :])
+    load(idx) = (V = apply!(visibilities[idx], flags, idx); V[1, :, :] + V[2, :, :])
 
     prg = Progress(Ntime(metadata) - 2)
     range = 1:3
@@ -259,41 +259,16 @@ end
 
 function _impulsive_event_flags!(flags, V1, V2, V3, metadata, threshold, range, lengths)
     Δ = 2 .* V2 .- V1 .- V3
-    ratio = rms(Δ, 1) ./ avg(abs.(Δ), 1)
+    ratio = rms(Δ, 1) ./ avg(abs.(Δ), 1) .- 1
     for α in find_unusual_baselines(lengths, ratio, threshold)
-        flags.channel_flags[α, range] = true
+        flags.integration_flags[α, range] = true
     end
 end
 
 "Get a list of all unusual baselines given the data for baselines of similar lengths."
-function find_unusual_baselines(lengths, data, threshold)
+function find_unusual_baselines(lengths, data, cutoff)
     Nbase = length(data)
-
-    # baselines shorter than 250 m are treated separately from baselines longer than 250 m, this
-    # seems to be a natural division of the baselines
-    cut = 250
-    selection1 = lengths .> cut
-    selection2 = lengths .≤ cut
-
-    function measure_mad(selection)
-        x = data[selection]
-        x = x[x .!= 0]
-        x = x[.!isnan.(x)]
-        if length(x) > 0
-            return mad(x)
-        else
-            return 0.0
-        end
-    end
-
-    σ1 = measure_mad(selection1)
-    σ2 = measure_mad(selection2)
-
-    function sigma(α)
-        lengths[α] > cut ? σ1 : σ2
-    end
-
-    find(α -> is_this_baseline_unusual(data[α], threshold*sigma(α)), 1:Nbase)
+    find(α -> is_this_baseline_unusual(data[α], cutoff), 1:Nbase)
 end
 
 function is_this_baseline_unusual(value, cutoff)

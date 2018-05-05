@@ -1,0 +1,8 @@
+input: 003-calibrated-data
+input-transposed: 001-calibrated-transposed-data
+output: 002-flagged-calibrated-data
+output-flags: 002-calibrated-data-flags
+metadata: metadata
+channel-flag-threshold: 0.2     # ratio of mean to RMS
+integration-flag-threshold: 0.3 # ratio of RMS to mean of absolute value (minus 1)
+
