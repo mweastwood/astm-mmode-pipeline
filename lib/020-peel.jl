@@ -43,14 +43,10 @@ function load(file)
            strategy)
 end
 
-function go(project_file, config_file; integration=0)
+function go(project_file, config_file)
     project = Project.load(project_file)
     config  = load(config_file)
-    if integration == 0
-        peel(project, config)
-    else
-        test(project, config, integration)
-    end
+    peel(project, config)
 end
 
 function peel(project, config)
@@ -120,6 +116,8 @@ function peel_and_measure_residuals!(input, output, metadata, sky, config, index
     # TODO: before-after residuals? position measuring???
     result = peel_dry_run!(input, metadata, sky, config, index)
     output[index] = ttcal_to_array(result)
+    residuals = Dict(source.name => getfield.(TTCal.getspec(result, source), :I)
+                     for source in sky.sources)
     residuals
 end
 
@@ -172,11 +170,9 @@ function do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, 
         subtract!(dataset, faint)
     end
 
-    #residuals = Dict(source.name => getfield.(TTCal.getspec(result, source), :I)
-    #                 for source in sky.sources)
     if istest
-        residuals = Dict(source.name => TTCal.getflux(dataset, source).I
-                         for source in sky.sources)
+        residualsx = Dict(source.name => TTCal.getflux(dataset, source).I
+                          for source in sky.sources)
         @show residuals
     end
 
