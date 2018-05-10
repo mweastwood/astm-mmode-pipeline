@@ -38,7 +38,6 @@ function main(args)
         N = args["remote-workers"]
         machines = ["astm04", "astm05", "astm06", "astm07", "astm08",
                     "astm09", "astm10", "astm11", "astm12", "astm13"]
-        #machines = ["astm11", "astm13"]
         addprocs([(machine, N) for machine in machines], exeflags=`-L $path`)
     end
 

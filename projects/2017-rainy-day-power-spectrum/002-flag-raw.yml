@@ -3,8 +3,7 @@ input-transposed: 001-raw-transposed-data
 output: 002-flagged-raw-data
 output-flags: 002-raw-data-flags
 metadata: metadata
-channel-flag-threshold: 5
-integration-flag-threshold: 3
+channel-baseline-constant-offset-threshold: 0.4
 a-priori-antenna-flags:
     - 1 # spikes
     - 10 # time-series of B is shitty

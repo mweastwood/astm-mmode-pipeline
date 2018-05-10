@@ -124,21 +124,21 @@ endef
 		.pipeline/001-calibrated-transposed-data
 	$(launch)
 
-#.pipeline/010-fitrfi: \
-#		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \
-#		.pipeline/001-flagged-calibrated-data
-#	$(call launch-remote,1)
-#
-#.pipeline/011-subrfi: \
-#		$(LIB)/011-subrfi.jl project.yml 011-subrfi.yml \
-#		.pipeline/001-flagged-calibrated-data \
-#		.pipeline/010-fitrfi
-#	$(call launch-remote,1)
-#
-#.pipeline/020-peeled-data: \
-#		$(LIB)/020-peel.jl project.yml 020-peel.yml \
-#		.pipeline/011-subrfi
-#	$(call launch-remote,4)
+.pipeline/010-fitrfi: \
+		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \
+		.pipeline/002-flagged-calibrated-data
+	$(call launch-remote,1)
+
+.pipeline/011-subrfi: \
+		$(LIB)/011-subrfi.jl project.yml 011-subrfi.yml \
+		.pipeline/001-flagged-calibrated-data \
+		.pipeline/010-fitrfi
+	$(call launch-remote,1)
+
+.pipeline/020-peeled-data: \
+		$(LIB)/020-peel.jl project.yml 020-peel.yml \
+		.pipeline/011-subrfi
+	$(call launch-remote,4)
 
 ####################################################################################################
 # M-MODE ANALYSIS BASICS AND IMAGING
