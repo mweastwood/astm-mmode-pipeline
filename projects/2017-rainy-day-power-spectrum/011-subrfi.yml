@@ -1,4 +1,4 @@
-input: 001-flagged-calibrated-data
+input: 002-flagged-calibrated-data
 output: 011-rfi-subtracted-data
 output-amplitude: 011-subrfi-amplitude
 coherencies: 010-fitrfi-coherencies

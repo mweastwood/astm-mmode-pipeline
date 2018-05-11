@@ -43,13 +43,18 @@ function load(file)
            strategy)
 end
 
-function go(project_file, config_file)
+function go(project_file, config_file; integration=0)
     project = Project.load(project_file)
     config  = load(config_file)
-    peel(project, config)
+    if integration == 0
+        peel(project, config)
+    else
+        test(project, config, integration)
+    end
 end
 
 function peel(project, config)
+    Project.set_stripe_count(project, config.output, 1)
     path = Project.workspace(project)
     sky  = readsky(config.skymodel)
     input    = BPJSpec.load(joinpath(path, config.input))
@@ -126,7 +131,9 @@ function peel_dry_run!(input, metadata, sky, config, index;
     array = input[index]
     T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
     dataset = array_to_ttcal(array, metadata, index, T)
-    do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, istest)
+    if !all(array .== 0)
+        do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, istest)
+    end
     dataset
 end
 
@@ -170,9 +177,11 @@ function do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, 
         subtract!(dataset, faint)
     end
 
+    #residuals = Dict(source.name => getfield.(TTCal.getspec(result, source), :I)
+    #                 for source in sky.sources)
     if istest
-        residualsx = Dict(source.name => TTCal.getflux(dataset, source).I
-                          for source in sky.sources)
+        residuals = Dict(source.name => TTCal.getflux(dataset, source).I
+                         for source in sky.sources)
         @show residuals
     end
 

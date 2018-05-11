@@ -1,4 +1,4 @@
-input: 001-flagged-calibrated-data
+input: 002-flagged-calibrated-data
 output-measurement-set: 010-fitrfi-smeared
 output-coherencies: 010-fitrfi-coherencies
 metadata: metadata
