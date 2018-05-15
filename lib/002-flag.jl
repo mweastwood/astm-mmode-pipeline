@@ -85,29 +85,28 @@ function flag(project, config)
     visibilities = BPJSpec.load(joinpath(path, config.input))
     output = similar(visibilities, MultipleFiles(joinpath(path, config.output)))
 
-    #flags = Flags(metadata)
+    flags = Flags(metadata)
 
-    #println("Applying a-priori flags")
-    #@time a_priori_flags!(flags, config, metadata)
+    println("Applying a-priori flags")
+    @time a_priori_flags!(flags, config, metadata)
 
-    #println("Flagging auto-correlations")
-    #@time flag_autos!(flags, config, metadata)
+    println("Flagging auto-correlations")
+    @time flag_autos!(flags, config, metadata)
 
-    #flag_frequency_differences = (config.visibility_amplitude_threshold > 0
-    #                              || config.channel_baseline_constant_offset_threshold > 0)
-    #if flag_frequency_differences
-    #    println("Computing flags from frequency differences")
-    #    transposed_visibilities = BPJSpec.load(joinpath(path, config.input_transposed))
-    #    @time flags_from_frequency_differences!(flags, transposed_visibilities, metadata, config)
-    #end
+    flag_frequency_differences = (config.visibility_amplitude_threshold > 0
+                                  || config.channel_baseline_constant_offset_threshold > 0)
+    if flag_frequency_differences
+        println("Computing flags from frequency differences")
+        transposed_visibilities = BPJSpec.load(joinpath(path, config.input_transposed))
+        @time flags_from_frequency_differences!(flags, transposed_visibilities, metadata, config)
+    end
+    Project.save(project, config.output_flags*"-unwidened", "flags", flags)
 
     println("Widening flags")
-    #Project.save(project, config.output_flags, "flags", flags)
-    flags = Project.load(project, config.output_flags, "flags")
     @time widen!(flags, config)
+    Project.save(project, config.output_flags, "flags", flags)
 
     println("Applying the new flags")
-    Project.save(project, config.output_flags, "flags", flags)
     #flags = Project.load(project, config.output_flags, "flags")
     Project.set_stripe_count(project, config.output, 1)
     @time write_output(project, flags, visibilities, output, metadata)
@@ -193,16 +192,25 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     lengths = baseline_lengths(metadata)
     load(β) = apply_to_transpose!(transposed_visibilities[β], flags, β)
 
-    function find_flags(Δ, range)
-        flags.channel_difference_rms[first(range)] = rms(Δ)
+    function find_flags(V1, V2, V3, Δ, range)
         if config.visibility_amplitude_threshold > 0
-            _visibility_amplitude_flags!(flags, Δ, config.visibility_amplitude_threshold,
-                                         range)
+            for iteration = 1:3
+                Δ .= difference_from_middle.(V1, V2, V3)
+                _visibility_amplitude_flags!(flags, Δ, config.visibility_amplitude_threshold, range)
+                apply_to_transpose!(V1, flags, range[1])
+                apply_to_transpose!(V2, flags, range[2])
+                apply_to_transpose!(V3, flags, range[3])
+            end
         end
         if config.channel_baseline_constant_offset_threshold > 0
+            Δ .= difference_from_middle.(V1, V2, V3)
             _constant_offset_flags!(flags, Δ, config.channel_baseline_constant_offset_threshold,
                                     range, lengths)
+            apply_to_transpose!(V1, flags, range[1])
+            apply_to_transpose!(V2, flags, range[2])
+            apply_to_transpose!(V3, flags, range[3])
         end
+        flags.channel_difference_rms[first(range)] = rms(Δ)
     end
 
     prg = Progress(Nfreq(metadata) - 2)
@@ -210,8 +218,11 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     V1 = load(1)
     V2 = load(2)
     V3 = load(3)
-    Δ  = difference_from_middle.(V1, V2, V3)
-    find_flags(Δ, range)
+    _preexisting_flags!(flags, V1, 1)
+    _preexisting_flags!(flags, V2, 2)
+    _preexisting_flags!(flags, V3, 3)
+    Δ  = similar(V1)
+    find_flags(V1, V2, V3, Δ, range)
     next!(prg)
 
     while last(range) < Nfreq(metadata)
@@ -219,8 +230,8 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
         V1 = V2
         V2 = V3
         V3 = load(last(range))
-        Δ .= difference_from_middle.(V1, V2, V3)
-        find_flags(Δ, range)
+        _preexisting_flags!(flags, V3, last(range))
+        find_flags(V1, V2, V3, Δ, range)
         next!(prg)
     end
 
