@@ -122,7 +122,7 @@ endef
 		$(LIB)/002-flag.jl project.yml 002-flag-calibrated.yml \
 		.pipeline/002-calibrated-data \
 		.pipeline/001-calibrated-transposed-data
-	$(launch)
+	$(call launch-remote,1)
 
 .pipeline/010-fitrfi: \
 		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \

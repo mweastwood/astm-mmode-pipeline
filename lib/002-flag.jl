@@ -51,12 +51,17 @@ struct Flags
     # uses much less memory (generally 8 times less), but is usually slower to index. This is a
     # worthwhile tradeoff.
     bits :: BitArray{3} # Nbase × Nfreq × Ntime
+    # We would also like to maintain a record of the measured RMS after channel differencing, so
+    # that we can use this information to re-flag the dataset in later steps without needing to take
+    # transposes of the visibilities.
+    channel_difference_rms :: Vector{Float64}
 end
 
 function Flags(metadata::TTCal.Metadata)
     bits = BitArray(Nbase(metadata), Nfreq(metadata), Ntime(metadata))
     bits[:] = false
-    Flags(bits)
+    channel_difference_rms = zeros(Nfreq(metadata)-2)
+    Flags(bits, channel_difference_rms)
 end
 
 flag_baseline!(flags::Flags, baseline) = flags.bits[baseline, :, :] = true
@@ -64,6 +69,8 @@ flag_channel!(flags::Flags, channel) = flags.bits[:, channel, :] = true
 flag_integration!(flags::Flags, integration) = flags.bits[:, :, integration] = true
 flag_baseline_channel!(flags::Flags, baseline, channel) =
     flags.bits[baseline, channel, :] = true
+flag_baseline_integration!(flags::Flags, baseline, integration) =
+    flags.bits[baseline, :, integration] = true
 
 function go(project_file, config_file)
     project = Project.load(project_file)
@@ -78,7 +85,7 @@ function flag(project, config)
     visibilities = BPJSpec.load(joinpath(path, config.input))
     output = similar(visibilities, MultipleFiles(joinpath(path, config.output)))
 
-    flags = Flags(metadata)
+    #flags = Flags(metadata)
 
     #println("Applying a-priori flags")
     #@time a_priori_flags!(flags, config, metadata)
@@ -94,13 +101,14 @@ function flag(project, config)
     #    @time flags_from_frequency_differences!(flags, transposed_visibilities, metadata, config)
     #end
 
-    #println("Widening flags")
-    #@time widen!(flags, config)
-
-    println("Applying the new flags")
+    println("Widening flags")
     #Project.save(project, config.output_flags, "flags", flags)
     flags = Project.load(project, config.output_flags, "flags")
-    @show size(flags.bits)
+    @time widen!(flags, config)
+
+    println("Applying the new flags")
+    Project.save(project, config.output_flags, "flags", flags)
+    #flags = Project.load(project, config.output_flags, "flags")
     Project.set_stripe_count(project, config.output, 1)
     @time write_output(project, flags, visibilities, output, metadata)
     flags
@@ -148,6 +156,7 @@ end
 "Apply a pre-existing list of flags."
 function a_priori_flags!(flags, config, metadata)
     α = 1
+    prg = Progress(Nbase(metadata))
     for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
         if ((ant1 in config.a_priori_antenna_flags)
                 || (ant2 in config.a_priori_antenna_flags)
@@ -156,6 +165,7 @@ function a_priori_flags!(flags, config, metadata)
             flag_baseline!(flags, α)
         end
         α += 1
+        next!(prg)
     end
     for β in config.a_priori_channel_flags
         flag_channel!(flags, β)
@@ -184,6 +194,7 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     load(β) = apply_to_transpose!(transposed_visibilities[β], flags, β)
 
     function find_flags(Δ, range)
+        flags.channel_difference_rms[first(range)] = rms(Δ)
         if config.visibility_amplitude_threshold > 0
             _visibility_amplitude_flags!(flags, Δ, config.visibility_amplitude_threshold,
                                          range)
@@ -214,6 +225,12 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     end
 
     flags
+end
+
+"Find the pre-existing flags so that we can have a complete list."
+function _preexisting_flags!(flags, V, β)
+    bits = V .== 0
+    flags.bits[:, β, :] .|= bits
 end
 
 """
@@ -261,22 +278,40 @@ end
 #    end
 #end
 
-#"""
-#If a baseline is flagged in over half the channels or integrations, it should probably be always
-#flagged.
-#"""
-#function widen!(flags)
-#    Nbase = length(flags.baseline_flags)
-#    Ntime = size(flags.integration_flags, 2)
-#    Nfreq = size(flags.channel_flags, 2)
-#    for α = 1:Nbase
-#        if sum(flags.integration_flags[α, :]) > Ntime/2
-#            flags.baseline_flags[α] = true
-#        elseif sum(flags.channel_flags[α, :]) > Nfreq/2
-#            flags.baseline_flags[α] = true
-#        end
-#    end
-#end
+"""
+Extend flags when a baseline is commonly flagged in a given integration or channel.
+"""
+function widen!(flags, config)
+    Nbase, Nfreq, Ntime = size(flags.bits)
+    for idx = 1:Ntime
+        _widen_frequency(flags, idx)
+    end
+    for β = 1:Nfreq
+        _widen_time(flags, β)
+    end
+end
+
+function _widen_frequency(flags, idx)
+    bits = @view flags.bits[:, :, idx]
+    Nbase, Nfreq = size(bits)
+    # How many frequency channels is each baseline flagged in?
+    count = sum(bits, 2)
+    # Flag the baseline for the entire integration if it crosses a threshold.
+    for α in find(count .> 0.25 * Nfreq)
+        flag_baseline_integration!(flags, α, idx)
+    end
+end
+
+function _widen_time(flags, β)
+    bits = @view flags.bits[:, β, :]
+    Nbase, Ntime = size(bits)
+    # How many integrations is each baseline flagged in?
+    flagged = sum(bits, 2)
+    # Flag the baseline for the entire frequency channel if it crosses a threshold.
+    for α in find(flagged .> 0.25 * Ntime)
+        flag_baseline_channel!(flags, α, β)
+    end
+end
 
 "Get a list of all unusual baselines given the data for baselines of similar lengths."
 function find_unusual_baselines(lengths, data, cutoff)
@@ -326,11 +361,63 @@ function windowed(reduction, deviation, window_size)
     end
 end
 
-mad(deviation) = median(abs.(deviation))
-rms(deviation) = sqrt(mean(abs2.(deviation)))
-rms(array, N)  = sqrt.(squeeze(mean(abs2.(array), N), N))
-avg(array, N)  = squeeze(mean(array, N), N)
-difference_from_middle(x, y, z) = 2*y - x - z
+"We're flagging data by setting it to zero. This computes the mean after discarding all zeros."
+function mean_no_zero(data)
+    S = sum(data)
+    C = sum(data .== 0)
+    L = length(data)
+    S / (L - C)
+end
+
+function mean_no_zero(data, dim)
+    S = squeeze(sum(data, dim), dim)
+    C = squeeze(sum(data .== 0, dim), dim)
+    L = size(data, dim)
+    S ./ (L .- C)
+end
+
+doc"""
+One key component of our analysis here is that we are computing differences that look like $-ν₁ +
+2ν₂ - ν₃$. This is effectively a second derivative with respect to frequency, but does a better job
+canceling out the power-law sky emission than the first derivative operator.
+
+However, there are times where any of these channels may be flagged. We want the following behavior.
+
+- **Either of the end points is flagged** - revert to the first derivative operator with the
+remaining two channels
+- **The middle point is flagged** - revert to the first derivative operator with the remaining two
+channels
+- **Both of the end points are flagged** - this channel should probably be flagged too, but that
+should be the job of an explicit widening of the flags. We'll return `zero` here to exclude this
+data point from the analysis.
+- **The midpoint and one end point is flagged** - we cannot judge whether the remaining end point
+should be flagged, but we'll return `zero` here to exclude this data point from the analysis
+- **All three data points are flagged** - return `zero` to exclude this data point from
+consideration
+
+Note that we will use a multiplicative factor so that thermal noise maintains the same amplitude
+between the first and second derivative operators.
+"""
+function difference_from_middle(x, y, z)
+    xok = x != 0
+    yok = y != 0
+    zok = z != 0
+    if xok && yok && zok
+        return 2*y - x - z
+    elseif xok && yok
+        return √3 * (y - x)
+    elseif xok && zok
+        return √3 * (z - x)
+    elseif yok && zok
+        return √3 * (z - y)
+    else
+        return zero(typeof(x))
+    end
+end
+
+rms(vector)   = sqrt(mean_no_zero(abs2.(vector)))
+rms(array, N) = sqrt.(mean_no_zero(abs2.(array), N))
+avg(array, N) = mean_no_zero(array, N)
 
 end
 
