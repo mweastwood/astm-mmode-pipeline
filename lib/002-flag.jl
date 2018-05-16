@@ -107,7 +107,7 @@ function flag(project, config)
     Project.save(project, config.output_flags, "flags", flags)
 
     println("Applying the new flags")
-    #flags = Project.load(project, config.output_flags, "flags")
+    #flags = Project.load(project, config.output_flags, "flags")::Flags
     Project.set_stripe_count(project, config.output, 1)
     @time write_output(project, flags, visibilities, output, metadata)
     flags
@@ -192,7 +192,7 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     lengths = baseline_lengths(metadata)
     load(β) = apply_to_transpose!(transposed_visibilities[β], flags, β)
 
-    function find_flags(V1, V2, V3, Δ, range)
+    function find_flags!(flags, V1, V2, V3, Δ, range)
         if config.visibility_amplitude_threshold > 0
             for iteration = 1:3
                 Δ .= difference_from_middle.(V1, V2, V3)
@@ -222,7 +222,7 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     _preexisting_flags!(flags, V2, 2)
     _preexisting_flags!(flags, V3, 3)
     Δ  = similar(V1)
-    find_flags(V1, V2, V3, Δ, range)
+    find_flags!(flags, V1, V2, V3, Δ, range)
     next!(prg)
 
     while last(range) < Nfreq(metadata)
@@ -231,7 +231,7 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
         V2 = V3
         V3 = load(last(range))
         _preexisting_flags!(flags, V3, last(range))
-        find_flags(V1, V2, V3, Δ, range)
+        find_flags!(flags, V1, V2, V3, Δ, range)
         next!(prg)
     end
 
@@ -269,25 +269,15 @@ that math says that the RMS is always larger than the amplitude of the time-aver
 so the `threshold` here should be between 0 and 1.
 """
 function _constant_offset_flags!(flags, Δ, threshold, range, lengths)
-    ratio = abs.(avg(Δ, 2)) ./ rms(Δ, 2)
-    for α in find_unusual_baselines(lengths, ratio, threshold)
-        flag_baseline_channel!(flags, α, range)
+    Nbase = size(Δ, 1)
+    for α = 1:Nbase
+        δ = @view Δ[α, :]
+        ratio = abs(avg(δ) / rms(δ))
+        if is_this_baseline_unusual(ratio, threshold)
+            flag_baseline_channel!(flags, α, range)
+        end
     end
 end
-
-#"""
-#This time, we will difference in time to cancel out the sky emission while leaving impulsive RFI
-#events. The amplitude of residual sky emission will generally vary smoothly with frequency, so
-#comparing the rms amplitude to the mean amplitude will help to pick out bad data in a way that is
-#insensitive to gain variations in the data.
-#"""
-#function _impulsive_event_flags!(flags, V1, V2, V3, metadata, threshold, range, lengths)
-#    Δ = 2 .* V2 .- V1 .- V3
-#    ratio = rms(Δ, 1) ./ avg(abs.(Δ), 1) .- 1
-#    for α in find_unusual_baselines(lengths, ratio, threshold)
-#        flags.integration_flags[α, range] = true
-#    end
-#end
 
 """
 Extend flags when a baseline is commonly flagged in a given integration or channel.
@@ -374,18 +364,18 @@ end
 
 "We're flagging data by setting it to zero. This computes the mean after discarding all zeros."
 function mean_no_zero(data)
-    S = sum(data)
-    C = sum(data .== 0)
+    mean_no_zero(identity, data)
+end
+
+function mean_no_zero(predicate::Function, data)
+    S = mapreduce(predicate, +, data)
+    C = mapreduce(iszero,    +, data)
     L = length(data)
     S / (L - C)
 end
 
-function mean_no_zero(data, dim)
-    S = squeeze(sum(data, dim), dim)
-    C = squeeze(sum(data .== 0, dim), dim)
-    L = size(data, dim)
-    S ./ (L .- C)
-end
+rms(vector) = sqrt(mean_no_zero(abs2, vector))
+avg(vector) = mean_no_zero(vector)
 
 doc"""
 One key component of our analysis here is that we are computing differences that look like $-ν₁ +
@@ -413,22 +403,18 @@ function difference_from_middle(x, y, z)
     xok = x != 0
     yok = y != 0
     zok = z != 0
-    if xok && yok && zok
+    if xok & yok & zok
         return 2*y - x - z
-    elseif xok && yok
+    elseif xok & yok
         return √3 * (y - x)
-    elseif xok && zok
+    elseif xok & zok
         return √3 * (z - x)
-    elseif yok && zok
+    elseif yok & zok
         return √3 * (z - y)
     else
         return zero(typeof(x))
     end
 end
-
-rms(vector)   = sqrt(mean_no_zero(abs2.(vector)))
-rms(array, N) = sqrt.(mean_no_zero(abs2.(array), N))
-avg(array, N) = mean_no_zero(array, N)
 
 end
 
