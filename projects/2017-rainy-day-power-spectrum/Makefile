@@ -40,6 +40,12 @@ average: \
 	.pipeline/101-averaged-m-modes-odd \
 	.pipeline/101-averaged-m-modes-even
 
+.PHONY: noise
+noise: \
+	.pipeline/102-noise-covariance-matrix-all \
+	.pipeline/102-noise-covariance-matrix-odd \
+	.pipeline/102-noise-covariance-matrix-even
+
 .PHONY: compress
 compress: \
 	.pipeline/103-full-rank-compression-all \
