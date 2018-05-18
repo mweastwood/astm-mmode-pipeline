@@ -31,7 +31,7 @@ make
 
 ## Notes
 
-* A lot of the code that currently libes in `bin/` isn't quite up-to-date.
+* A lot of the code that currently lives in `bin/` isn't quite up-to-date.
 * In theory, everything here should be reusable for new m-mode analysis projects. The dream is that
   you should only need to copy an existing directory within `projects/` and begin tuning the
   `Makefile` and configuration files.
