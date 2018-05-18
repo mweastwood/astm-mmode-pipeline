@@ -12,6 +12,9 @@ function parse_commandline()
         "--remote-workers"
             help = "the number of remote workers to launch"
             arg_type = Int
+        "--all-to-all"
+            help = "all the workers must connect to all of the other workers"
+            action = :store_true
         "driver"
             help = "path to a Julia file that defines `Driver.go(...)`"
             arg_type = String
@@ -38,7 +41,8 @@ function main(args)
         N = args["remote-workers"]
         machines = ["astm04", "astm05", "astm06", "astm07", "astm08",
                     "astm09", "astm10", "astm11", "astm12", "astm13"]
-        addprocs([(machine, N) for machine in machines], exeflags=`-L $path`)
+        addprocs([(machine, N) for machine in machines], exeflags=`-L $path`,
+                 topology = args["all-to-all"] ? :all_to_all : :master_slave)
     end
 
     if args["local-workers"] !== nothing || args["remote-workers"] !== nothing
