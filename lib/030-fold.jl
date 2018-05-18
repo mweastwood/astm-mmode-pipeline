@@ -130,8 +130,10 @@ function _normalize!(output, path, size, frequency)
         open(joinpath(path, @sprintf("%04d.numerator", frequency)), "r") do numerator_file
             numerator   = read(  numerator_file, Complex128, size)
             denominator = read(denominator_file,        Int, size)
+            no_data = denominator .== 0
+            numerator[no_data]   = 0
+            denominator[no_data] = 1
             numerator ./= denominator
-            numerator[isnan.(numerator)] .= 0
             output[frequency] = numerator
         end
     end
