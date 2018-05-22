@@ -146,7 +146,7 @@ function flag(project, config)
     input  = BPJSpec.load(joinpath(path, config.input))
     output = similar(input, MultipleFiles(joinpath(path, config.output)))
     Project.set_stripe_count(project, config.output, 1)
-    @time write_output(project, flags, visibilities, output, metadata)
+    @time write_output(project, flags, input, output, metadata)
     flags
 end
 
@@ -182,16 +182,15 @@ function apply!(data, flags, time)
     # Smooth out the sawtooth
     Nant = size(flags.sawtooth, 3)
     for β = 1:size(xx, 1)
-        α = 1
         for ant1 = 1:Nant
             s1 = flags.sawtooth[time, β, ant1]
             s1 == 0 && continue
             for ant2 = ant1:Nant
                 s2 = flags.sawtooth[time, β, ant2]
                 s2 == 0 && continue
+                α = Project.baseline_index(Nant, ant1, ant2)
                 xx[β, α] /= s1 * s2
                 yy[β, α] /= s1 * s2
-                α += 1
             end
         end
     end
@@ -205,15 +204,14 @@ function apply_to_transpose!(data, flags, frequency)
     # Smooth out the sawtooth
     Nant = size(flags.sawtooth, 3)
     for idx = 1:size(data, 2)
-        α = 1
         for ant1 = 1:Nant
             s1 = flags.sawtooth[idx, frequency, ant1]
             s1 == 0 && continue
             for ant2 = ant1:Nant
                 s2 = flags.sawtooth[idx, frequency, ant2]
                 s2 == 0 && continue
+                α = Project.baseline_index(Nant, ant1, ant2)
                 data[α, idx] /= s1 * s2
-                α += 1
             end
         end
     end
