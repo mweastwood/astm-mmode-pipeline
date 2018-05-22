@@ -15,6 +15,10 @@ function parse_commandline()
         "--all-to-all"
             help = "all the workers must connect to all of the other workers"
             action = :store_true
+        "--exclude"
+            help = "exclude the given ASTM nodes (eg. `--exclude 4 5 12`)"
+            arg_type = Int
+            nargs = '+'
         "driver"
             help = "path to a Julia file that defines `Driver.go(...)`"
             arg_type = String
@@ -30,24 +34,51 @@ const args = parse_commandline()
 const path = abspath(normpath(args["driver"]))
 include(path)
 
+name(astm) = @sprintf("astm%02d", astm)
+function time_worker_spawn(astm, number, topology)
+    @elapsed addprocs([(name(astm), 1)])
+end
+
+function time_load_code(worker, path)
+    time = @elapsed remotecall_wait(include, worker, path)
+    hostname = remotecall_fetch(worker) do
+        chomp(readstring(`hostname`))
+    end
+    time, hostname
+end
+
 function main(args)
+    topology = args["all-to-all"] ? :all_to_all : :master_slave
+
     if args["local-workers"] !== nothing
         info("Launching local workers")
-        addprocs(args["local-workers"], exeflags=`-L $path`)
+        addprocs(args["local-workers"], topology=topology)
     end
 
     if args["remote-workers"] !== nothing
         info("Launching remote workers")
-        N = args["remote-workers"]
-        machines = ["astm04", "astm05", "astm06", "astm07", "astm08",
-                    "astm09", "astm10", "astm11", "astm12", "astm13"]
-        addprocs([(machine, N) for machine in machines], exeflags=`-L $path`,
-                 topology = args["all-to-all"] ? :all_to_all : :master_slave)
+        number = args["remote-workers"]
+        for astm = 4:13
+            astm in args["exclude"] && continue
+            time = time_worker_spawn(astm, number, topology)
+            println(" ", rpad(name(astm)*" ", 7, "─"), lpad(@sprintf(" %.1f s", time), 8, "─"))
+        end
     end
 
     if args["local-workers"] !== nothing || args["remote-workers"] !== nothing
+        info("Loading code")
+        lck = ReentrantLock()
+        function print_loading_time(worker, hostname, time)
+            lock(lck)
+            println(" ", rpad(lpad(worker, 2)*" ", 4, "─"),
+                    " ", rpad(hostname*" ", 7, "─"), lpad(@sprintf(" %.1f s", time), 9, "─"))
+            unlock(lck)
+        end
         @sync for worker in workers()
-            @async remotecall_wait(include, worker, path)
+            @async begin
+                time, hostname = time_load_code(worker, path)
+                print_loading_time(worker, hostname, time)
+            end
         end
     end
 
