@@ -1,3 +1,20 @@
+# Summary of flagging strategy
+# ============================
+# 1. Manually inspect the antenna reports and pick out all the truly egregious antennas.
+# 2. Look for impulsive events in the auto-correlations.
+# 3. Compute the channel difference 2ν₂ - ν₁ - ν₃ to cancel out the sky emission.
+#    ->
+
+# NOTE: Time-dependent gain fluctuations are calibrated in this routine as well. For the OVRO-LWA
+# this generally manifests as 15 minute-period sawtooth amplitude fluctuations due to the HVAC
+# cycles. The exact period is variable (typically 15 to 17 minutes) presumably due to fluctuations
+# in the ambient environmental temperature.
+#
+# I have decided to calibrate these gain fluctuations in the flagging routine, because this is the
+# earliest routine that has a complete view of each baseline as a function of time, and I'd like to
+# calibrate these fluctuations as early as possible. I do not want to introduce an additional
+# routine, because it is faster (and less disk space) to just handle it all at once with the flags.
+
 module Driver
 
 using FileIO, JLD2
@@ -19,8 +36,11 @@ struct Config
     a_priori_antenna_flags  :: Vector{Int}
     a_priori_baseline_flags :: Vector{Tuple{Int, Int}}
     a_priori_channel_flags  :: Vector{Int}
+    autocorrelation_impulsive_threshold        :: Float64
     visibility_amplitude_threshold             :: Float64
     channel_baseline_constant_offset_threshold :: Float64
+    flag_autocorrelations :: Bool
+    smooth_sawtooth :: Bool
 end
 
 function load(file)
@@ -41,27 +61,33 @@ function load(file)
            a_priori_antenna_flags,
            a_priori_baseline_flags,
            a_priori_channel_flags,
+           get(dict, "autocorrelation-impulsive-threshold", 0.0),
            get(dict, "visibility-amplitude-threshold", 0.0),
-           get(dict, "channel-baseline-constant-offset-threshold", 0.0))
+           get(dict, "channel-baseline-constant-offset-threshold", 0.0),
+           get(dict, "flag-autocorrelations", false),
+           get(dict, "smooth-sawtooth", false))
 end
 
 struct Flags
     # A full matrix of (baseline, channel, integration) flags is actually enormous if we are using a
     # full byte to store a `Bool` per visibility. However, we can instead use a `BitArray`. This
     # uses much less memory (generally 8 times less), but is usually slower to index. This is a
-    # worthwhile tradeoff.
+    # worthwhile tradeoff to allow us to generally represent any combination of flags we want.
     bits :: BitArray{3} # Nbase × Nfreq × Ntime
     # We would also like to maintain a record of the measured RMS after channel differencing, so
     # that we can use this information to re-flag the dataset in later steps without needing to take
     # transposes of the visibilities.
     channel_difference_rms :: Vector{Float64}
+    # A (Ntime × Nfreq × Nant) matrix of the sawtooth pattern for each antenna.
+    sawtooth :: Array{Float64, 3}
 end
 
 function Flags(metadata::TTCal.Metadata)
     bits = BitArray(Nbase(metadata), Nfreq(metadata), Ntime(metadata))
     bits[:] = false
     channel_difference_rms = zeros(Nfreq(metadata)-2)
-    Flags(bits, channel_difference_rms)
+    sawtooth = zeros(Ntime(metadata), Nfreq(metadata), Nant(metadata))
+    Flags(bits, channel_difference_rms, sawtooth)
 end
 
 flag_baseline!(flags::Flags, baseline) = flags.bits[baseline, :, :] = true
@@ -71,6 +97,8 @@ flag_baseline_channel!(flags::Flags, baseline, channel) =
     flags.bits[baseline, channel, :] = true
 flag_baseline_integration!(flags::Flags, baseline, integration) =
     flags.bits[baseline, :, integration] = true
+flag_baseline_channel_integration!(flags::Flags, baseline, channel, integration) =
+    flags.bits[baseline, channel, integration] = true
 
 function go(project_file, config_file)
     project = Project.load(project_file)
@@ -82,32 +110,41 @@ end
 function flag(project, config)
     path     = Project.workspace(project)
     metadata = Project.load(project, config.metadata, "metadata")
-    visibilities = BPJSpec.load(joinpath(path, config.input))
-    output = similar(visibilities, MultipleFiles(joinpath(path, config.output)))
 
     flags = Flags(metadata)
 
     println("Applying a-priori flags")
-    @time a_priori_flags!(flags, config, metadata)
+    a_priori_flags!(flags, config, metadata)
+    Project.save(project, config.output_flags*"-apriori", "flags", flags)
 
-    println("Flagging auto-correlations")
-    @time flag_autos!(flags, config, metadata)
-
-    flag_frequency_differences = (config.visibility_amplitude_threshold > 0
-                                  || config.channel_baseline_constant_offset_threshold > 0)
-    if flag_frequency_differences
-        println("Computing flags from frequency differences")
-        transposed_visibilities = BPJSpec.load(joinpath(path, config.input_transposed))
-        @time flags_from_frequency_differences!(flags, transposed_visibilities, metadata, config)
+    if config.flag_autocorrelations
+        println("Flagging auto-correlations")
+        flag_autos!(flags, config, metadata)
     end
-    Project.save(project, config.output_flags*"-unwidened", "flags", flags)
+
+    use_transposed_visibilities = (config.smooth_sawtooth
+                                   || config.visibility_amplitude_threshold > 0
+                                   || config.channel_baseline_constant_offset_threshold > 0)
+    if use_transposed_visibilities
+        println("Working feverishly on the transposed visibilities")
+        transposed_visibilities = BPJSpec.load(joinpath(path, config.input_transposed))
+        process_transposed_visibilities!(flags, transposed_visibilities, metadata, config)
+    end
+
+    #use_regular_visibilities = false
+    #if use_regular_visibilities
+    #    visibilities = BPJSpec.load(joinpath(path, config.input))
+    #    process_regular_visibilities!(flags, visibilities, metadata, config)
+    #end
 
     println("Widening flags")
+    Project.save(project, config.output_flags*"-unwidened", "flags", flags)
     @time widen!(flags, config)
     Project.save(project, config.output_flags, "flags", flags)
 
     println("Applying the new flags")
-    #flags = Project.load(project, config.output_flags, "flags")::Flags
+    input  = BPJSpec.load(joinpath(path, config.input))
+    output = similar(input, MultipleFiles(joinpath(path, config.output)))
     Project.set_stripe_count(project, config.output, 1)
     @time write_output(project, flags, visibilities, output, metadata)
     flags
@@ -142,6 +179,22 @@ function apply!(data, flags, time)
     yy = @view data[2, :, :]
     xx[bits] = 0
     yy[bits] = 0
+    # Smooth out the sawtooth
+    Nant = size(flags.sawtooth, 3)
+    for β = 1:size(xx, 1)
+        α = 1
+        for ant1 = 1:Nant
+            s1 = flags.sawtooth[time, β, ant1]
+            s1 == 0 && continue
+            for ant2 = ant1:Nant
+                s2 = flags.sawtooth[time, β, ant2]
+                s2 == 0 && continue
+                xx[β, α] /= s1 * s2
+                yy[β, α] /= s1 * s2
+                α += 1
+            end
+        end
+    end
     data
 end
 
@@ -149,6 +202,21 @@ end
 function apply_to_transpose!(data, flags, frequency)
     bits = flags.bits[:, frequency, :]
     data[bits] = 0
+    # Smooth out the sawtooth
+    Nant = size(flags.sawtooth, 3)
+    for idx = 1:size(data, 2)
+        α = 1
+        for ant1 = 1:Nant
+            s1 = flags.sawtooth[idx, frequency, ant1]
+            s1 == 0 && continue
+            for ant2 = ant1:Nant
+                s2 = flags.sawtooth[idx, frequency, ant2]
+                s2 == 0 && continue
+                data[α, idx] /= s1 * s2
+                α += 1
+            end
+        end
+    end
     data
 end
 
@@ -175,37 +243,57 @@ end
 "Flag all of the auto-correlations."
 function flag_autos!(flags, config, metadata)
     α = 1
+    prg = Progress(Nant(metadata))
     for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
         if ant1 == ant2
             flag_baseline!(flags, α)
+            next!(prg)
         end
         α += 1
     end
     flags
 end
 
+function extract_autocorrelations(visibilities, metadata)
+    output = zeros(Ntime(metadata), Nant(metadata))
+    α = 1
+    for ant1 = 1:Nant(metadata), ant2 = ant1:Nant(metadata)
+        if ant1 == ant2
+            output[:, ant1] = real.(visibilities[α, :])
+        end
+        α += 1
+    end
+    output
+end
+
 baseline_lengths(metadata) = ustrip.([norm(metadata.positions[ant1] - metadata.positions[ant2])
                                      for ant1 = 1:Nant(metadata) for ant2 = ant1:Nant(metadata)])
 
-"Look for anomalous baselines after differencing in frequency (to cancel out the sky emission)."
-function flags_from_frequency_differences!(flags, transposed_visibilities, metadata, config)
-    lengths = baseline_lengths(metadata)
-    load(β) = apply_to_transpose!(transposed_visibilities[β], flags, β)
+"Use the transposed visibilities to smooth the auto-correlations and find flags."
+function process_transposed_visibilities!(flags, transposed_visibilities, metadata, config)
+    function load(β)
+        V = transposed_visibilities[β]
+        _preexisting_flags!(flags, V, β)
+        A = extract_autocorrelations(V, metadata)
+        process_autocorrelations!(flags, A, metadata, config, β)
+        apply_to_transpose!(V, flags, β)
+    end
 
     function find_flags!(flags, V1, V2, V3, Δ, range)
-        if config.visibility_amplitude_threshold > 0
+        threshold = config.visibility_amplitude_threshold
+        if threshold > 0
             for iteration = 1:3
                 Δ .= difference_from_middle.(V1, V2, V3)
-                _visibility_amplitude_flags!(flags, Δ, config.visibility_amplitude_threshold, range)
+                _visibility_amplitude_flags!(flags, Δ, threshold, range)
                 apply_to_transpose!(V1, flags, range[1])
                 apply_to_transpose!(V2, flags, range[2])
                 apply_to_transpose!(V3, flags, range[3])
             end
         end
-        if config.channel_baseline_constant_offset_threshold > 0
+        threshold = config.channel_baseline_constant_offset_threshold
+        if threshold > 0
             Δ .= difference_from_middle.(V1, V2, V3)
-            _constant_offset_flags!(flags, Δ, config.channel_baseline_constant_offset_threshold,
-                                    range, lengths)
+            _constant_offset_flags!(flags, Δ, threshold, range)
             apply_to_transpose!(V1, flags, range[1])
             apply_to_transpose!(V2, flags, range[2])
             apply_to_transpose!(V3, flags, range[3])
@@ -218,9 +306,6 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     V1 = load(1)
     V2 = load(2)
     V3 = load(3)
-    _preexisting_flags!(flags, V1, 1)
-    _preexisting_flags!(flags, V2, 2)
-    _preexisting_flags!(flags, V3, 3)
     Δ  = similar(V1)
     find_flags!(flags, V1, V2, V3, Δ, range)
     next!(prg)
@@ -238,10 +323,34 @@ function flags_from_frequency_differences!(flags, transposed_visibilities, metad
     flags
 end
 
+function process_autocorrelations!(flags, autos, metadata, config, β)
+    threshold = config.autocorrelation_impulsive_threshold
+    if threshold > 0
+        _flag_autocorrelation_timeseries!(flags, autos, threshold, β)
+    end
+    if config.smooth_sawtooth
+        _measure_sawtooth_fluctuations!(flags, autos, β)
+    end
+end
+
 "Find the pre-existing flags so that we can have a complete list."
 function _preexisting_flags!(flags, V, β)
     bits = V .== 0
     flags.bits[:, β, :] .|= bits
+end
+
+"Flag antennas that have spikes in the autocorrelation timeseries."
+function _flag_autocorrelation_timeseries!(flags, autos, threshold, β)
+    Ntime, Nant = size(autos)
+    for ant = 1:Nant
+        x = @view autos[:, ant]
+        f = Driver.threshold_flag(x, Driver.rms, 5, scale=75, iterations=2)
+        if any(f)
+            x[f] = 0
+            baselines = Project.baseline_index.(Nant, ant, 1:Nant)
+            flag_baseline_channel_integration!(flags, baselines, β, f)
+        end
+    end
 end
 
 """
@@ -268,7 +377,7 @@ therefore flag baselines where the time-averaged visibilities are a large fracti
 that math says that the RMS is always larger than the amplitude of the time-averaged visibilities,
 so the `threshold` here should be between 0 and 1.
 """
-function _constant_offset_flags!(flags, Δ, threshold, range, lengths)
+function _constant_offset_flags!(flags, Δ, threshold, range)
     Nbase = size(Δ, 1)
     for α = 1:Nbase
         δ = @view Δ[α, :]
@@ -345,7 +454,7 @@ function threshold_flag(data, reduction, threshold; window_size=0, scale=10, ite
         else
             σ = reduction(deviation)
         end
-        new_flags = deviation .> thresholde .* σ
+        new_flags = deviation .> threshold .* σ
         flags     = new_flags .| original_flags
     end
 
@@ -414,6 +523,42 @@ function difference_from_middle(x, y, z)
     else
         return zero(typeof(x))
     end
+end
+
+"""
+The AC unit in the electronics shelter seems to turn on/off every 15 minutes or so. This leads to
+gain variations on 15 minute timescales that manifests as a sawtooth pattern in the gains.
+"""
+function _measure_sawtooth_fluctuations!(flags, autos, β)
+    Ntime, Nant = size(autos)
+    for ant = 1:Nant
+        x = @view autos[:, ant]
+        y = convolve_with_gaussian(x, 201)
+        flags.sawtooth[:, β, ant] = sqrt.(x ./ y)
+    end
+    flags
+end
+
+"Convolve the input signal with a Gaussian of a given width."
+function convolve_with_gaussian(x, width)
+    N = length(x)
+    w = (width - 1) ÷ 2
+    kernel = exp.(-0.5 * (linspace(-3, 3, width+1)).^2)
+    numerator   = zeros(N)
+    denominator = zeros(N)
+    for t1 = 1:N
+        range = (-w:w) + t1
+        range = max(1, range[1]):min(N, range[end])
+        for t2 in range
+            if x[t2] != 0
+                idx = t2 - t1 + w + 1
+                numerator[t1]   += x[t2] * kernel[idx]
+                denominator[t1] += kernel[idx]
+            end
+        end
+    end
+    numerator ./= denominator
+    numerator
 end
 
 end

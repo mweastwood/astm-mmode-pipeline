@@ -5,4 +5,5 @@ output-flags: 002-calibrated-data-flags
 metadata: metadata
 visibility-amplitude-threshold: 5               # ratio of absolute value to RMS
 channel-baseline-constant-offset-threshold: 0.3 # ratio of absolute value of mean to RMS
+flag-autocorrelations: true
 

@@ -3,7 +3,9 @@ input-transposed: 001-raw-transposed-data
 output: 002-flagged-raw-data
 output-flags: 002-raw-data-flags
 metadata: metadata
-channel-baseline-constant-offset-threshold: 0.4
+autocorrelation-impulsive-threshold:        5.0 # ratio of autocorrelation amplitude to RMS
+channel-baseline-constant-offset-threshold: 0.4 # ratio of absolute value of mean to RMS
+smooth-sawtooth: true
 a-priori-antenna-flags:
     - 1 # spikes
     - 10 # time-series of B is shitty

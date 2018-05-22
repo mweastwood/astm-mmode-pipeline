@@ -65,9 +65,20 @@ function rm(project, filename)
     end
 end
 
-#baseline_index(ant1, ant2) = ((ant1-1)*(512-(ant1-2)))÷2 + (ant2-ant1+1)
-#Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
-#Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
+Nant2Nbase(Nant) = (Nant*(Nant+1))÷2
+Nbase2Nant(Nbase) = round(Int, (sqrt(1+8Nbase)-1)/2)
+
+function baseline_index(Nant, ant1, ant2)
+    if ant1 ≤ ant2
+        return _baseline_index(Nant, ant1, ant2)
+    else
+        return _baseline_index(Nant, ant2, ant1)
+    end
+end
+
+function _baseline_index(Nant, ant1, ant2)
+    ((ant1-1)*(2Nant-(ant1-2)))÷2 + (ant2-ant1+1)
+end
 
 end
 
