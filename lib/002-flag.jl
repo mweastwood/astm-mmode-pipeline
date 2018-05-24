@@ -37,6 +37,7 @@ struct Config
     a_priori_baseline_flags :: Vector{Tuple{Int, Int}}
     a_priori_channel_flags  :: Vector{Int}
     autocorrelation_impulsive_threshold        :: Float64
+    integration_rms_threshold                  :: Float64
     visibility_amplitude_threshold             :: Float64
     channel_baseline_constant_offset_threshold :: Float64
     flag_autocorrelations :: Bool
@@ -62,6 +63,7 @@ function load(file)
            a_priori_baseline_flags,
            a_priori_channel_flags,
            get(dict, "autocorrelation-impulsive-threshold", 0.0),
+           get(dict, "integration-rms-threshold", 0.0),
            get(dict, "visibility-amplitude-threshold", 0.0),
            get(dict, "channel-baseline-constant-offset-threshold", 0.0),
            get(dict, "flag-autocorrelations", false),
@@ -141,12 +143,13 @@ function flag(project, config)
     Project.save(project, config.output_flags*"-unwidened", "flags", flags)
     @time widen!(flags, config)
     Project.save(project, config.output_flags, "flags", flags)
+    #flags = Project.load(project, config.output_flags, "flags")
 
     println("Applying the new flags")
     input  = BPJSpec.load(joinpath(path, config.input))
     output = similar(input, MultipleFiles(joinpath(path, config.output)))
     Project.set_stripe_count(project, config.output, 1)
-    @time write_output(project, flags, input, output, metadata)
+    write_output(project, flags, input, output, metadata)
     flags
 end
 
@@ -277,24 +280,32 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         apply_to_transpose!(V, flags, β)
     end
 
+    function update_flags!(V1, V2, V3, flags, range)
+        apply_to_transpose!(V1, flags, range[1])
+        apply_to_transpose!(V2, flags, range[2])
+        apply_to_transpose!(V3, flags, range[3])
+    end
+
     function find_flags!(flags, V1, V2, V3, Δ, range)
+        threshold = config.integration_rms_threshold
+        if threshold > 0
+            Δ .= difference_from_middle.(V1, V2, V3)
+            _integration_rms_flags!(flags, Δ, threshold, range)
+            update_flags!(V1, V2, V3, flags, range)
+        end
         threshold = config.visibility_amplitude_threshold
         if threshold > 0
             for iteration = 1:3
                 Δ .= difference_from_middle.(V1, V2, V3)
                 _visibility_amplitude_flags!(flags, Δ, threshold, range)
-                apply_to_transpose!(V1, flags, range[1])
-                apply_to_transpose!(V2, flags, range[2])
-                apply_to_transpose!(V3, flags, range[3])
+                update_flags!(V1, V2, V3, flags, range)
             end
         end
         threshold = config.channel_baseline_constant_offset_threshold
         if threshold > 0
             Δ .= difference_from_middle.(V1, V2, V3)
             _constant_offset_flags!(flags, Δ, threshold, range)
-            apply_to_transpose!(V1, flags, range[1])
-            apply_to_transpose!(V2, flags, range[2])
-            apply_to_transpose!(V3, flags, range[3])
+            update_flags!(V1, V2, V3, flags, range)
         end
         flags.channel_difference_rms[first(range)] = rms(Δ)
     end
@@ -348,6 +359,16 @@ function _flag_autocorrelation_timeseries!(flags, autos, threshold, β)
             baselines = Project.baseline_index.(Nant, ant, 1:Nant)
             flag_baseline_channel_integration!(flags, baselines, β, f)
         end
+    end
+end
+
+"Flag (frequency, time) pairs that have enhanced RMS across all baselines."
+function _integration_rms_flags!(flags, Δ, threshold, range)
+    Nbase, Ntime = size(Δ)
+    σ = [rms(@view Δ[:, idx]) for idx = 1:Ntime]
+    bits = threshold_flag(σ, mad, threshold, scale=1000, iterations=2)
+    for β in range, α = 1:Nbase
+        flags.bits[α, β, :] .|= bits
     end
 end
 
@@ -478,9 +499,15 @@ function mean_no_zero(predicate::Function, data)
     S = mapreduce(predicate, +, data)
     C = mapreduce(iszero,    +, data)
     L = length(data)
-    S / (L - C)
+    ifelse(L == C, zero(typeof(S)), S / (L - C))
 end
 
+function median_no_zero(predicate::Function, data)
+    selection = data .!= 0
+    median(predicate.(@view data[selection]))
+end
+
+mad(vector) = median_no_zero(abs, vector)
 rms(vector) = sqrt(mean_no_zero(abs2, vector))
 avg(vector) = mean_no_zero(vector)
 
