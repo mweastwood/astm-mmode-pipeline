@@ -35,6 +35,10 @@ make
 * In theory, everything here should be reusable for new m-mode analysis projects. The dream is that
   you should only need to copy an existing directory within `projects/` and begin tuning the
   `Makefile` and configuration files.
+* You should be using `make ... --dry-run` to check what will be run ahead of time.
+* Use `make ... --touch` to skip over steps that shouldn't need to be run again. This is useful when
+  you've made a cosmetic change that shouldn't impact the final results, and therefore you don't
+  want to rerun every single analysis step potentially impacted by editing the given file.
 * I promise `projects/2017-rainy-day-power-spectrum` has up-to-date configuration files, but it's
   possible the other projects have lagged behind as I've made changes.
 * Please do reach out to me if you have any questions about how to use this pipeline.
