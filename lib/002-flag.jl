@@ -272,7 +272,19 @@ baseline_lengths(metadata) = ustrip.([norm(metadata.positions[ant1] - metadata.p
 
 "Use the transposed visibilities to smooth the auto-correlations and find flags."
 function process_transposed_visibilities!(flags, transposed_visibilities, metadata, config)
+    # We are sweeping through frequency channels with a window size of three. This means that we
+    # have three channels loaded at any one time. If a problem is detected, we don't bother trying
+    # to guess which of the three channels is the problem, we just flag all three of them. If we are
+    # not careful, that means when we slide the window over once, two of the three channels are
+    # already flagged and we will, by default, flag this new channel without ever really looking at
+    # it. Oops! So we need to be careful to make sure flags don't propagate themselves in this
+    # manner!
+
     function load(β)
+        # When we're loading the visibilities, we'll take care of some quick flags that only require
+        # one channel at a time. These can write directly into the master list of flags because
+        # we're only flagging one channel at a time and therefore they can't propagate through
+        # frequency channels.
         V = transposed_visibilities[β]
         _preexisting_flags!(flags, V, β)
         A = extract_autocorrelations(V, metadata)
@@ -280,34 +292,51 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         apply_to_transpose!(V, flags, β)
     end
 
-    function update_flags!(V1, V2, V3, flags, range)
-        apply_to_transpose!(V1, flags, range[1])
-        apply_to_transpose!(V2, flags, range[2])
-        apply_to_transpose!(V3, flags, range[3])
+    function update_flags!(V1, V2, V3, bits)
+        V1[bits] = 0
+        V2[bits] = 0
+        V3[bits] = 0
     end
 
-    function find_flags!(flags, V1, V2, V3, Δ, range)
+    function find_flags(V1, V2, V3, Δ)
+        # In this function we only identify the (baseline, time) pairs that we would like to flag
+        # for these three frequency channels, we don't output anything yet. Or else we risk the
+        # wrath of the flag propagation gods. Tremble in fear!!!
+
+        bits = BitArray(size(V1))
+        bits[:] = false
+
         threshold = config.integration_rms_threshold
         if threshold > 0
             Δ .= difference_from_middle.(V1, V2, V3)
-            _integration_rms_flags!(flags, Δ, threshold, range)
-            update_flags!(V1, V2, V3, flags, range)
+            _integration_rms_flags!(bits, Δ, threshold)
+            update_flags!(V1, V2, V3, bits)
         end
+
         threshold = config.visibility_amplitude_threshold
         if threshold > 0
             for iteration = 1:3
                 Δ .= difference_from_middle.(V1, V2, V3)
-                _visibility_amplitude_flags!(flags, Δ, threshold, range)
-                update_flags!(V1, V2, V3, flags, range)
+                _visibility_amplitude_flags!(bits, Δ, threshold)
+                update_flags!(V1, V2, V3, bits)
             end
         end
+
         threshold = config.channel_baseline_constant_offset_threshold
         if threshold > 0
             Δ .= difference_from_middle.(V1, V2, V3)
-            _constant_offset_flags!(flags, Δ, threshold, range)
-            update_flags!(V1, V2, V3, flags, range)
+            _constant_offset_flags!(bits, Δ, threshold)
+            update_flags!(V1, V2, V3, bits)
         end
-        flags.channel_difference_rms[first(range)] = rms(Δ)
+
+        bits
+    end
+
+    function output!(flags, channel, Δ, bits)
+        # only call this function to output the updated flags once we are completely done looking at
+        # this channel (ie. it won't be used in any more differences)
+        flags.channel_difference_rms[channel] = rms(Δ)
+        flags.bits[:, channel, :] .|= bits
     end
 
     prg = Progress(Nfreq(metadata) - 2)
@@ -316,7 +345,11 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
     V2 = load(2)
     V3 = load(3)
     Δ  = similar(V1)
-    find_flags!(flags, V1, V2, V3, Δ, range)
+    bits = find_flags(V1, V2, V3, Δ)
+    V1bits = deepcopy(bits)
+    V2bits = deepcopy(bits)
+    V3bits = deepcopy(bits)
+    output!(flags, 1, Δ, V1bits)
     next!(prg)
 
     while last(range) < Nfreq(metadata)
@@ -324,10 +357,17 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         V1 = V2
         V2 = V3
         V3 = load(last(range))
-        _preexisting_flags!(flags, V3, last(range))
-        find_flags!(flags, V1, V2, V3, Δ, range)
+        V1bits = V2bits
+        V2bits = V3bits
+        V3bits = find_flags(V1, V2, V3, Δ)
+        V1bits .|= V3bits # give new flags to first channel
+        V2bits .|= V3bits # give new flags to second channel as well
+        output!(flags, first(range), Δ, V1bits)
         next!(prg)
     end
+
+    output!(flags, range[2], Δ, V2bits)
+    output!(flags, range[3], Δ, V3bits)
 
     flags
 end
@@ -362,13 +402,13 @@ function _flag_autocorrelation_timeseries!(flags, autos, threshold, β)
     end
 end
 
-"Flag (frequency, time) pairs that have enhanced RMS across all baselines."
-function _integration_rms_flags!(flags, Δ, threshold, range)
+"Flag all baselines in integrations that have enhanced RMS across all baselines."
+function _integration_rms_flags!(bits, Δ, threshold, range)
     Nbase, Ntime = size(Δ)
     σ = [rms(@view Δ[:, idx]) for idx = 1:Ntime]
-    bits = threshold_flag(σ, mad, threshold, scale=1000, iterations=2)
-    for β in range, α = 1:Nbase
-        flags.bits[α, β, :] .|= bits
+    new_bits = threshold_flag(σ, mad, threshold, scale=1000, iterations=2)
+    for α = 1:Nbase
+        bits[α, :] .|= new_bits
     end
 end
 
@@ -379,11 +419,9 @@ After taking differences, we should be left with just noise. So we can measure t
 and flag any visibilities that are large compared to this RMS. A typical value for the threshold
 here is `5` to avoid flagging too many visibilities due to thermal noise.
 """
-function _visibility_amplitude_flags!(flags, Δ, threshold, range)
-    bits = abs.(Δ) .> threshold * rms(Δ)
-    for β in range
-        flags.bits[:, β, :] .|= bits
-    end
+function _visibility_amplitude_flags!(bits, Δ, threshold)
+    new_bits = abs.(Δ) .> threshold * rms(Δ)
+    bits .|= new_bits
 end
 
 """
@@ -396,13 +434,13 @@ therefore flag baselines where the time-averaged visibilities are a large fracti
 that math says that the RMS is always larger than the amplitude of the time-averaged visibilities,
 so the `threshold` here should be between 0 and 1.
 """
-function _constant_offset_flags!(flags, Δ, threshold, range)
+function _constant_offset_flags!(bits, Δ, threshold)
     Nbase = size(Δ, 1)
     for α = 1:Nbase
         δ = @view Δ[α, :]
         ratio = abs(avg(δ) / rms(δ))
         if is_this_baseline_unusual(ratio, threshold)
-            flag_baseline_channel!(flags, α, range)
+            bits[α, :] = true
         end
     end
 end
