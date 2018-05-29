@@ -180,6 +180,12 @@ function do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, 
     #residuals = Dict(source.name => getfield.(TTCal.getspec(result, source), :I)
     #                 for source in sky.sources)
     if istest
+        # IMPORTANT
+        # TTCal doesn't yet account for flagged channels in its flux calculation. At the moment
+        # flagged channels essentially vote for zero flux, so this function will underestimate the
+        # amount of flux a source has. This is acceptable for now because this is just debug output,
+        # but Michael should really fix this. Elsewhere we're using the `mean_no_zero` function to
+        # circumvent it.
         residuals = Dict(source.name => TTCal.getflux(dataset, source).I
                          for source in sky.sources)
         @show residuals
@@ -197,10 +203,17 @@ function measure_sky!(sky::TTCal.SkyModel, dataset)
         # fit for flux
         measured_spectrum = getspec(dataset, source)
         model_spectrum = TTCal.total_flux.(source, dataset.metadata.frequencies)
-        scale = mean(a.I / b.I for (a, b) in zip(measured_spectrum, model_spectrum))
+        scale = mean_no_zero(a.I / b.I for (a, b) in zip(measured_spectrum, model_spectrum))
         source = scale*source
         sky.sources[idx] = source
     end
+end
+
+function mean_no_zero(data)
+    S = sum(data)
+    C = mapreduce(iszero, +, data)
+    L = length(data)
+    ifelse(L == C, zero(typeof(S)), S / (L - C))
 end
 
 function add!(dataset, sky)
