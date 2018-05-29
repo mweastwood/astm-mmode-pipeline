@@ -139,13 +139,13 @@ function flag(project, config)
     #    process_regular_visibilities!(flags, visibilities, metadata, config)
     #end
 
-    println("Widening flags")
-    Project.save(project, config.output_flags*"-unwidened", "flags", flags)
-    @time widen!(flags, config)
-    Project.save(project, config.output_flags, "flags", flags)
-    #flags = Project.load(project, config.output_flags, "flags")
+    #println("Widening flags")
+    #Project.save(project, config.output_flags*"-unwidened", "flags", flags)
+    #@time widen!(flags, config)
 
     println("Applying the new flags")
+    Project.save(project, config.output_flags, "flags", flags)
+    #flags = Project.load(project, config.output_flags*"-unwidened", "flags")
     input  = BPJSpec.load(joinpath(path, config.input))
     output = similar(input, MultipleFiles(joinpath(path, config.output)))
     Project.set_stripe_count(project, config.output, 1)
