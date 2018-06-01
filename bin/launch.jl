@@ -36,7 +36,7 @@ include(path)
 
 name(astm) = @sprintf("astm%02d", astm)
 function time_worker_spawn(astm, number, topology)
-    @elapsed addprocs([(name(astm), 1)])
+    @elapsed addprocs([(name(astm), number)])
 end
 
 function time_load_code(worker, path)
