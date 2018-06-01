@@ -289,13 +289,8 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         _preexisting_flags!(flags, V, β)
         A = extract_autocorrelations(V, metadata)
         process_autocorrelations!(flags, A, metadata, config, β)
-        apply_to_transpose!(V, flags, β)
-    end
-
-    function update_flags!(V1, V2, V3, bits)
-        V1[bits] = 0
-        V2[bits] = 0
-        V3[bits] = 0
+        output = apply_to_transpose!(V, flags, β)
+        output
     end
 
     function find_flags(V1, V2, V3, Δ)
@@ -306,27 +301,26 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         bits = BitArray(size(V1))
         bits[:] = false
 
+        Δ .= difference_from_middle.(V1, V2, V3)
+
         threshold = config.integration_rms_threshold
         if threshold > 0
-            Δ .= difference_from_middle.(V1, V2, V3)
             _integration_rms_flags!(bits, Δ, threshold)
-            update_flags!(V1, V2, V3, bits)
+            Δ[bits] = 0
         end
 
         threshold = config.visibility_amplitude_threshold
         if threshold > 0
             for iteration = 1:3
-                Δ .= difference_from_middle.(V1, V2, V3)
                 _visibility_amplitude_flags!(bits, Δ, threshold)
-                update_flags!(V1, V2, V3, bits)
+                Δ[bits] = 0
             end
         end
 
         threshold = config.channel_baseline_constant_offset_threshold
         if threshold > 0
-            Δ .= difference_from_middle.(V1, V2, V3)
             _constant_offset_flags!(bits, Δ, threshold)
-            update_flags!(V1, V2, V3, bits)
+            Δ[bits] = 0
         end
 
         bits
