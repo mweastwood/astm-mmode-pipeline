@@ -332,10 +332,10 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         bits
     end
 
-    function output!(flags, channel, Δ, bits)
+    function output!(flags, channel, Δ, bits, measure_rms=true)
         # only call this function to output the updated flags once we are completely done looking at
         # this channel (ie. it won't be used in any more differences)
-        flags.channel_difference_rms[channel] = rms(Δ)
+        measure_rms && (flags.channel_difference_rms[channel] = rms(Δ))
         flags.bits[:, channel, :] .|= bits
     end
 
@@ -366,8 +366,8 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         next!(prg)
     end
 
-    output!(flags, range[2], Δ, V2bits)
-    output!(flags, range[3], Δ, V3bits)
+    output!(flags, range[2], Δ, V2bits, false)
+    output!(flags, range[3], Δ, V3bits, false)
 
     flags
 end
@@ -403,7 +403,7 @@ function _flag_autocorrelation_timeseries!(flags, autos, threshold, β)
 end
 
 "Flag all baselines in integrations that have enhanced RMS across all baselines."
-function _integration_rms_flags!(bits, Δ, threshold, range)
+function _integration_rms_flags!(bits, Δ, threshold)
     Nbase, Ntime = size(Δ)
     σ = [rms(@view Δ[:, idx]) for idx = 1:Ntime]
     new_bits = threshold_flag(σ, mad, threshold, scale=1000, iterations=2)
