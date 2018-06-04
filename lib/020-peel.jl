@@ -138,6 +138,7 @@ function peel_dry_run!(input, metadata, sky, config, index;
 end
 
 function do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, istest)
+    sky = deepcopy(sky) # don't modify the user's copy of `sky`
     frame = ReferenceFrame(dataset.metadata)
     filter!(sky.sources) do source
         TTCal.isabovehorizon(frame, source)
