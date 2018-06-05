@@ -46,7 +46,18 @@ function fitrfi(project, wsclean, config)
     #ms = Tables.open(joinpath(path, config.output_measurement_set*".ms"), write=true)
     #dataset = TTCal.Dataset(ms)
     residuals, coherencies = peel(dataset, config.components)
+
+    # Image each of the removed components
+    for (idx, coherency) in enumerate(coherencies)
+        TTCal.write(ms, coherency, column="CORRECTED_DATA")
+        WSClean.run(wsclean, ms, joinpath(path, config.output_measurement_set*"-component-$idx"))
+        Tables.open(ms, write=true)
+    end
+
+    # Image the residuals
     TTCal.write(ms, residuals, column="CORRECTED_DATA")
+    WSClean.run(wsclean, ms, joinpath(path, config.output_measurement_set*"-residuals"))
+
     Project.save(project, config.output_coherencies, "coherencies", coherencies)
     Tables.close(ms)
 end
@@ -99,7 +110,7 @@ function peel(dataset, N)
     dummy  = TTCal.Source("dummy", TTCal.Point(zenith, flat))
     sky = TTCal.SkyModel(fill(dummy, N))
     residuals = deepcopy(dataset)
-    calibrations = TTCal.peel!(residuals, TTCal.ConstantBeam(), sky)
+    calibrations = TTCal.peel!(residuals, TTCal.ConstantBeam(), sky, quiet=false)
     coherencies  = compute_coherencies(dataset.metadata, sky, calibrations)
     residuals, coherencies
 end
