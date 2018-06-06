@@ -152,7 +152,7 @@ function do_the_source_removal!(dataset, sky, config, dopeeling, dosubtraction, 
     # peel bright sources
     if dopeeling
         subtract!(dataset, medium)
-        calibrations = peel!(dataset, bright)
+        calibrations = peel!(dataset, bright, istest)
         add!(dataset, medium)
 
         # check to see if peeled sources were actually peeled
@@ -231,9 +231,9 @@ function subtract!(dataset, sky)
     end
 end
 
-function peel!(dataset, sky)
+function peel!(dataset, sky, istest)
     if length(sky.sources) > 0
-        calibrations = TTCal.peel!(dataset, TTCal.ConstantBeam(), sky, quiet=true,
+        calibrations = TTCal.peel!(dataset, TTCal.ConstantBeam(), sky, quiet=!istest,
                                    collapse_frequency=false)
     else
         calibrations = TTCal.Calibration[]
