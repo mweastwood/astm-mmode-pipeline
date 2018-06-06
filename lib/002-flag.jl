@@ -56,7 +56,7 @@ function load(file)
 
     Config(dict["input"],
            dict["input-transposed"],
-           dict["output"],
+           get(dict, "output", ""),
            dict["output-flags"],
            dict["metadata"],
            a_priori_antenna_flags,
@@ -143,13 +143,17 @@ function flag(project, config)
     #Project.save(project, config.output_flags*"-unwidened", "flags", flags)
     #@time widen!(flags, config)
 
-    println("Applying the new flags")
+    println("Saving the new flags")
     Project.save(project, config.output_flags, "flags", flags)
-    #flags = Project.load(project, config.output_flags*"-unwidened", "flags")
-    input  = BPJSpec.load(joinpath(path, config.input))
-    output = similar(input, MultipleFiles(joinpath(path, config.output)))
-    Project.set_stripe_count(project, config.output, 1)
-    write_output(project, flags, input, output, metadata)
+
+    if config.output != ""
+        println("Applying the new flags")
+        #flags = Project.load(project, config.output_flags*"-unwidened", "flags")
+        input  = BPJSpec.load(joinpath(path, config.input))
+        output = similar(input, MultipleFiles(joinpath(path, config.output)))
+        Project.set_stripe_count(project, config.output, 1)
+        write_output(project, flags, input, output, metadata)
+    end
     flags
 end
 
