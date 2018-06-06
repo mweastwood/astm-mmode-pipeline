@@ -1,6 +1,7 @@
 input: 031-m-modes-even
 output-alm: 032-dirty-alm-even
 output-map: 032-dirty-map-even
+metadata: metadata
 transfer-matrix: 100-transfer-matrix
 regularization: 100
 nside: 512
