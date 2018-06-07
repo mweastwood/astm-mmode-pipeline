@@ -1,0 +1,4 @@
+input: 020-peeled-data
+output: 001-peeled-transposed-data
+metadata: metadata
+
