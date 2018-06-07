@@ -1,0 +1,10 @@
+input: 030-m-modes
+output-alm: 031-dirty-channel-alm
+output-map: 031-dirty-channel-map
+output-directory: 031-dirty-channel-maps
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

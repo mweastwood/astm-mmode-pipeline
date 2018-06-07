@@ -1,6 +1,6 @@
-input: 031-m-modes
-output-alm: 032-dirty-alm
-output-map: 032-dirty-map
+input: 030-m-modes
+output-alm: 031-dirty-alm
+output-map: 031-dirty-map
 metadata: metadata
 transfer-matrix: 100-transfer-matrix
 regularization: 100
