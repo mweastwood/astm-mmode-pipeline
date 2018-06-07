@@ -18,18 +18,20 @@ peel: .pipeline/020-peeled-data
 
 .PHONY: m-modes
 m-modes: \
-	.pipeline/031-m-modes-all \
-	.pipeline/031-m-modes-odd \
-	.pipeline/031-m-modes-even
+	.pipeline/030-m-modes-all \
+	.pipeline/030-m-modes-unpeeled \
+	.pipeline/030-m-modes-odd \
+	.pipeline/030-m-modes-even
 
 .PHONY: dirty-maps
 dirty-maps: \
-	.pipeline/032-dirty-map-all \
-	.pipeline/032-dirty-map-odd \
-	.pipeline/032-dirty-map-even \
-	.pipeline/032-dirty-channel-maps \
-	.pipeline/033-difference-maps-even-odd \
-	.pipeline/033-difference-maps-channels
+	.pipeline/031-dirty-map-all \
+	.pipeline/031-dirty-map-odd \
+	.pipeline/031-dirty-map-even \
+	.pipeline/031-dirty-channel-maps \
+	.pipeline/031-dirty-channel-maps-unpeeled
+	#.pipeline/033-difference-maps-even-odd \
+	#.pipeline/033-difference-maps-channels
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
@@ -79,7 +81,7 @@ power-spectrum: \
 BIN=../../bin
 LIB=../../lib
 JULIA=julia-0.6 --color=yes -O3
-LAUNCH=$(JULIA) $(BIN)/launch.jl
+LAUNCH=$(JULIA) -- $(BIN)/launch.jl
 
 define launch
 	$(LAUNCH) $(filter-out .pipeline/%,$^)
@@ -87,7 +89,7 @@ define launch
 endef
 
 define launch-remote
-	$(LAUNCH) --remote-workers $(1) $(filter-out .pipeline/%,$^)
+	$(LAUNCH) --remote-workers $(1) -- $(filter-out .pipeline/%,$^)
 	touch $@
 endef
 
@@ -112,7 +114,7 @@ endef
 		$(LIB)/002-flag.jl project.yml 002-flag-raw.yml \
 		.pipeline/000-raw-data \
 		.pipeline/001-raw-transposed-data
-	$(call launch-remote,1)
+	$(launch)
 
 .pipeline/003-calibrated-data: \
 		$(LIB)/003-calibrate.jl project.yml wsclean.yml 003-calibrate.yml \
@@ -128,7 +130,7 @@ endef
 		$(LIB)/002-flag.jl project.yml 002-flag-calibrated.yml \
 		.pipeline/002-calibrated-data \
 		.pipeline/001-calibrated-transposed-data
-	$(call launch-remote,1)
+	$(launch)
 
 .pipeline/010-fitrfi: \
 		$(LIB)/010-fitrfi.jl project.yml wsclean.yml 010-fitrfi.yml \
@@ -144,44 +146,65 @@ endef
 .pipeline/020-peeled-data: \
 		$(LIB)/020-peel.jl project.yml 020-peel.yml \
 		.pipeline/011-subrfi
-	$(call launch-remote,4)
+	$(call launch-remote,6)
+
+.pipeline/001-peeled-transposed-data: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-peeled.yml \
+		.pipeline/020-peeled-data
+	$(call launch-remote,1)
+
+.pipeline/002-flagged-peeled-data: \
+		$(LIB)/002-flag.jl project.yml 002-flag-peeled.yml \
+		.pipeline/020-peeled-data \
+		.pipeline/001-peeled-transposed-data
+	$(launch)
 
 ####################################################################################################
 # M-MODE ANALYSIS BASICS AND IMAGING
 
-.pipeline/030-folded-data: \
-		$(LIB)/030-fold.jl project.yml 030-fold.yml \
-		.pipeline/020-peeled-data
-	$(call launch-remote,1)
-
-.pipeline/031-m-modes%: \
-		$(LIB)/031-getmmodes.jl project.yml 031-getmmodes%.yml \
-		.pipeline/030-folded-data \
+.pipeline/030-m-modes%: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes%.yml \
+		.pipeline/001-peeled-transposed-data \
+		.pipeline/002-flagged-peeled-data \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
-.pipeline/032-dirty-map%: \
-		$(LIB)/032-tikhonov.jl project.yml 032-tikhonov%.yml \
-		.pipeline/031-m-modes% \
+.pipeline/030-m-modes-unpeeled: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-unpeeled.yml \
+		.pipeline/001-calibrated-transposed-data \
+		.pipeline/002-flagged-calibrated-data \
 		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
-.pipeline/032-dirty-channel-maps: \
-		$(LIB)/032-tikhonov.jl project.yml 032-tikhonov-channel-maps.yml \
-		.pipeline/031-m-modes-all \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
-.pipeline/033-difference-maps-even-odd: \
-		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
-		.pipeline/032-dirty-map-odd \
-		.pipeline/032-dirty-map-even
+	#$(call launch-remote,1)
 	$(launch)
 
-.pipeline/033-difference-maps-channels: \
-		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-channels.yml \
-		.pipeline/032-dirty-channel-maps
-	$(launch)
+.pipeline/031-dirty-map%: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov%.yml \
+		.pipeline/030-m-modes% \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps.yml \
+		.pipeline/030-m-modes-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-unpeeled: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps-unpeeled.yml \
+		.pipeline/030-m-modes-unpeeled \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+#.pipeline/033-difference-maps-even-odd: \
+#		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
+#		.pipeline/032-dirty-map-odd \
+#		.pipeline/032-dirty-map-even
+#	$(launch)
+#
+#.pipeline/033-difference-maps-channels: \
+#		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-channels.yml \
+#		.pipeline/032-dirty-channel-maps
+#	$(launch)
 
 .pipeline/100-transfer-matrix: \
 		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix.yml \
