@@ -1,7 +1,7 @@
 input: 030-m-modes-unpeeled
-output-alm: 031-dirty-channel-alm
-output-map: 031-dirty-channel-map
-output-directory: 031-dirty-channel-maps
+output-alm: 031-dirty-channel-alm-unpeeled
+output-map: 031-dirty-channel-map-unpeeled
+output-directory: 031-dirty-channel-maps-unpeeled
 metadata: metadata
 transfer-matrix: 100-transfer-matrix
 regularization: 100
