@@ -200,11 +200,16 @@ endef
 #		.pipeline/032-dirty-map-odd \
 #		.pipeline/032-dirty-map-even
 #	$(launch)
-#
-#.pipeline/033-difference-maps-channels: \
+
+#.pipeline/033-difference-channel-maps: \
 #		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-channels.yml \
 #		.pipeline/032-dirty-channel-maps
 #	$(launch)
+
+.pipeline/032-difference-channel-maps-unpeeled: \
+		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps-unpeeled.yml \
+		.pipeline/031-dirty-channel-maps-unpeeled
+	$(launch)
 
 .pipeline/100-transfer-matrix: \
 		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix.yml \

@@ -31,7 +31,7 @@ function difference(project, config)
     for idx = 1:length(config.inputs)-1
         file1 = config.inputs[idx]
         file2 = config.inputs[idx+1]
-        file3 = @sprintf("033-difference-%s-%s.fits",
+        file3 = @sprintf("032-difference-%s-%s.fits",
                          replace(basename(file2), ".fits", ""),
                          replace(basename(file1), ".fits", ""))
         map1 = readhealpix(joinpath(input_path, file1))
