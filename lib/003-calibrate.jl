@@ -18,6 +18,7 @@ struct Config
     input        :: String
     output       :: String
     output_calibration :: String
+    output_bandpass    :: String
     metadata     :: String
     skymodel     :: String
     test_image   :: String
@@ -44,6 +45,7 @@ function load(file)
     Config(dict["input"],
            get(dict, "output", ""),
            get(dict, "output-calibration", ""),
+           get(dict, "output-bandpass", ""),
            dict["metadata"],
            joinpath(dirname(file), dict["sky-model"]),
            dict["test-image"],
@@ -72,8 +74,10 @@ function calibrate(project, wsclean, config)
     ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
     WSClean.run(wsclean, ms, joinpath(path, config.test_image))
     if config.output_calibration != ""
-        Project.save(project, config.output_calibration, "calibration", calibration,
-                     "bandpass-coefficients", bandpass_coeff)
+        Project.save(project, config.output_calibration, "calibration", calibration)
+    end
+    if config.output_bandpass != ""
+        Project.save(project, config.output_bandpass, "bandpass-parameters", bandpass_coeff)
     end
     if config.output != ""
         apply_the_calibration(project, config, calibration)
