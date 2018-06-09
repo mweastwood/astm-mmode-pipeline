@@ -25,6 +25,8 @@ struct Config
     maxiter      :: Int
     tolerance    :: Float64
     minuvw       :: Float64
+    refant       :: Int # the reference antenna (we have just let the overall phase float until now)
+    order        :: Int # order of the polynomial fit to the bandpass amplitude
     delete_input :: Bool
 end
 
@@ -49,6 +51,8 @@ function load(file)
            dict["maxiter"],
            dict["tolerance"],
            dict["minuvw"],
+           dict["refant"],
+           dict["order"],
            dict["delete-input"])
 end
 
@@ -64,11 +68,12 @@ end
 
 function calibrate(project, wsclean, config)
     path = Project.workspace(project)
-    dataset, calibration = solve_for_the_calibration(project, config)
+    dataset, calibration, bandpass_coeff = solve_for_the_calibration(project, config)
     ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
     WSClean.run(wsclean, ms, joinpath(path, config.test_image))
     if config.output_calibration != ""
-        Project.save(project, config.output_calibration, "calibration", calibration)
+        Project.save(project, config.output_calibration, "calibration", calibration,
+                     "bandpass-coefficients", bandpass_coeff)
     end
     if config.output != ""
         apply_the_calibration(project, config, calibration)
@@ -83,8 +88,9 @@ function solve_for_the_calibration(project, config)
     calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
                                   tolerance=config.tolerance, minuvw=config.minuvw,
                                   collapse_time=true)
+    coeff = smooth!(calibration, measured.metadata, config)
     applycal!(measured, calibration)
-    measured, calibration
+    measured, calibration, coeff
 end
 
 ####################################################################################################
@@ -116,6 +122,110 @@ function pack!(dataset, array, index)
             α += 1
         end
     end
+end
+
+####################################################################################################
+
+function smooth!(calibration, metadata, config)
+    ν = metadata.frequencies
+    coeff  = zeros(config.order + 4, 2, Nant(metadata))
+    input  = cal_to_array(calibration, metadata, config.refant)
+    output = zeros(Complex128, Nfreq(metadata), 2, Nant(metadata))
+    for ant = 1:Nant(metadata)
+        coeff[:, 1, ant], output[:, 1, ant] = fit_bandpass(ν, @view(input[:, 1, ant]), config) # xx
+        coeff[:, 2, ant], output[:, 2, ant] = fit_bandpass(ν, @view(input[:, 2, ant]), config) # yy
+    end
+    array_to_cal!(calibration, output, metadata)
+    coeff
+end
+
+function cal_to_array(calibration, metadata, refant)
+    # get the data into a format that is a little easier to work with
+    output = zeros(Complex128, 2, Nant(metadata), Nfreq(metadata))
+    for β = 1:Nfreq(metadata)
+        cal = calibration[β, 1]
+        for ant = 1:Nant(metadata)
+            J = cal[ant]
+            output[1, ant, β] = J.xx
+            output[2, ant, β] = J.yy
+        end
+    end
+    # fix the phase to the reference antenna
+    for β = 1:Nfreq(metadata)
+        xx_phase_factor = conj(output[1, refant, β]) / abs(output[1, refant, β])
+        yy_phase_factor = conj(output[2, refant, β]) / abs(output[2, refant, β])
+        output[1, :, β] .*= xx_phase_factor
+        output[2, :, β] .*= yy_phase_factor
+    end
+    # put frequency on the fast axis
+    output = permutedims(output, (3, 1, 2)) # Nfreq × Npol × Nant
+end
+
+function array_to_cal!(calibration, array, metadata)
+    for β = 1:Nfreq(metadata)
+        cal = calibration[β, 1]
+        for ant = 1:Nant(metadata)
+            J = TTCal.DiagonalJonesMatrix(array[β, 1, ant], array[β, 2, ant])
+            cal[ant] = J
+        end
+    end
+end
+
+function fit_bandpass(ν, gains, config)
+    amplitude =   abs.(gains)
+    phase     = angle.(gains)
+    flags = isnan.(amplitude) .| (amplitude .== 0)
+    νMHz  = ustrip.(uconvert.(u"MHz", ν))
+    amplitude_coeff, amplitude_fit = fit_amplitude(νMHz, amplitude, flags, config.order)
+    phase_coeff,     phase_fit     = fit_phase(νMHz, phase, flags)
+    complete_coeff = [phase_coeff; amplitude_coeff]
+    complete_fit   = amplitude_fit .* cis.(phase_fit)
+    complete_coeff, complete_fit
+end
+
+function fit_amplitude(νMHz, amplitude, flags, order)
+    polyfit(νMHz, amplitude, flags, order)
+end
+
+function fit_phase(νMHz, phase, flags)
+    #  0 => phase offset relative to the reference antenna
+    #  1 => delay term
+    # -1 => differential total electron content (ie. relative to the reference antenna)
+    # To get the delay in m, multiply by u"c / (2π*MHz)"
+    # To get the TEC in TECU, divide by u"q^2 / (4pi*me*ϵ0*c) * (TECU/MHz)"
+    polyfit(νMHz, unroll_phase(phase), flags, (0, 1, -1))
+end
+
+function polyfit(x, y, flags, order::Int)
+    terms = collect(n for n = 0:order)
+    polyfit(x, y, flags, terms)
+end
+
+function polyfit(x, y, flags, terms::Union{AbstractVector, Tuple})
+    A = zeros(eltype(y), length(y), length(terms))
+    for (jdx, n) in enumerate(terms)
+        for idx = 1:length(y)
+            A[idx, jdx] = x[idx]^n
+        end
+    end
+    coeff  = A[.!flags, :] \ y[.!flags]
+    values = A * coeff
+    coeff, values
+end
+
+function unroll_phase(phase)
+    unrolled_phase = copy(phase)
+    for idx = 1:length(phase)-1
+        Δϕ = phase[idx+1] - phase[idx]
+        while Δϕ > π
+            Δϕ -= 2π
+        end
+        while Δϕ < -π
+            Δϕ += 2π
+        end
+        unrolled_phase[idx+1] = unrolled_phase[idx] + Δϕ
+    end
+    unrolled_phase
 end
 
 ####################################################################################################
@@ -206,8 +316,6 @@ beam_coeff = Dict(36.528u"MHz" => [ 0.538556463745644,     -0.46866163121041965,
                                    -0.03933368453654855,    0.03569618734453113,
                                    -0.020645215922528007,  -0.0007547051500611155,
                                    -0.02480903125367872])
-
-####################################################################################################
 
 end
 

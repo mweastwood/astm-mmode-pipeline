@@ -5,8 +5,10 @@ metadata: metadata
 sky-model: calibration-sky-model.json
 test-image: 003-calibration-image
 integrations: 1640:1660
-maxiter: 50
-tolerance: 1e-3
+maxiter: 200
+tolerance: 1e-5
 minuvw: 15.0
+refant: 34
+order: 5
 delete-input: false
 
