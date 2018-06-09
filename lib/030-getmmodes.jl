@@ -6,6 +6,7 @@ using BPJSpec
 using YAML
 
 include("Project.jl")
+include("FlagDefinitions.jl"); using .FlagDefinitions
 
 struct Config
     input        :: String
@@ -121,13 +122,6 @@ function _fold(array, integrations_per_day)
     numerator[no_data]   = 0
     denominator[no_data] = 1
     numerator ./ denominator
-end
-
-# Definition copied from 002-flag.jl
-struct Flags
-    bits :: BitArray{3} # Nbase × Nfreq × Ntime
-    channel_difference_rms :: Vector{Float64}
-    sawtooth :: Array{Float64, 3}
 end
 
 end
