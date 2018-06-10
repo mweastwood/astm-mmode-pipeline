@@ -1,5 +1,7 @@
 module FlagDefinitions
 
+using TTCal
+
 export Flags
 export flag_baseline!, flag_channel!, flag_integration!
 export flag_baseline_channel!, flag_baseline_integration!, flag_baseline_channel_integration!
