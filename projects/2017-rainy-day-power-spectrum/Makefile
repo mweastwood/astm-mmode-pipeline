@@ -174,8 +174,7 @@ endef
 		.pipeline/001-calibrated-transposed-data \
 		.pipeline/002-flagged-calibrated-data \
 		.pipeline/100-transfer-matrix
-	#$(call launch-remote,1)
-	$(launch)
+	$(call launch-remote,1)
 
 .pipeline/031-dirty-map%: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov%.yml \

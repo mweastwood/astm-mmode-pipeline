@@ -1,5 +1,6 @@
 module Driver
 
+using FileIO, JLD2
 using ProgressMeter
 using TTCal
 using BPJSpec
@@ -47,11 +48,11 @@ function getmmodes(project, config)
     ttcal_metadata = Project.load(project, config.metadata, "metadata")
     metadata  = BPJSpec.from_ttcal(ttcal_metadata)
     hierarchy = Project.load(project, config.hierarchy, "hierarchy")
+    path_to_flags = joinpath(path, config.input_flags*".jld2")
 
     input  = BPJSpec.load(joinpath(path, config.input))
     output = create(MModes, MultipleFiles(joinpath(path, config.output)),
                     metadata, hierarchy)
-    flags  = Project.load(project, config.input_flags, "flags")
 
     queue = collect(1:length(input.frequencies))
     pool  = CachingPool(workers())
@@ -60,7 +61,7 @@ function getmmodes(project, config)
     increment() = (lock(lck); next!(prg); unlock(lck))
 
     function closure(input, output, frequency)
-        _getmmodes(input, output, hierarchy, flags, frequency,
+        _getmmodes(input, output, hierarchy, path_to_flags, frequency,
                    config.integrations_per_day, config.option)
     end
 
@@ -73,11 +74,11 @@ function getmmodes(project, config)
     end
 end
 
-function _getmmodes(input, output, hierarchy, flags, frequency,
+function _getmmodes(input, output, hierarchy, path_to_flags, frequency,
                     integrations_per_day, option)
-    @show frequency
     try
         array = input[frequency]
+        flags = FileIO.load(path_to_flags, "flags")
         __getmmodes(array, output, hierarchy, flags, frequency,
                     integrations_per_day, option)
     catch err
