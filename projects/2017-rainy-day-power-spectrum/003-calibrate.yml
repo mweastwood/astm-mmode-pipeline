@@ -1,6 +1,7 @@
 input: 002-flagged-raw-data
 output: 003-calibrated-data
 output-calibration: 003-calibration-solution
+output-bandpass: 003-bandpass-parameters
 metadata: metadata
 sky-model: calibration-sky-model.json
 test-image: 003-calibration-image
