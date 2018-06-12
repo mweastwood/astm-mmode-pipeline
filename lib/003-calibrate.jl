@@ -23,6 +23,7 @@ struct Config
     skymodel     :: String
     test_image   :: String
     integrations :: Vector{Int}
+    channels_at_a_time :: Int
     maxiter      :: Int
     tolerance    :: Float64
     minuvw       :: Float64
@@ -50,6 +51,7 @@ function load(file)
            joinpath(dirname(file), dict["sky-model"]),
            dict["test-image"],
            integrations,
+           get(dict, "channels-at-a-time", 0),
            dict["maxiter"],
            dict["tolerance"],
            dict["minuvw"],
@@ -70,9 +72,8 @@ end
 
 function calibrate(project, wsclean, config)
     path = Project.workspace(project)
-    dataset, calibration, bandpass_coeff = solve_for_the_calibration(project, config)
-    ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
-    WSClean.run(wsclean, ms, joinpath(path, config.test_image))
+    calibration, coeff = solve_for_the_calibration(project, config)
+    create_test_image(project, config, calibration)
     if config.output_calibration != ""
         Project.save(project, config.output_calibration, "calibration", calibration)
     end
@@ -85,41 +86,71 @@ function calibrate(project, wsclean, config)
 end
 
 function solve_for_the_calibration(project, config)
+    println("Solving for the calibration")
+    metadata = Project.load(project, config.metadata, "metadata")
+    if config.channels_at_a_time > 0
+        queue = collect(Iterators.partition(1:Nfreq(metadata), config.channels_at_a_time))
+        @show queue
+        # We don't know what order the calibration will finish in, so we'll write them all down
+        # along with their channel numbers and stitch it back together at the end.
+        calibrations = Dict{Int, TTCal.Calibration}() # maps (first channel) => (calibration)
+        @sync for worker in workers()
+            @async while length(queue) > 0
+                channels = shift!(queue)
+                my_calibration = remotecall_fetch(solve_for_the_calibration_with_channels, worker,
+                                                  project, config, channels)
+                calibrations[first(channels)] = my_calibration
+            end
+        end
+        # Stitch it back together
+        sorted_keys = sort(collect(keys(calibrations)))
+        calibration = calibrations[first(sorted_keys)]
+        for key in sorted_keys[2:end]
+            TTCal.merge!(calibration, calibrations[key], axis=:frequency)
+        end
+    else
+        # We're taking all the channels at once, and we'll do the calibration on the master process
+        calibration = solve_for_the_calibration_with_channels(project, config, 1:Nfreq(metadata))
+    end
+    coeff = smooth!(calibration, metadata, config)
+    calibration, coeff
+end
+
+function solve_for_the_calibration_with_channels(project, config, channels)
+    @show channels
+    metadata = Project.load(project, config.metadata, "metadata")
     sky = readsky(config.skymodel)
-    measured = read_raw_visibilities(project, config)
-    beam = getbeam(measured.metadata)
-    model = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
-    calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
-                                  tolerance=config.tolerance, minuvw=config.minuvw,
-                                  collapse_time=true)
-    coeff = smooth!(calibration, measured.metadata, config)
-    applycal!(measured, calibration)
-    measured, calibration, coeff
+    beam  = getbeam(metadata)
+    @time measured = read_raw_visibilities(project, config, channels)
+    @time model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
+    @time calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
+                                        tolerance=config.tolerance, minuvw=config.minuvw,
+                                        collapse_time=true, quiet=true)
+    calibration
 end
 
 ####################################################################################################
 
-function read_raw_visibilities(project, config)
+function read_raw_visibilities(project, config, channels)
     path = Project.workspace(project)
     input = BPJSpec.load(joinpath(path, config.input))
     metadata = Project.load(project, config.metadata, "metadata")
     TTCal.slice!(metadata, config.integrations, axis=:time)
+    TTCal.slice!(metadata, channels, axis=:frequency)
     dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-    prg = Progress(length(config.integrations))
     for (i, j) in enumerate(config.integrations)
-        pack!(dataset, input[j], i)
-        next!(prg)
+        pack!(dataset, input[j], channels, i)
     end
     dataset
 end
 
-function pack!(dataset, array, index)
+function pack!(dataset, array, channels, index)
     T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
-    for frequency = 1:Nfreq(dataset)
-        visibilities = dataset[frequency, index]
+    for (β, β′) in enumerate(channels)
+        visibilities = dataset[β, index]
         α = 1
         for antenna1 = 1:Nant(dataset), antenna2 = antenna1:Nant(dataset)
-            J = pack_jones_matrix(array, frequency, α, T)
+            J = pack_jones_matrix(array, β′, α, T)
             if J.xx != 0 && J.yy != 0
                 visibilities[antenna1, antenna2] = J
             end
@@ -230,6 +261,16 @@ function unroll_phase(phase)
         unrolled_phase[idx+1] = unrolled_phase[idx] + Δϕ
     end
     unrolled_phase
+end
+
+####################################################################################################
+
+function create_test_image(project, config, calibration)
+    metadata = Project.load(project, config.metadata, "metadata")
+    dataset  = read_raw_visibilities(project, config, 1:Nfreq(metadata))
+    applycal!(dataset, calibration)
+    ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
+    WSClean.run(wsclean, ms, joinpath(path, config.test_image))
 end
 
 ####################################################################################################
