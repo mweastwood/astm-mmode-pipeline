@@ -72,8 +72,8 @@ end
 
 function calibrate(project, wsclean, config)
     path = Project.workspace(project)
-    calibration, coeff = solve_for_the_calibration(project, config)
-    create_test_image(project, config, calibration)
+    calibration, bandpass_coeff = solve_for_the_calibration(project, config)
+    create_test_image(project, wsclean, config, calibration)
     if config.output_calibration != ""
         Project.save(project, config.output_calibration, "calibration", calibration)
     end
@@ -90,7 +90,6 @@ function solve_for_the_calibration(project, config)
     metadata = Project.load(project, config.metadata, "metadata")
     if config.channels_at_a_time > 0
         queue = collect(Iterators.partition(1:Nfreq(metadata), config.channels_at_a_time))
-        @show queue
         # We don't know what order the calibration will finish in, so we'll write them all down
         # along with their channel numbers and stitch it back together at the end.
         calibrations = Dict{Int, TTCal.Calibration}() # maps (first channel) => (calibration)
@@ -117,15 +116,16 @@ function solve_for_the_calibration(project, config)
 end
 
 function solve_for_the_calibration_with_channels(project, config, channels)
-    @show channels
-    metadata = Project.load(project, config.metadata, "metadata")
-    sky = readsky(config.skymodel)
-    beam  = getbeam(metadata)
-    @time measured = read_raw_visibilities(project, config, channels)
-    @time model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
-    @time calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
-                                        tolerance=config.tolerance, minuvw=config.minuvw,
-                                        collapse_time=true, quiet=true)
+    @time begin
+        metadata = Project.load(project, config.metadata, "metadata")
+        sky = readsky(config.skymodel)
+        beam  = getbeam(metadata)
+        measured = read_raw_visibilities(project, config, channels)
+        model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
+        calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
+                                      tolerance=config.tolerance, minuvw=config.minuvw,
+                                      collapse_time=true, quiet=true)
+    end
     calibration
 end
 
@@ -265,9 +265,15 @@ end
 
 ####################################################################################################
 
-function create_test_image(project, config, calibration)
+function create_test_image(project, wsclean, config, calibration)
+    myindex = round(Int, middle(config.integrations))
+    println("Creating a sample test image ($myindex)")
+    path = Project.workspace(project)
     metadata = Project.load(project, config.metadata, "metadata")
-    dataset  = read_raw_visibilities(project, config, 1:Nfreq(metadata))
+    input = BPJSpec.load(joinpath(path, config.input))
+    array = input[myindex]
+    T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
+    dataset = array_to_ttcal(array, metadata, myindex, T)
     applycal!(dataset, calibration)
     ms = CreateMeasurementSet.create(dataset, joinpath(path, config.test_image*".ms"))
     WSClean.run(wsclean, ms, joinpath(path, config.test_image))
