@@ -43,13 +43,17 @@ function load(file)
            strategy)
 end
 
-function go(project_file, config_file; integration=0)
+function go(project_file, config_file; integration=0, what=false)
     project = Project.load(project_file)
     config  = load(config_file)
-    if integration == 0
-        peel(project, config)
+    if what
+        what_did_peeling_remove(project, config, integration)
     else
-        test(project, config, integration)
+        if integration == 0
+            peel(project, config)
+        else
+            test(project, config, integration)
+        end
     end
 end
 
@@ -96,19 +100,66 @@ function test(project, config, integration)
     dataset = peel_dry_run!(input, metadata, sky, config, integration;
                             dopeeling=false, dosubtraction=false, istest=true)
     WSClean.run(wsclean, dataset,
-                joinpath(path, "tmp", @sprintf("peeling-test-%05d-1", integration)))
+                joinpath(path, "tmp", @sprintf("peeling-test-%05d-1", integration)),
+                mspath=joinpath(path, "tmp", @sprintf("peeling-test-%05d-1.ms", integration)),
+                deletems=false)
 
     println("# only peeling")
     dataset = peel_dry_run!(input, metadata, sky, config, integration;
                             dopeeling=true, dosubtraction=false, istest=true)
     WSClean.run(wsclean, dataset,
-                joinpath(path, "tmp", @sprintf("peeling-test-%05d-2", integration)))
+                joinpath(path, "tmp", @sprintf("peeling-test-%05d-2", integration)),
+                mspath=joinpath(path, "tmp", @sprintf("peeling-test-%05d-2.ms", integration)),
+                deletems=false)
 
     println("# full source removal")
     dataset = peel_dry_run!(input, metadata, sky, config, integration;
                             dopeeling=true, dosubtraction=true, istest=true)
     WSClean.run(wsclean, dataset,
-                joinpath(path, "tmp", @sprintf("peeling-test-%05d-3", integration)))
+                joinpath(path, "tmp", @sprintf("peeling-test-%05d-3", integration)),
+                mspath=joinpath(path, "tmp", @sprintf("peeling-test-%05d-3.ms", integration)),
+                deletems=false)
+end
+
+function what_did_peeling_remove(project, config, integration)
+    path = Project.workspace(project)
+    sky  = readsky(config.skymodel)
+    input    = BPJSpec.load(joinpath(path, config.input))
+    metadata = Project.load(project, config.metadata, "metadata")
+    wsclean  = WSClean.Config("uniform", 0.0, 8)
+
+    # Run a copy of the peeling routine
+    array = input[integration]
+    T = size(array, 1) == 2 ? TTCal.Dual : TTCal.Full
+    dataset = array_to_ttcal(array, metadata, integration, T)
+    frame    = ReferenceFrame(dataset.metadata)
+    @show getfield.(sky.sources, :name)
+    filter!(sky.sources) do source
+        TTCal.isabovehorizon(frame, source)
+    end
+    @show getfield.(sky.sources, :name)
+    measure_sky!(sky, dataset)
+    @show getfield.(sky.sources, :name)
+    bright, medium, faint = partition(dataset.metadata, config, sky)
+
+    (print("1: "); foreach(s->print(s.name, ", "), bright.sources); println())
+    (print("2: "); foreach(s->print(s.name, ", "), medium.sources); println())
+    (print("3: "); foreach(s->print(s.name, ", "),  faint.sources); println())
+
+    subtract!(dataset, medium)
+    calibrations = peel!(dataset, bright, true)
+    add!(dataset, medium)
+
+    println("Imaging")
+    basename = @sprintf("peeling-residuals-%05d", integration)
+    @time WSClean.run(wsclean, dataset, joinpath(path, "tmp", basename))
+    for (calibration, source) in zip(calibrations, bright.sources)
+        println("* ", source.name)
+        @time model = genvis(dataset.metadata, TTCal.ConstantBeam(), source,
+                             polarization=TTCal.Dual)
+        @time TTCal.corrupt!(model, calibration)
+        @time WSClean.run(wsclean, model, joinpath(path, "tmp", basename*"-"*source.name))
+    end
 end
 
 function fill_in_residuals!(residuals, _residuals, index)

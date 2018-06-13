@@ -19,11 +19,19 @@ function load(file)
     Config(dict["weight"], dict["minuvw"], dict["j"])
 end
 
-function run(config::Config, input::TTCal.Dataset, output)
-    path = joinpath(Project.temp(), randstring(4)*".ms")
+function run(config::Config, input::TTCal.Dataset, output; mspath="", deletems=true)
+    if mspath == ""
+        path = joinpath(Project.temp(), randstring(4)*".ms")
+    else
+        path = mspath
+    end
     ms = CreateMeasurementSet.create(input, path)
     run(config, ms, output)
-    Tables.delete(ms)
+    if deletems
+        Tables.delete(ms)
+    else
+        Tables.close(ms)
+    end
 end
 
 function run(config::Config, input::Table, output)

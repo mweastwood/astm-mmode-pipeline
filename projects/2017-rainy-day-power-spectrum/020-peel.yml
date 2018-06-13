@@ -13,11 +13,11 @@ strategy:
         minimum-elevation: 10
         minimum-flux: 1000
     Vir A:
-        category: bright
+        category: faint
         minimum-elevation: 30
         minimum-flux: 1000
     Tau A:
-        category: bright
+        category: faint
         minimum-elevation: 30
         minimum-flux: 1000
     Her A:
@@ -37,5 +37,7 @@ strategy:
         minimum-elevation: 60
         minimum-flux: 500
     Sun:
-        category: skip
+        category: bright
+        minimum-elevation: 10
+        minimum-flux: 3000
 
