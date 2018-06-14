@@ -38,7 +38,11 @@ function predict(project, config)
     mmodes = similar(alm, storage=MultipleFiles(joinpath(path, config.output_mmodes)))
     metadata  = Project.load(project, config.metadata,  "metadata")
     hierarchy = Project.load(project, config.hierarchy, "hierarchy")
+    Project.set_stripe_count(project, config.output_mmodes, 1)
+    Project.set_stripe_count(project, config.output_visibilities, 1)
 
+    alm2mmodes(transfermatrix, alm, mmodes)
+    mmodes2visibilities(mmodes, visibilities, metadata, hierarchy)
 end
 
 function alm2mmodes(transfermatrix, alm, mmodes)
