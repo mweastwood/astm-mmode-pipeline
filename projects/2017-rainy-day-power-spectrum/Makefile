@@ -26,12 +26,10 @@ m-modes: \
 .PHONY: dirty-maps
 dirty-maps: \
 	.pipeline/031-dirty-map-all \
-	.pipeline/031-dirty-map-odd \
-	.pipeline/031-dirty-map-even \
 	.pipeline/031-dirty-channel-maps \
-	.pipeline/031-dirty-channel-maps-unpeeled
-	#.pipeline/033-difference-maps-even-odd \
-	#.pipeline/033-difference-maps-channels
+	.pipeline/031-dirty-channel-maps-unpeeled \
+	.pipeline/032-difference-channel-maps \
+	.pipeline/032-difference-channel-maps-unpeeled
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
@@ -200,10 +198,10 @@ endef
 #		.pipeline/032-dirty-map-even
 #	$(launch)
 
-#.pipeline/033-difference-channel-maps: \
-#		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-channels.yml \
-#		.pipeline/032-dirty-channel-maps
-#	$(launch)
+.pipeline/032-difference-channel-maps: \
+		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps.yml \
+		.pipeline/031-dirty-channel-maps
+	$(launch)
 
 .pipeline/032-difference-channel-maps-unpeeled: \
 		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps-unpeeled.yml \
