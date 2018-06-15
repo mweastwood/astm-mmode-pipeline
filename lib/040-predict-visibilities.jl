@@ -1,6 +1,7 @@
 module Driver
 
 using BPJSpec
+using TTCal
 using ProgressMeter
 using YAML
 
@@ -35,7 +36,9 @@ function predict(project, config)
     path = Project.workspace(project)
     transfermatrix = BPJSpec.load(joinpath(path, config.transfermatrix))
     alm    = BPJSpec.load(joinpath(path, config.input))
-    mmodes = similar(alm, storage=MultipleFiles(joinpath(path, config.output_mmodes)))
+    mmodes = similar(alm, MultipleFiles(joinpath(path, config.output_mmodes)))
+    visibilities = create(FBlockMatrix, MultipleFiles(joinpath(path, config.output_visibilities)),
+                          alm.frequencies, alm.bandwidth)
     metadata  = Project.load(project, config.metadata,  "metadata")
     hierarchy = Project.load(project, config.hierarchy, "hierarchy")
     Project.set_stripe_count(project, config.output_mmodes, 1)
@@ -46,7 +49,8 @@ function predict(project, config)
 end
 
 function alm2mmodes(transfermatrix, alm, mmodes)
-    @. mmodes = transfermatrix * alm
+    progressbar = ProgressBar(mmodes)
+    @. progressbar = transfermatrix * alm
 end
 
 function mmodes2visibilities(mmodes, visibilities, metadata, hierarchy)
@@ -68,7 +72,8 @@ end
 function _mmodes2visibilities(mmodes, visibilities, hierarchy, Ntime, Nbase, β)
     packed_mmodes = pack_mmodes(mmodes, hierarchy, Ntime, Nbase, β)
     planned_fft = plan_fft(packed_mmodes, 1)
-    visibilities[β] = Ntime .* (planned_fft \ packed_mmodes)
+    output = Ntime .* (planned_fft \ packed_mmodes)
+    visibilities[β] = permutedims(output, (2, 1))
 end
 
 function pack_mmodes(mmodes, hierarchy, Ntime, Nbase, β)
@@ -76,14 +81,14 @@ function pack_mmodes(mmodes, hierarchy, Ntime, Nbase, β)
 
     # m = 0
     block = mmodes[0, β]
-    for (α, α′) in enumerate(baseline_permutation(hierarchy, 0))
+    for (α, α′) in enumerate(BPJSpec.baseline_permutation(hierarchy, 0))
         output[1, α′] = block[α]
     end
 
     # m > 0
     for m = 1:mmodes.mmax
         block = mmodes[m, β]
-        for (α, α′) in enumerate(baseline_permutation(hierarchy, m))
+        for (α, α′) in enumerate(BPJSpec.baseline_permutation(hierarchy, m))
             α1 = 2α-1 # positive m
             α2 = 2α-0 # negative m
             output[      m+1, α′] =      block[α1]

@@ -1,0 +1,7 @@
+input: 031-dirty-channel-alm
+output-mmodes: 040-predicted-m-modes
+output-visibilities: 040-predicted-visibilities
+metadata: metadata
+hierarchy: hierarchy
+transfer-matrix: 100-transfer-matrix
+

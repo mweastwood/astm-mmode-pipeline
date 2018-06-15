@@ -158,7 +158,7 @@ endef
 	$(launch)
 
 ####################################################################################################
-# M-MODE ANALYSIS BASICS AND IMAGING
+# TIKHONOV-REGULARIZED IMAGING
 
 .pipeline/030-m-modes%: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes%.yml \
@@ -207,6 +207,18 @@ endef
 		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps-unpeeled.yml \
 		.pipeline/031-dirty-channel-maps-unpeeled
 	$(launch)
+
+####################################################################################################
+# RECALIBRATION
+
+.pipeline/040-predicted-visibilities: \
+		$(LIB)/040-predict-visibilities.jl project.yml 040-predict-visibilities.yml \
+		.pipeline/031-dirty-map-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+####################################################################################################
+# TRANSFER MATRIX AND NOISE COVARIANCE MATRIX
 
 .pipeline/100-transfer-matrix: \
 		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix.yml \
