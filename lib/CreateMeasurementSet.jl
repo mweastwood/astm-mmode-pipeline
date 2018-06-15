@@ -121,7 +121,7 @@ function fill_spectral_window_table!(ms, metadata)
     Tables.add_rows!(table, 1)
     table["MEAS_FREQ_REF"] = Int32[1]
     ν = ustrip.(uconvert.(u"Hz", metadata.frequencies))
-    Δν = ν[2] - ν[1]
+    Δν = length(ν) > 1 ? ν[2] - ν[1] : 24e3
     table["CHAN_FREQ"] = reshape(ν, Nfreq(metadata), 1)
     table["REF_FREQUENCY"] = [ν[1] - Δν/2]
     table["CHAN_WIDTH"] = fill(Δν, Nfreq(metadata), 1)
