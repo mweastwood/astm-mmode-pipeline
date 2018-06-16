@@ -6,22 +6,36 @@ export pack_jones_matrix, unpack_jones_matrix!
 
 using TTCal
 
-function array_to_ttcal(array, metadata, time, T=TTCal.Dual)
+function array_to_ttcal(input, metadata, time, T=TTCal.Dual)
+    # Pack all frequency channels of the input array into a TTCal Dataset
+    array_to_ttcal(input, metadata, 1:Nfreq(metadata), time, T)
+end
+
+function array_to_ttcal(input, metadata, frequencies, time, T=TTCal.Dual)
+    # Pack selected frequency channels of the input array into a TTCal Dataset
     metadata = deepcopy(metadata)
-    TTCal.slice!(metadata, time, axis=:time)
-    ttcal_dataset = TTCal.Dataset(metadata, polarization=T)
-    for frequency in 1:Nfreq(metadata)
-        visibilities = ttcal_dataset[frequency, 1]
+    TTCal.slice!(metadata, frequencies, axis=:frequency)
+    TTCal.slice!(metadata, time,        axis=:time)
+    output = TTCal.Dataset(metadata, polarization=T)
+    array_to_ttcal!(output, input, frequencies, 1, T)
+    output
+end
+
+function array_to_ttcal!(output, input, frequencies, time, T=TTCal.Dual)
+    # Pack selected frequency channels of the input array into a TTCal Dataset
+    for (frequency, frequency′) in enumerate(channels)
+        # `frequency`  refers to the channel index within the output TTCal Dataset
+        # `frequency′` refers to the channel index within the input array
+        visibilities = output[frequency, time]
         α = 1
-        for antenna1 = 1:Nant(metadata), antenna2 = antenna1:Nant(metadata)
-            J = pack_jones_matrix(array, frequency, α, T)
-            if J != zero(typeof(J))
+        for antenna1 = 1:Nant(output), antenna2 = antenna1:Nant(output)
+            J = pack_jones_matrix(input, frequency′, α, T)
+            if J.xx != 0 && J.yy != 0
                 visibilities[antenna1, antenna2] = J
             end
             α += 1
         end
     end
-    ttcal_dataset
 end
 
 function pack_jones_matrix(array, frequency, α, ::Type{TTCal.Full})
