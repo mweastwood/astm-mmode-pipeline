@@ -3,27 +3,33 @@ module Driver
 using BPJSpec
 using TTCal
 using ProgressMeter
+using QuadGK
+using Unitful
 using YAML
 
 include("Project.jl")
 
 struct Config
     input          :: String
+    output_alm     :: String
     output_mmodes  :: String
     output_visibilities :: String
     metadata       :: String
     hierarchy      :: String
     transfermatrix :: String
+    spectral_index :: Float64
 end
 
 function load(file)
     dict = YAML.load(open(file))
     Config(dict["input"],
+           dict["output-alm"],
            dict["output-mmodes"],
            dict["output-visibilities"],
            dict["metadata"],
            dict["hierarchy"],
-           dict["transfer-matrix"])
+           dict["transfer-matrix"],
+           dict["spectral-index"])
 end
 
 function go(project_file, config_file)
@@ -35,17 +41,48 @@ end
 function predict(project, config)
     path = Project.workspace(project)
     transfermatrix = BPJSpec.load(joinpath(path, config.transfermatrix))
-    alm    = BPJSpec.load(joinpath(path, config.input))
-    mmodes = similar(alm, MultipleFiles(joinpath(path, config.output_mmodes)))
+    input_alm      = Project.load(project, config.input, "alm")
+
+    ν  = transfermatrix.frequencies
+    Δν = transfermatrix.bandwidth
+    mmax = transfermatrix.mmax
+
+    alm    = create(MFBlockVector, MultipleFiles(joinpath(path, config.output_alm)),    mmax, ν, Δν)
+    mmodes = create(MFBlockVector, MultipleFiles(joinpath(path, config.output_mmodes)), mmax, ν, Δν)
     visibilities = create(FBlockMatrix, MultipleFiles(joinpath(path, config.output_visibilities)),
-                          alm.frequencies, alm.bandwidth)
+                          ν, Δν)
+
     metadata  = Project.load(project, config.metadata,  "metadata")
     hierarchy = Project.load(project, config.hierarchy, "hierarchy")
-    Project.set_stripe_count(project, config.output_mmodes, 1)
+    Project.set_stripe_count(project, config.output_alm,          1)
+    Project.set_stripe_count(project, config.output_mmodes,       1)
     Project.set_stripe_count(project, config.output_visibilities, 1)
 
+    index2alm(input_alm, alm, metadata, config.spectral_index)
     alm2mmodes(transfermatrix, alm, mmodes)
     mmodes2visibilities(mmodes, visibilities, metadata, hierarchy)
+end
+
+function index2alm(input_alm, output_alm, metadata, spectral_index)
+    # Take an input set of spherical harmonics and scale it by some spectral index. We will assume
+    # that the input spherical harmonics are integrated over some bandwidth, and so we will
+    # normalize the output spherical harmonics so that integrating over this bandwidth gives the
+    # correct result.
+    ν  = ustrip.(uconvert.(u"MHz", metadata.frequencies))
+    ν1 = minimum(ν)
+    ν2 = maximum(ν)
+    Δν = ν2 - ν1
+    normalization  = quadgk(ν -> ν^spectral_index, ν1, ν2) |> first
+    normalization /= Δν
+
+    prg = Progress(output_alm.mmax+1)
+    for m = 0:output_alm.mmax
+        block = input_alm[m]
+        for β = 1:Nfreq(metadata)
+            output_alm[m, β] = block .* ν[β]^spectral_index/normalization
+        end
+        next!(prg)
+    end
 end
 
 function alm2mmodes(transfermatrix, alm, mmodes)

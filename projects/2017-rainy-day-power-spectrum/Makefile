@@ -34,6 +34,9 @@ dirty-maps: \
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
 
+.PHONY: predict
+predict: .pipeline/040-predicted-visibilities
+
 .PHONY: average
 average: \
 	.pipeline/101-averaged-m-modes-all \
