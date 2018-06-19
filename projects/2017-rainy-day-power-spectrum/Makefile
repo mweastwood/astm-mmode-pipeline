@@ -38,7 +38,9 @@ transfer-matrix: .pipeline/100-transfer-matrix
 predict: .pipeline/040-predicted-visibilities
 
 .PHONY: recalibrate
-recalibrate: .pipeline/041-recalibrate
+recalibrate: \
+	.pipeline/041-recalibrate \
+	.pipeline/042-recalibrate-apply
 
 .PHONY: average
 average: \
@@ -227,6 +229,12 @@ endef
 		$(LIB)/041-recalibrate.jl project.yml wsclean.yml 041-recalibrate.yml \
 		.pipeline/002-flagged-calibrated-data \
 		.pipeline/040-predicted-visibilities
+	$(call launch-remote,1)
+
+.pipeline/042-recalibrate-apply: \
+		$(LIB)/042-recalibrate-apply.jl project.yml 042-recalibrate-apply.yml \
+		.pipeline/020-peeled-data \
+		.pipeline/041-recalibrate
 	$(call launch-remote,1)
 
 ####################################################################################################
