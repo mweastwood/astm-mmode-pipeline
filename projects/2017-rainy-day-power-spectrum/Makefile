@@ -237,6 +237,11 @@ endef
 		.pipeline/041-recalibrate
 	$(call launch-remote,1)
 
+.pipeline/001-recalibrated-transposed-data: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-recalibrated.yml \
+		.pipeline/042-recalibrate-apply
+	$(call launch-remote,1)
+
 ####################################################################################################
 # TRANSFER MATRIX AND NOISE COVARIANCE MATRIX
 

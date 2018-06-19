@@ -6,7 +6,10 @@ using ProgressMeter
 using YAML
 
 include("Project.jl")
+include("WSClean.jl")
+include("CreateMeasurementSet.jl")
 include("TTCalDatasets.jl"); using .TTCalDatasets
+include("BeamModels.jl");    using .BeamModels
 include("CalibrationFundamentals.jl"); using .CalibrationFundamentals
 
 struct Config
@@ -19,6 +22,7 @@ end
 function load(file)
     dict = YAML.load(open(file))
     Config(dict["input"],
+           dict["metadata"],
            dict["calibration"],
            dict["output"])
 end
