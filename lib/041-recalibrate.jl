@@ -59,10 +59,12 @@ end
 
 function recalibrate(project, wsclean, config)
     path = Project.workspace(project)
-    #calibration = solve_for_the_calibration(project, config)
-    #Project.save(project, config.output_calibration, "calibration", calibration)
-    calibration = Project.load(project, config.output_calibration, "calibration")
-    create_test_image(project, wsclean, config, calibration)
+    calibration, measured, model = solve_for_the_calibration(project, config)
+    Project.save(project, config.output_calibration, "calibration", calibration)
+    image(project, measured, config.test_image*"-measured")
+    image(project, model,    config.test_image*"-model")
+    applycal!(measured, calibration)
+    image(project, measured, config.test_image*"-calibrated")
 end
 
 function solve_for_the_calibration(project, config)
@@ -75,28 +77,37 @@ function solve_for_the_calibration(project, config)
         increment() = (lock(lck); next!(prg); unlock(lck))
         # We don't know what order the calibration will finish in, so we'll write them all down
         # along with their channel numbers and stitch it back together at the end.
-        calibrations = Dict{Int, TTCal.Calibration}() # maps (first channel) => (calibration)
+        calibrations          = Dict{Int, TTCal.Calibration}() # (first channel) => (calibration)
+        measured_visibilities = Dict{Int, TTCal.Dataset}()     # (first channel) => (dataset)
+        model_visibilities    = Dict{Int, TTCal.Dataset}()     # (first channel) => (dataset)
         @sync for worker in workers()
             @async while length(queue) > 0
                 channels = shift!(queue)
-                my_calibration = remotecall_fetch(solve_for_the_calibration_with_channels, worker,
-                                                  project, config, channels, true)
+                my_calibration, my_measured, my_model =
+                    remotecall_fetch(solve_for_the_calibration_with_channels, worker,
+                                     project, config, channels, true)
                 calibrations[first(channels)] = my_calibration
+                measured_visibilities[first(channels)] = my_measured
+                model_visibilities[first(channels)] = my_model
                 increment()
             end
         end
         # Stitch it back together
         sorted_keys = sort(collect(keys(calibrations)))
         calibration = calibrations[first(sorted_keys)]
+        measured    = measured_visibilities[first(sorted_keys)]
+        model       = model_visibilities[first(sorted_keys)]
         for key in sorted_keys[2:end]
-            TTCal.merge!(calibration, calibrations[key], axis=:frequency)
+            TTCal.merge!(calibration,       calibrations[key], axis=:frequency)
+            TTCal.merge!(measured, measured_visibilities[key], axis=:frequency)
+            TTCal.merge!(model,       model_visibilities[key], axis=:frequency)
         end
     else
         # We're taking all the channels at once, and we'll do the calibration on the master process
-        calibration = solve_for_the_calibration_with_channels(project, config, 1:Nfreq(metadata),
-                                                              false)
+        calibration, measured, model =
+            solve_for_the_calibration_with_channels(project, config, 1:Nfreq(metadata), false)
     end
-    calibration
+    calibration, measured, model
 end
 
 function solve_for_the_calibration_with_channels(project, config, channels, quiet)
@@ -105,13 +116,21 @@ function solve_for_the_calibration_with_channels(project, config, channels, quie
     metadata = Project.load(project, config.metadata, "metadata")
     sky   = readsky(config.skymodel)
     beam  = getbeam(metadata)
+
     measured = read_raw_visibilities(input, metadata, channels, config.integrations)
-    model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
+    model    = genvis(deepcopy(measured.metadata), beam, sky, polarization=TTCal.Dual)
     add_diffuse_model_visibilities!(model, project, config, channels)
+
     calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
                                   tolerance=config.tolerance, minuvw=config.minuvw,
                                   collapse_time=true, quiet=quiet)
-    calibration
+
+    # pick out a central integration for imaging
+    central_integration = round(Int, middle(1:Ntime(metadata)))
+    TTCal.slice!(measured, central_integration, axis=:time)
+    TTCal.slice!(model,    central_integration, axis=:time)
+
+    calibration, measured, model
 end
 
 function add_diffuse_model_visibilities!(model, project, config, channels)
@@ -133,6 +152,13 @@ function add_diffuse_model_visibilities!(model, project, config, channels)
             end
         end
     end
+end
+
+function image(project, dataset, name)
+    path = Project.workspace(project)
+    ms = CreateMeasurementSet.create(dataset, joinpath(path, name*".ms"))
+    WSClean.run(WSClean.Config("natural", 0, 8), ms, joinpath(path, name*"-natural"))
+    WSClean.run(WSClean.Config("uniform", 0, 8), ms, joinpath(path, name*"-uniform"))
 end
 
 end
