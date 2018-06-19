@@ -1,17 +1,18 @@
 "Define some helper functions for converting between arrays and TTCal Datasets."
 module TTCalDatasets
 
-export array_to_ttcal, ttcal_to_array
+export array_to_ttcal, array_to_ttcal!
+export ttcal_to_array
 export pack_jones_matrix, unpack_jones_matrix!
 
 using TTCal
 
-function array_to_ttcal(input, metadata, time, T=TTCal.Dual)
+function array_to_ttcal(input, metadata, time, T)
     # Pack all frequency channels of the input array into a TTCal Dataset
     array_to_ttcal(input, metadata, 1:Nfreq(metadata), time, T)
 end
 
-function array_to_ttcal(input, metadata, frequencies, time, T=TTCal.Dual)
+function array_to_ttcal(input, metadata, frequencies, time, T)
     # Pack selected frequency channels of the input array into a TTCal Dataset
     metadata = deepcopy(metadata)
     TTCal.slice!(metadata, frequencies, axis=:frequency)
@@ -21,9 +22,9 @@ function array_to_ttcal(input, metadata, frequencies, time, T=TTCal.Dual)
     output
 end
 
-function array_to_ttcal!(output, input, frequencies, time, T=TTCal.Dual)
+function array_to_ttcal!(output, input, frequencies, time, T)
     # Pack selected frequency channels of the input array into a TTCal Dataset
-    for (frequency, frequency′) in enumerate(channels)
+    for (frequency, frequency′) in enumerate(frequencies)
         # `frequency`  refers to the channel index within the output TTCal Dataset
         # `frequency′` refers to the channel index within the input array
         visibilities = output[frequency, time]

@@ -37,6 +37,9 @@ transfer-matrix: .pipeline/100-transfer-matrix
 .PHONY: predict
 predict: .pipeline/040-predicted-visibilities
 
+.PHONY: recalibrate
+recalibrate: .pipeline/041-recalibrate
+
 .PHONY: average
 average: \
 	.pipeline/101-averaged-m-modes-all \
@@ -218,6 +221,12 @@ endef
 		$(LIB)/040-predict-visibilities.jl project.yml 040-predict-visibilities.yml \
 		.pipeline/031-dirty-map-all \
 		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/041-recalibrate: \
+		$(LIB)/041-recalibrate.jl project.yml wsclean.yml 041-recalibrate.yml \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/040-predicted-visibilities
 	$(call launch-remote,1)
 
 ####################################################################################################

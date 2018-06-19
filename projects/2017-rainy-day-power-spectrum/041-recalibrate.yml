@@ -1,0 +1,12 @@
+input: 002-flagged-calibrated-data
+output-calibration: 041-recalibration-solution
+metadata: metadata
+sky-model: calibration-sky-model.json
+additional-model-visibilities: 040-predicted-visibilities
+test-image: 041-recalibration-image
+integrations: 1600:1800
+channels-at-a-time: 5
+maxiter: 200
+tolerance: 1e-5
+minuvw: 15.0
+

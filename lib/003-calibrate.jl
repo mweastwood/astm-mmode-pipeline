@@ -117,16 +117,16 @@ function solve_for_the_calibration(project, config)
 end
 
 function solve_for_the_calibration_with_channels(project, config, channels)
-    @time begin
-        metadata = Project.load(project, config.metadata, "metadata")
-        sky = readsky(config.skymodel)
-        beam  = getbeam(metadata)
-        measured = read_raw_visibilities(project, config, channels)
-        model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
-        calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
-                                      tolerance=config.tolerance, minuvw=config.minuvw,
-                                      collapse_time=true, quiet=true)
-    end
+    path  = Project.workspace(project)
+    input = BPJSpec.load(joinpath(path, config.input))
+    metadata = Project.load(project, config.metadata, "metadata")
+    sky   = readsky(config.skymodel)
+    beam  = getbeam(metadata)
+    measured = read_raw_visibilities(input, metadata, channels, config.integrations)
+    model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
+    calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
+                                  tolerance=config.tolerance, minuvw=config.minuvw,
+                                  collapse_time=true, quiet=true)
     calibration
 end
 

@@ -8,17 +8,17 @@ export apply_the_calibration
 using BPJSpec
 using TTCal
 
-include("Project.jl")
+using ..Project
+using ..TTCalDatasets
+using ..WSClean
+using ..CreateMeasurementSet
 
-function read_raw_visibilities(project, config, channels)
-    path  = Project.workspace(project)
-    input = BPJSpec.load(joinpath(path, config.input))
-    metadata = Project.load(project, config.metadata, "metadata")
-    TTCal.slice!(metadata, config.integrations, axis=:time)
-    TTCal.slice!(metadata, channels, axis=:frequency)
+function read_raw_visibilities(input, metadata, channels, integrations)
+    TTCal.slice!(metadata, integrations, axis=:time)
+    TTCal.slice!(metadata, channels,     axis=:frequency)
     dataset = TTCal.Dataset(metadata, polarization=TTCal.Dual)
-    for (i, j) in enumerate(config.integrations)
-        array_to_ttcal!(dataset, input[j], channels, i)
+    for (i, j) in enumerate(integrations)
+        array_to_ttcal!(dataset, input[j], channels, i, TTCal.Dual)
     end
     dataset
 end

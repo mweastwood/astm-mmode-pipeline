@@ -1,14 +1,19 @@
 module Driver
 
+using BPJSpec
+using TTCal
+using ProgressMeter
+using YAML
+
 include("Project.jl")
+include("WSClean.jl")
+include("CreateMeasurementSet.jl")
 include("TTCalDatasets.jl"); using .TTCalDatasets
 include("BeamModels.jl");    using .BeamModels
 include("CalibrationFundamentals.jl"); using .CalibrationFundamentals
 
-
 struct Config
     input        :: String
-    output       :: String
     output_calibration :: String
     metadata     :: String
     skymodel     :: String
@@ -33,10 +38,10 @@ function load(file)
         integrations = dict["integrations"]
     end
     Config(dict["input"],
-           dict["output"],
            dict["output-calibration"],
            dict["metadata"],
            joinpath(dirname(file), dict["sky-model"]),
+           dict["additional-model-visibilities"],
            dict["test-image"],
            integrations,
            get(dict, "channels-at-a-time", 0),
@@ -54,17 +59,10 @@ end
 
 function recalibrate(project, wsclean, config)
     path = Project.workspace(project)
-    calibration = solve_for_the_calibration(project, config)
-    #create_test_image(project, wsclean, config, calibration)
-    #if config.output_calibration != ""
-    #    Project.save(project, config.output_calibration, "calibration", calibration)
-    #end
-    #if config.output_bandpass != ""
-    #    Project.save(project, config.output_bandpass, "bandpass-parameters", bandpass_coeff)
-    #end
-    #if config.output != ""
-    #    apply_the_calibration(project, config, calibration)
-    #end
+    #calibration = solve_for_the_calibration(project, config)
+    #Project.save(project, config.output_calibration, "calibration", calibration)
+    calibration = Project.load(project, config.output_calibration, "calibration")
+    create_test_image(project, wsclean, config, calibration)
 end
 
 function solve_for_the_calibration(project, config)
@@ -72,6 +70,9 @@ function solve_for_the_calibration(project, config)
     metadata = Project.load(project, config.metadata, "metadata")
     if config.channels_at_a_time > 0
         queue = collect(Iterators.partition(1:Nfreq(metadata), config.channels_at_a_time))
+        lck = ReentrantLock()
+        prg = Progress(length(queue))
+        increment() = (lock(lck); next!(prg); unlock(lck))
         # We don't know what order the calibration will finish in, so we'll write them all down
         # along with their channel numbers and stitch it back together at the end.
         calibrations = Dict{Int, TTCal.Calibration}() # maps (first channel) => (calibration)
@@ -79,8 +80,9 @@ function solve_for_the_calibration(project, config)
             @async while length(queue) > 0
                 channels = shift!(queue)
                 my_calibration = remotecall_fetch(solve_for_the_calibration_with_channels, worker,
-                                                  project, config, channels)
+                                                  project, config, channels, true)
                 calibrations[first(channels)] = my_calibration
+                increment()
             end
         end
         # Stitch it back together
@@ -91,27 +93,47 @@ function solve_for_the_calibration(project, config)
         end
     else
         # We're taking all the channels at once, and we'll do the calibration on the master process
-        calibration = solve_for_the_calibration_with_channels(project, config, 1:Nfreq(metadata))
+        calibration = solve_for_the_calibration_with_channels(project, config, 1:Nfreq(metadata),
+                                                              false)
     end
     calibration
 end
 
-function solve_for_the_calibration_with_channels(project, config, channels)
-    @time begin
-        metadata = Project.load(project, config.metadata, "metadata")
-        sky = readsky(config.skymodel)
-        beam  = getbeam(metadata)
-        measured = read_raw_visibilities(project, config, channels)
-        model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
-        calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
-                                      tolerance=config.tolerance, minuvw=config.minuvw,
-                                      collapse_time=true, quiet=true)
-    end
+function solve_for_the_calibration_with_channels(project, config, channels, quiet)
+    path  = Project.workspace(project)
+    input = BPJSpec.load(joinpath(path, config.input))
+    metadata = Project.load(project, config.metadata, "metadata")
+    sky   = readsky(config.skymodel)
+    beam  = getbeam(metadata)
+    measured = read_raw_visibilities(input, metadata, channels, config.integrations)
+    model    = genvis(measured.metadata, beam, sky, polarization=TTCal.Dual)
+    add_diffuse_model_visibilities!(model, project, config, channels)
+    calibration = TTCal.calibrate(measured, model, maxiter=config.maxiter,
+                                  tolerance=config.tolerance, minuvw=config.minuvw,
+                                  collapse_time=true, quiet=quiet)
     calibration
 end
 
-
-
+function add_diffuse_model_visibilities!(model, project, config, channels)
+    path = Project.workspace(project)
+    additional_model_visibilities_path = joinpath(path, config.additional_model_visibilities)
+    additional_model_visibilities = BPJSpec.load(additional_model_visibilities_path)
+    for (frequency, frequency′) in enumerate(channels)
+        V = additional_model_visibilities[frequency′]
+        for (time, time′) in enumerate(config.integrations)
+            model_visibilities = model[frequency, time]
+            α = 1
+            for ant1 = 1:Nant(model), ant2 = ant1:Nant(model)
+                # Flagged baselines will have zero additional model visibilities. This is not a
+                # problem as long as the baselines flagged in `additional_model_visibilities` are
+                # consistent with the baselines flagged in the dataset we are calibrating.
+                W = V[α, time′]
+                model_visibilities[ant1, ant2] += TTCal.DiagonalJonesMatrix(W, W)
+                α += 1
+            end
+        end
+    end
+end
 
 end
 
