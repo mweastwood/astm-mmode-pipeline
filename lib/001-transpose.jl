@@ -41,6 +41,8 @@ function transpose(project, config)
     input = BPJSpec.load(joinpath(path, config.input))
     temp_files = [open(joinpath(path, config.output, @sprintf("%04d.temp", β)), "w+")
                         for β = 1:Nfreq(metadata)]
+    #temp_files = [open(joinpath(path, config.output, @sprintf("%04d.temp", β)), "r")
+    #                    for β = 1:Nfreq(metadata)]
 
     prg = Progress(Nfreq(metadata))
     for β = 1:Nfreq(metadata)
@@ -57,7 +59,7 @@ function transpose(project, config)
 
     foreach(close, temp_files)
     for β = 1:Nfreq(metadata)
-        rm(joinpath(path, @sprintf("%04d.temp", β)), force=true)
+        rm(joinpath(path, config.output, @sprintf("%04d.temp", β)), force=true)
     end
 end
 
@@ -103,7 +105,9 @@ function _normalize!(output, path, size, frequency)
     open(joinpath(path, @sprintf("%04d.temp", frequency)), "r") do temp_file
         data = read(temp_file, Complex128, size)
         output[frequency] = data
+        finalize(data)
     end
+    nothing
 end
 
 end
