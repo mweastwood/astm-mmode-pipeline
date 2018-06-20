@@ -242,6 +242,19 @@ endef
 		.pipeline/042-recalibrate-apply
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-recalibrated: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated.yml \
+		.pipeline/001-recalibrated-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-recalibrated: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps-recalibrated.yml \
+		.pipeline/030-m-modes-recalibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 ####################################################################################################
 # TRANSFER MATRIX AND NOISE COVARIANCE MATRIX
 
