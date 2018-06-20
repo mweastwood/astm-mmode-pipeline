@@ -18,6 +18,7 @@ struct Config
     hierarchy      :: String
     transfermatrix :: String
     spectral_index :: Float64
+    integrations_per_day :: Int
 end
 
 function load(file)
@@ -29,7 +30,8 @@ function load(file)
            dict["metadata"],
            dict["hierarchy"],
            dict["transfer-matrix"],
-           dict["spectral-index"])
+           dict["spectral-index"],
+           dict["integrations-per-day"])
 end
 
 function go(project_file, config_file)
@@ -60,7 +62,7 @@ function predict(project, config)
 
     index2alm(input_alm, alm, metadata, config.spectral_index)
     alm2mmodes(transfermatrix, alm, mmodes)
-    mmodes2visibilities(mmodes, visibilities, metadata, hierarchy)
+    mmodes2visibilities(mmodes, visibilities, metadata, hierarchy, config.integrations_per_day)
 end
 
 function index2alm(input_alm, output_alm, metadata, spectral_index)
@@ -90,7 +92,7 @@ function alm2mmodes(transfermatrix, alm, mmodes)
     @. progressbar = transfermatrix * alm
 end
 
-function mmodes2visibilities(mmodes, visibilities, metadata, hierarchy)
+function mmodes2visibilities(mmodes, visibilities, metadata, hierarchy, Ntime)
     queue = collect(1:Nfreq(metadata))
     lck = ReentrantLock()
     prg = Progress(length(queue))
@@ -100,7 +102,7 @@ function mmodes2visibilities(mmodes, visibilities, metadata, hierarchy)
             β = shift!(queue)
             remotecall_wait(_mmodes2visibilities, worker,
                             mmodes, visibilities, hierarchy,
-                            Ntime(metadata), Nbase(metadata), β)
+                            Ntime, Nbase(metadata), β)
             increment()
         end
     end
