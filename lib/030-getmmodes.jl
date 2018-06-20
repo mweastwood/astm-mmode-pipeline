@@ -15,7 +15,9 @@ struct Config
     output       :: String
     metadata     :: String
     hierarchy    :: String
-    integrations_per_day :: Int
+    interpolating_visibilities :: String
+    replacement_threshold :: Float64
+    integrations_per_day  :: Int
     delete_input :: Bool
     option       :: String
 end
@@ -28,6 +30,8 @@ function load(file)
            dict["output"],
            dict["metadata"],
            dict["hierarchy"],
+           get(dict, "interpolating-visibilities", ""),
+           get(dict, "replacement-threshold", 0.0),
            dict["integrations-per-day"],
            dict["delete-input"],
            option)
@@ -48,81 +52,104 @@ function getmmodes(project, config)
     ttcal_metadata = Project.load(project, config.metadata, "metadata")
     metadata  = BPJSpec.from_ttcal(ttcal_metadata)
     hierarchy = Project.load(project, config.hierarchy, "hierarchy")
-    path_to_flags = joinpath(path, config.input_flags*".jld2")
 
+    Project.set_stripe_count(project, config.output, 1)
     input  = BPJSpec.load(joinpath(path, config.input))
     output = create(MModes, MultipleFiles(joinpath(path, config.output)),
                     metadata, hierarchy)
 
     queue = collect(1:length(input.frequencies))
-    pool  = CachingPool(workers())
     lck = ReentrantLock()
     prg = Progress(length(queue))
     increment() = (lock(lck); next!(prg); unlock(lck))
 
-    function closure(input, output, frequency)
-        _getmmodes(input, output, hierarchy, path_to_flags, frequency,
-                   config.integrations_per_day, config.option)
-    end
-
     @sync for worker in workers()
         @async while length(queue) > 0
             frequency = shift!(queue)
-            remotecall_wait(closure, pool, input, output, frequency)
+            remotecall_wait(_getmmodes, worker, input, output,
+                            hierarchy, project, config, frequency)
             increment()
         end
     end
 end
 
-function _getmmodes(input, output, hierarchy, path_to_flags, frequency,
-                    integrations_per_day, option)
-    try
-        array = input[frequency]
-        flags = FileIO.load(path_to_flags, "flags")
-        __getmmodes(array, output, hierarchy, flags, frequency,
-                    integrations_per_day, option)
-    catch err
-        println(err)
-        rethrow(err)
+function _getmmodes(input, output, hierarchy, project, config, frequency)
+    V = input[frequency]
+    flag!(V, project, config, frequency)
+    W = fold(V, config)
+    if config.interpolating_visibilities != ""
+        interpolate!(W, project, config, frequency)
     end
+    _getmmodes!(output, V, hierarchy, config, frequency)
 end
 
-function __getmmodes(array, output, hierarchy, flags, frequency,
-                     integrations_per_day, option)
-    array[flags.bits[:, frequency, :]] = 0 # apply the flags
-    folded_array = _fold(array, integrations_per_day)
-    Ntime = size(folded_array, 2)
-    odd  = @view folded_array[:, 1:2:end]
-    even = @view folded_array[:, 2:2:end]
-    if option == "odd"
-        folded_array = odd
-        dϕ = 0.0
-    elseif option == "even"
-        folded_array = even
-        dϕ = -2π/Ntime
-    else
-        dϕ = 0.0
-    end
-    # put time on the fast axis
-    transposed_array = permutedims(folded_array, (2, 1))
-    # compute the m-modes
-    compute!(MModes, output, hierarchy, transposed_array, frequency; dϕ=dϕ)
+function flag!(V, project, config, frequency)
+    flags = Project.load(project, config.input_flags, "flags")
+    V[flags.bits[:, frequency, :]] = 0 # apply the flags
 end
 
-function _fold(array, integrations_per_day)
-    Nbase, Ntime = size(array)
-    numerator   = zeros(eltype(array), Nbase, integrations_per_day)
-    denominator = zeros(          Int, Nbase, integrations_per_day)
+function fold(V, config)
+    Nbase, Ntime = size(V)
+    numerator   = zeros(eltype(V), Nbase, config.integrations_per_day)
+    denominator = zeros(      Int, Nbase, config.integrations_per_day)
     for idx = 1:Ntime, α = 1:Nbase
-        if array[α, idx] != 0
-            numerator[α, mod1(idx, integrations_per_day)] += array[α, idx]
-            denominator[α, mod1(idx, integrations_per_day)] += 1
+        if V[α, idx] != 0
+            numerator[  α, mod1(idx, config.integrations_per_day)] += V[α, idx]
+            denominator[α, mod1(idx, config.integrations_per_day)] += 1
         end
     end
     no_data = denominator .== 0
     numerator[no_data]   = 0
     denominator[no_data] = 1
-    numerator ./ denominator
+    output = numerator ./ denominator
+    output
+end
+
+function interpolate!(V, project, config, frequency)
+    path = Project.workspace(project)
+    interpolating_visibilities = BPJSpec.load(joinpath(path, config.interpolating_visibilities))
+    W = interpolating_visibilities[frequency]
+    @assert size(W) == size(V)
+
+    flags = V .== 0
+    diff  = V .- W
+    σ = sqrt(mean(abs2.(diff[.!flags])))
+
+    # Fill in any gaps in the data
+    Nbase, Ntime = size(V)
+    for α = 1:Nbase
+        all(flags[α, :]) && continue
+        for time = 1:Ntime
+            if flags[α, time]
+                # Replace a gap in the data with the interpolated value
+                V[α, time] = W[α, time]
+            end
+            if abs(diff[α, time]) > config.replacement_threshold * σ
+                # Replace a visibility that seems to be an outlier
+                V[α, time] = W[α, time]
+            end
+        end
+    end
+end
+
+function _getmmodes!(output, V, hierarchy, config, frequency)
+    Ntime = size(V, 2)
+    odd  = @view V[:, 1:2:end]
+    even = @view V[:, 2:2:end]
+    if config.option == "odd"
+        W  = odd
+        dϕ = 0.0
+    elseif config.option == "even"
+        W  = even
+        dϕ = -2π/Ntime
+    else
+        W  = V
+        dϕ = 0.0
+    end
+    # put time on the fast axis
+    transposed_array = permutedims(W, (2, 1))
+    # compute the m-modes
+    compute!(MModes, output, hierarchy, transposed_array, frequency; dϕ=dϕ)
 end
 
 end
