@@ -91,7 +91,7 @@ function smear(project, config)
         end
     end
     accumulation ./= Ntime(metadata)
-    array_to_ttcal(accumulation, metadata, 1)
+    array_to_ttcal(accumulation, metadata, 1, TTCal.Dual)
 end
 
 function remote_worker_loop(input, metadata, visibilities)
