@@ -275,12 +275,6 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
 
         Δ .= difference_from_middle.(V1, V2, V3)
 
-        threshold = config.integration_rms_threshold
-        if threshold > 0
-            _integration_rms_flags!(bits, Δ, threshold)
-            Δ[bits] = 0
-        end
-
         threshold = config.visibility_amplitude_threshold
         if threshold > 0
             for iteration = 1:3
@@ -292,6 +286,12 @@ function process_transposed_visibilities!(flags, transposed_visibilities, metada
         threshold = config.channel_baseline_constant_offset_threshold
         if threshold > 0
             _constant_offset_flags!(bits, Δ, threshold)
+            Δ[bits] = 0
+        end
+
+        threshold = config.integration_rms_threshold
+        if threshold > 0
+            _integration_rms_flags!(bits, Δ, threshold)
             Δ[bits] = 0
         end
 
