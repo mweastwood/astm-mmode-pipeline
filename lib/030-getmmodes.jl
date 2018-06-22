@@ -80,7 +80,7 @@ function _getmmodes(input, output, hierarchy, project, config, frequency)
     if config.interpolating_visibilities != ""
         interpolate!(W, project, config, frequency)
     end
-    _getmmodes!(output, V, hierarchy, config, frequency)
+    _getmmodes!(output, W, hierarchy, config, frequency)
 end
 
 function flag!(V, project, config, frequency)
