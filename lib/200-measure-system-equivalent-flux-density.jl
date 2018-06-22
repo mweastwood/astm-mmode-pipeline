@@ -3,31 +3,22 @@ module Driver
 using ProgressMeter
 using TTCal
 using BPJSpec
-using Unitful, UnitfulAstro
+using Unitful
 using YAML
 
-#using UnicodePlots
-using PyPlot
-using PyCall
-@pyimport matplotlib.pyplot as pyplot
-
 include("Project.jl")
-include("TTCalDatasets.jl")
-using .TTCalDatasets
 
 struct Config
-    input       :: String
-    metadata    :: String
-    calibration :: String
-    integration :: Int
+    input    :: String
+    output   :: String
+    metadata :: String
 end
 
 function load(file)
     dict = YAML.load(open(file))
     Config(dict["input"],
-           dict["metadata"],
-           dict["calibration"],
-           dict["integration"])
+           dict["output"],
+           dict["metadata"])
 end
 
 function go(project_file, config_file)
@@ -37,93 +28,79 @@ function go(project_file, config_file)
 end
 
 function sefd(project, config)
-    path = Project.workspace(project)
-    input = BPJSpec.load(joinpath(path, config.input))
+    path     = Project.workspace(project)
+    input    = BPJSpec.load(joinpath(path, config.input))
     metadata = Project.load(project, config.metadata, "metadata")
-    ν = ustrip.(uconvert.(u"MHz", metadata.frequencies))
+    output   = zeros(Nfreq(metadata)-2, Ntime(metadata)-2)
 
-    Ω = 2.4u"sr"
-    K = (u"c"/(ν[1]*u"MHz"))^2/(Ω*2u"k")
+    queue = collect(2:Ntime(metadata)-1)
+    lck = ReentrantLock()
+    prg = Progress(length(queue))
+    increment() = (lock(lck); next!(prg); unlock(lck))
 
-    # Mozdzen et al. 2017 report a measurement of the absolute sky flux in the southern hemisphere
-    # between 90 and 190 MHz. The brightness temperature at 150 MHz varies between 842 K at 17 h
-    # LST, and 257 K at 2 H LST. The spectral index fluctuates between -2.6 and -2.5. The spectral
-    # index tends to flatten as the sky temperature increases (presumably due to free-free
-    # absorption).
-    high_temp = 842u"K" * (73/150)^-2.5
-    low_temp  = 257u"K" * (73/150)^-2.6
-    @show low_temp high_temp
-    high_prediction = uconvert(u"Jy", high_temp/K)
-    low_prediction  = uconvert(u"Jy", low_temp/K)
-    lwa1_prediction = 256*4680u"Jy"
-    lwa1_temp = 1740u"K"
-
-    kelvin(x) = ustrip(uconvert(u"K",  x))
-    jansky(x) = ustrip(uconvert(u"Jy", x))
-
-    sefds = Vector{typeof(1.0u"Jy")}[]
-    for integration = 10:500:6628
-        V1 = input[integration-1]
-        V2 = input[integration+0]
-        V3 = input[integration+1]
-        sefd = measure(V1, V2, V3)
-        push!(sefds, sefd)
+    @sync for worker in workers()
+        @async while length(queue) > 0
+            integration = shift!(queue)
+            output[:, integration] = remotecall_fetch(measure_sefd, worker, input, integration)
+            increment()
+        end
     end
 
-    figure(1); clf()
-    fill_between(ν,
-                 fill(jansky( low_prediction)/1e6, length(ν)),
-                 fill(jansky(high_prediction)/1e6, length(ν)),
-                 facecolor="black", alpha=0.25)
-    for sefd in sefds
-        plot(ν[2:end-1], jansky.(sefd)/1e6, "k-", linewidth=1)
-    end
-    axhline(jansky(lwa1_prediction)/1e6, color="r", linestyle="-.", linewidth=1)
-    axhline(jansky(high_prediction)/1e6, color="k", linestyle="--", linewidth=1)
-    axhline(jansky( low_prediction)/1e6, color="k", linestyle="--", linewidth=1)
-    xlabel("Frequency / MHz")
-    ylabel("SEFD / MJy")
-    xlim(ν[1], ν[end])
-
-    figure(2); clf()
-    fill_between(ν,
-                 fill(kelvin( low_temp), length(ν)),
-                 fill(kelvin(high_temp), length(ν)),
-                 facecolor="black", alpha=0.25)
-    for sefd in sefds
-        plot(ν[2:end-1], kelvin.(K*sefd), "k-", linewidth=1)
-    end
-    axhline(kelvin(lwa1_temp), color="r", linestyle="-.", linewidth=1)
-    axhline(kelvin(high_temp), color="k", linestyle="--", linewidth=1)
-    axhline(kelvin( low_temp), color="k", linestyle="--", linewidth=1)
-    xlabel("Frequency / MHz")
-    ylabel("System Temperature / K")
-    xlim(ν[1], ν[end])
-
-    nothing
+    Project.save(project, config.output, "SEFD", output)
 end
 
-rms(X) = sqrt(mean(abs2.(X)))
-rms(X, N) = squeeze(sqrt.(mean(abs2.(X), N)), N)
-
-function difference_all(V1, V2, V3)
-    _, Nfreq, Nbase = size(V1)
-    output = zeros(Complex128, Nfreq-2, Nbase)
-    for α = 1:Nbase, β = 2:Nfreq-1
-        xx = 4V2[1, β, α] - (V1[1, β, α] + V3[1, β, α] + V2[1, β-1, α] + V2[1, β+1, α])
-        yy = 4V2[2, β, α] - (V1[2, β, α] + V3[2, β, α] + V2[2, β-1, α] + V2[2, β+1, α])
-        output[β-1, α] = (xx - yy) / 2
-    end
-    output ./ sqrt(10)
+function measure_sefd(input, integration)
+    V1 = input[integration - 1]
+    V2 = input[integration + 0]
+    V3 = input[integration + 1]
+    _measure_sefd(V1, V2, V3)
 end
 
-function measure(V1, V2, V3)
-    f = squeeze(all(V1 .== 0, (1, 2)), (1, 2)) # flags
+function _measure_sefd(V1, V2, V3)
+    Δ = difference_all(V1, V2, V3)
     # for just the real or imaginary component of the visibilities, you get an additional factor of
     # two here (ie. N = 2×Δν×τ)
     N = uconvert(NoUnits, 24u"kHz"*13u"s")
-    Δall  = difference_all(V1, V2, V3) .* sqrt(N)
-    rms(Δall[:, .!f], 2) .* u"Jy"
+    [sqrt(N)*rms(@view(Δ[:, β])) for β = 1:size(Δ, 2)]
+end
+
+"compute the RMS without counting zero elements"
+function rms(x)
+    S = mapreduce(           abs2, +, x)
+    N = mapreduce(y -> !iszero(y), +, x)
+    ifelse(N == 0, zero(typeof(S)), sqrt(S / N))
+end
+
+"xx and yy are 3x3 matrices (3 frequency channels x 3 time integrations)"
+function difference_all_33(xx, yy)
+    if any(xx .== 0) || any(yy .== 0)
+        # punt if we're missing any data
+        return zero(eltype(xx))
+    else
+        Δxx = 4xx[2, 2] - (xx[1, 1] + xx[1, 3] + xx[3, 1] + xx[3, 3])
+        Δyy = 4yy[2, 2] - (yy[1, 1] + yy[1, 3] + yy[3, 1] + yy[3, 3])
+        Δ = Δxx - Δyy
+        # following the rules of error propagation, the standard deviation of the difference is
+        #     (new σ) = √(4² + 4 + 4² + 4) × (old σ)
+        # so we will scale the result so that the standard deviation remains unchanged
+        return Δ / √40
+    end
+end
+
+"V1, V2, and V3 are 2 × Nfreq × Nbase matrices from three separate integrations."
+function difference_all(V1, V2, V3)
+    _, Nfreq, Nbase = size(V1)
+    output = zeros(eltype(V1), Nbase, Nfreq - 2)
+    for α = 1:Nbase, β = 2:Nfreq-1
+        xx = [V1[1, β-1, α] V1[1, β+0, α] V1[1, β+1, α]
+              V2[1, β-1, α] V2[1, β+0, α] V2[1, β+1, α]
+              V3[1, β-1, α] V3[1, β+0, α] V3[1, β+1, α]]
+        yy = [V1[2, β-1, α] V1[2, β+0, α] V1[2, β+1, α]
+              V2[2, β-1, α] V2[2, β+0, α] V2[2, β+1, α]
+              V3[2, β-1, α] V3[2, β+0, α] V3[2, β+1, α]]
+        output[α, β-1] = difference_all_33(xx, yy)
+    end
+    output
 end
 
 end

@@ -81,6 +81,9 @@ power-spectrum: \
 	.pipeline/121-quadratic-estimator-extreme-all \
 	.pipeline/121-quadratic-estimator-signal-injection
 
+.PHONY: sefd
+sefd: .pipeline/200-measure-system-equivalent-flux-density
+
 #.PHONY: signal-injection
 #signal-injection: .pipeline/123-injected-quadratic-estimator
 
@@ -353,4 +356,13 @@ endef
 		.pipeline/120-basis-covariance-matrices \
 		.pipeline/122-signal-injection
 	$(launch)
+
+####################################################################################################
+# MISC
+
+.pipeline/200-measure-system-equivalent-flux-density: \
+		$(LIB)/200-measure-system-equivalent-flux-density.jl project.yml \
+		200-measure-system-equivalent-flux-density.yml \
+		.pipeline/002-flagged-calibrated-data
+	$(call launch-remote,1)
 

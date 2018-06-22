@@ -1,0 +1,4 @@
+input: 002-flagged-calibrated-data
+output: 200-system-equivalent-flux-density
+metadata: metadata
+
