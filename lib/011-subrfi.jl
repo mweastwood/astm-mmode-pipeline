@@ -47,16 +47,39 @@ function subrfi(project, config)
     increment() = (lock(lck); next!(prg); unlock(lck))
 
     @sync for worker in workers()
-        @async while length(queue) > 0
-            integration = shift!(queue)
-            amp = remotecall_fetch(_subrfi, worker, input, output,
-                                   metadata, coherencies, integration)
-            amplitude[:, :, integration, :] = amp
-            increment()
+        @async begin
+            input_channel  = RemoteChannel()
+            output_channel = RemoteChannel()
+            remotecall(remote_worker_loop, worker, input_channel, output_channel,
+                       input, output, project, config)
+            try
+                while length(queue) > 0
+                    integration = shift!(queue)
+                    put!(input_channel, integration)
+                    amp = take!(output_channel)
+                    amplitude[:, :, integration, :] = amp
+                    increment()
+                end
+            finally
+                put!(input_channel, 0)
+            end
         end
     end
 
     Project.save(project, config.output_amplitude, "amplitude", amplitude)
+end
+
+function remote_worker_loop(input_channel, output_channel,
+                            input_visibilities, output_visibilities,
+                            project, config)
+    metadata    = Project.load(project, config.metadata,    "metadata")
+    coherencies = Project.load(project, config.coherencies, "coherencies")
+    while true
+        integration = take!(input_channel) :: Int
+        integration == 0 && break
+        put!(output_channel, _subrfi(input_visibilities, output_visibilities,
+                                     metadata, coherencies, integration))
+    end
 end
 
 function _subrfi(input, output, metadata, coherencies, integration)
