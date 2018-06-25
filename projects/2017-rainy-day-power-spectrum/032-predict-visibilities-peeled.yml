@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 031-dirty-alm-peeled-all
+output-alm: 032-predicted-alm-peeled
+output-mmodes: 032-predicted-m-modes-peeled
+output-visibilities: 032-predicted-visibilities-peeled
+metadata: metadata
+hierarchy: hierarchy
+transfer-matrix: 100-transfer-matrix
+spectral-index: -2.3
+integrations-per-day: 6628
+

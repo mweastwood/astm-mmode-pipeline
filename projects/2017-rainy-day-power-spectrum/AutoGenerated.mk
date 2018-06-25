@@ -317,6 +317,12 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/032-predicted-visibilities-calibrated: \
+		$(LIB)/032-predict-visibilities.jl project.yml 032-predict-visibilities-calibrated.yml \
+		.pipeline/031-dirty-map-calibrated-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/030-m-modes-peeled-all: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-peeled-all.yml \
 		.pipeline/001-peeled-transposed-data \
@@ -635,6 +641,12 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/032-predicted-visibilities-peeled: \
+		$(LIB)/032-predict-visibilities.jl project.yml 032-predict-visibilities-peeled.yml \
+		.pipeline/031-dirty-map-peeled-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/030-m-modes-recalibrated-all: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated-all.yml \
 		.pipeline/001-recalibrated-transposed-data \
@@ -952,4 +964,10 @@
 	    .pipeline/112-foreground-filter-recalibrated-even-mild \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
+
+.pipeline/032-predicted-visibilities-recalibrated: \
+		$(LIB)/032-predict-visibilities.jl project.yml 032-predict-visibilities-recalibrated.yml \
+		.pipeline/031-dirty-map-recalibrated-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
 

@@ -40,6 +40,7 @@ function main()
                     end
                 end
             end
+            create_032_predict_visibilities_yml(makefile, process)
         end
     end
 
@@ -137,7 +138,29 @@ function create_031_tikhonov_yml(makefile, process, sample)
     newline(makefile)
 end
 
-function create_040_predict_visibilities_yml(makefile, process, sample)
+function create_032_predict_visibilities_yml(makefile, process)
+    # (we'll only do this with this with the sky maps constructed from all available data)
+    filename = "032-predict-visibilities-$process.yml"
+    open(joinpath(@__DIR__, filename), "w") do file
+        write_header(file)
+        println(file, "input: 031-dirty-alm-$process-all")
+        println(file, "output-alm: 032-predicted-alm-$process")
+        println(file, "output-mmodes: 032-predicted-m-modes-$process")
+        println(file, "output-visibilities: 032-predicted-visibilities-$process")
+        println(file, "metadata: metadata")
+        println(file, "hierarchy: hierarchy")
+        println(file, "transfer-matrix: 100-transfer-matrix")
+        println(file, "spectral-index: -2.3")
+        println(file, "integrations-per-day: 6628")
+        newline(file)
+    end
+
+    println(makefile, ".pipeline/032-predicted-visibilities-$process: \\")
+    println(makefile, "		\$(LIB)/032-predict-visibilities.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/031-dirty-map-$process-all \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
 end
 
 function create_101_average_channels_yml(makefile, process, sample)
