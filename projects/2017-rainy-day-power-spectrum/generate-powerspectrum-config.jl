@@ -59,7 +59,12 @@ function create_030_getmmodes_yml(makefile, process, sample)
     open(joinpath(@__DIR__, filename), "w") do file
         write_header(file)
         println(file, "input: 001-$process-transposed-data")
-        println(file, "input-flags: 002-$process-data-flags")
+        if process == "recalibrated"
+            warn("SPECIAL CASE: recalibrated data is inheriting flags from peeled data")
+            println(file, "input-flags: 002-peeled-data-flags")
+        else
+            println(file, "input-flags: 002-$process-data-flags")
+        end
         println(file, "output: 030-m-modes-$process-$sample")
         println(file, "metadata: metadata")
         println(file, "hierarchy: hierarchy")
@@ -72,7 +77,12 @@ function create_030_getmmodes_yml(makefile, process, sample)
     println(makefile, ".pipeline/030-m-modes-$process-$sample: \\")
     println(makefile, "		\$(LIB)/030-getmmodes.jl project.yml $filename \\")
     println(makefile, "		.pipeline/001-$process-transposed-data \\")
-    println(makefile, "		.pipeline/002-flagged-$process-data \\")
+    if process == "recalibrated"
+        warn("SPECIAL CASE: recalibrated data is inheriting flags from peeled data")
+        println(makefile, "		.pipeline/002-flagged-peeled-data \\")
+    else
+        println(makefile, "		.pipeline/002-flagged-$process-data \\")
+    end
     println(makefile, "		.pipeline/100-transfer-matrix")
     println(makefile, "	\$(call launch-remote,1)")
     newline(makefile)

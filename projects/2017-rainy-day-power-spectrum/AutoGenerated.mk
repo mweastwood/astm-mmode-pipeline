@@ -566,7 +566,7 @@
 .pipeline/030-m-modes-recalibrated-all: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated-all.yml \
 		.pipeline/001-recalibrated-transposed-data \
-		.pipeline/002-flagged-recalibrated-data \
+		.pipeline/002-flagged-peeled-data \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
@@ -660,7 +660,7 @@
 .pipeline/030-m-modes-recalibrated-odd: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated-odd.yml \
 		.pipeline/001-recalibrated-transposed-data \
-		.pipeline/002-flagged-recalibrated-data \
+		.pipeline/002-flagged-peeled-data \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
@@ -754,7 +754,7 @@
 .pipeline/030-m-modes-recalibrated-even: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated-even.yml \
 		.pipeline/001-recalibrated-transposed-data \
-		.pipeline/002-flagged-recalibrated-data \
+		.pipeline/002-flagged-peeled-data \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
