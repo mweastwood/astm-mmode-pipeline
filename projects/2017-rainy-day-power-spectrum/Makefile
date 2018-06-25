@@ -174,28 +174,6 @@ endef
 		.pipeline/001-peeled-transposed-data
 	$(launch)
 
-####################################################################################################
-# TIKHONOV-REGULARIZED IMAGING
-
-#.pipeline/033-difference-maps-even-odd: \
-#		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
-#		.pipeline/032-dirty-map-odd \
-#		.pipeline/032-dirty-map-even
-#	$(launch)
-
-.pipeline/032-difference-channel-maps: \
-		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps.yml \
-		.pipeline/031-dirty-channel-maps
-	$(launch)
-
-.pipeline/032-difference-channel-maps-unpeeled: \
-		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps-unpeeled.yml \
-		.pipeline/031-dirty-channel-maps-unpeeled
-	$(launch)
-
-####################################################################################################
-# RECALIBRATION
-
 #.pipeline/041-recalibrate: \
 #		$(LIB)/041-recalibrate.jl project.yml wsclean.yml 041-recalibrate.yml \
 #		.pipeline/002-flagged-calibrated-data \
@@ -212,30 +190,14 @@ endef
 #		$(LIB)/001-transpose.jl project.yml 001-transpose-recalibrated.yml \
 #		.pipeline/042-recalibrate-apply
 #	$(call launch-remote,1)
-#
-#.pipeline/031-dirty-channel-maps-recalibrated: \
-#		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps-recalibrated.yml \
-#		.pipeline/030-m-modes-recalibrated \
-#		.pipeline/100-transfer-matrix
-#	$(call launch-remote,1)
 
 ####################################################################################################
-# TRANSFER MATRIX AND NOISE COVARIANCE MATRIX
+# TRANSFER MATRIX AND NOISE COVARIANCE MATRICES
 
 .pipeline/100-transfer-matrix: \
 		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix.yml \
 		.pipeline/000-raw-data
 	$(call launch-remote,4)
-
-.pipeline/101-averaged-m-modes-%: \
-		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-%.yml \
-		.pipeline/031-m-modes-%
-	$(call launch-remote,1)
-
-.pipeline/101-averaged-transfer-matrix: \
-		$(LIB)/101-average-channels.jl project.yml 101-average-channels-transfer-matrix.yml \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
 
 .pipeline/102-noise-covariance-matrix%: \
 		$(LIB)/102-noise-covariance-matrix.jl project.yml 102-noise-covariance-matrix%.yml \
@@ -243,16 +205,6 @@ endef
 		.pipeline/100-transfer-matrix \
 		.pipeline/101-averaged-transfer-matrix
 	$(call launch-remote,1)
-
-.pipeline/103-full-rank-compression%: \
-		$(LIB)/103-full-rank-compress.jl project.yml 103-full-rank-compress%.yml \
-		.pipeline/101-averaged-m-modes% \
-		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix%
-	$(call launch-remote,1)
-
-####################################################################################################
-# FOREGROUND FILTERING AND QUADRATIC ESTIMATOR
 
 .pipeline/110-foreground-covariance-matrix: \
 		$(LIB)/110-foreground-covariance-matrix.jl project.yml 110-foreground-covariance-matrix.yml \
@@ -263,6 +215,16 @@ endef
 		$(LIB)/111-signal-covariance-matrix.jl project.yml 111-signal-covariance-matrix.yml \
 		.pipeline/101-averaged-m-modes
 	$(launch)
+
+#.pipeline/103-full-rank-compression%: \
+#		$(LIB)/103-full-rank-compress.jl project.yml 103-full-rank-compress%.yml \
+#		.pipeline/101-averaged-m-modes% \
+#		.pipeline/101-averaged-transfer-matrix \
+#		.pipeline/102-noise-covariance-matrix%
+#	$(call launch-remote,1)
+
+####################################################################################################
+# QUADRATIC ESTIMATOR
 
 #.pipeline/113-difference-even-odd: \
 #		$(LIB)/113-difference-m-modes.jl project.yml 113-difference-even-odd.yml \
@@ -306,6 +268,22 @@ endef
 		200-measure-system-equivalent-flux-density.yml \
 		.pipeline/002-flagged-calibrated-data
 	$(call launch-remote,4)
+
+##.pipeline/033-difference-maps-even-odd: \
+##		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
+##		.pipeline/032-dirty-map-odd \
+##		.pipeline/032-dirty-map-even
+##	$(launch)
+#
+#.pipeline/032-difference-channel-maps: \
+#		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps.yml \
+#		.pipeline/031-dirty-channel-maps
+#	$(launch)
+#
+#.pipeline/032-difference-channel-maps-unpeeled: \
+#		$(LIB)/032-difference-maps.jl project.yml 032-difference-channel-maps-unpeeled.yml \
+#		.pipeline/031-dirty-channel-maps-unpeeled
+#	$(launch)
 
 ####################################################################################################
 # AUTO-GENERATED RULES

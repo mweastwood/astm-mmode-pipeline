@@ -132,6 +132,13 @@ function create_031_tikhonov_yml(makefile, process, sample)
     end
     replace_if_different(filename)
 
+    println(makefile, ".pipeline/031-dirty-map-$process-$sample: \\")
+    println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/030-m-modes-$process-$sample \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
+
     filename = "031-tikhonov-channels-$process-$sample.yml"
     open(joinpath(temp, filename), "w") do file
         write_header(file)
@@ -147,13 +154,6 @@ function create_031_tikhonov_yml(makefile, process, sample)
         newline(file)
     end
     replace_if_different(filename)
-
-    println(makefile, ".pipeline/031-dirty-map-$process-$sample: \\")
-    println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
-    println(makefile, "		.pipeline/030-m-modes-$process-$sample \\")
-    println(makefile, "		.pipeline/100-transfer-matrix")
-    println(makefile, "	\$(call launch-remote,1)")
-    newline(makefile)
 
     println(makefile, ".pipeline/031-dirty-channel-maps-$process-$sample: \\")
     println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
