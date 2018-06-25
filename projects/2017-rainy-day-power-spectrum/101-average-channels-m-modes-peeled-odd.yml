@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-peeled-odd
+input: 030-m-modes-interpolated-peeled-odd
 output: 101-averaged-m-modes-peeled-odd
 Navg: 10
 

@@ -174,22 +174,22 @@ endef
 		.pipeline/001-peeled-transposed-data
 	$(launch)
 
-#.pipeline/041-recalibrate: \
-#		$(LIB)/041-recalibrate.jl project.yml wsclean.yml 041-recalibrate.yml \
-#		.pipeline/002-flagged-calibrated-data \
-#		.pipeline/040-predicted-visibilities
-#	$(call launch-remote,1)
-#
-#.pipeline/042-recalibrate-apply: \
-#		$(LIB)/042-recalibrate-apply.jl project.yml 042-recalibrate-apply.yml \
-#		.pipeline/020-peeled-data \
-#		.pipeline/041-recalibrate
-#	$(call launch-remote,1)
-#
-#.pipeline/001-recalibrated-transposed-data: \
-#		$(LIB)/001-transpose.jl project.yml 001-transpose-recalibrated.yml \
-#		.pipeline/042-recalibrate-apply
-#	$(call launch-remote,1)
+.pipeline/040-recalibrate: \
+		$(LIB)/040-recalibrate.jl project.yml wsclean.yml 040-recalibrate.yml \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/032-predicted-visibilities-peeled
+	$(call launch-remote,1)
+
+.pipeline/041-recalibrate-apply: \
+		$(LIB)/041-recalibrate-apply.jl project.yml 041-recalibrate-apply.yml \
+		.pipeline/020-peeled-data \
+		.pipeline/040-recalibrate
+	$(call launch-remote,1)
+
+.pipeline/001-recalibrated-transposed-data: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-recalibrated.yml \
+		.pipeline/041-recalibrate-apply
+	$(call launch-remote,1)
 
 ####################################################################################################
 # TRANSFER MATRIX AND NOISE COVARIANCE MATRICES

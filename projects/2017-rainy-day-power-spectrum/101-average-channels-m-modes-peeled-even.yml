@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-peeled-even
+input: 030-m-modes-interpolated-peeled-even
 output: 101-averaged-m-modes-peeled-even
 Navg: 10
 

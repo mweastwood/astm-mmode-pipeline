@@ -1,0 +1,12 @@
+# This file was auto-generated. Do not edit directly!
+input: 001-peeled-transposed-data
+input-flags: 002-peeled-data-flags
+output: 030-m-modes-interpolated-peeled-all
+metadata: metadata
+hierarchy: hierarchy
+interpolating-visibilities: 032-predicted-visibilities-peeled
+replacement-threshold: 5
+integrations-per-day: 6628
+delete-input: false
+option: all
+

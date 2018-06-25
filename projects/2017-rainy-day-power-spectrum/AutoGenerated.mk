@@ -6,6 +6,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-calibrated-all: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-calibrated-all.yml \
+		.pipeline/001-calibrated-transposed-data \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/032-predicted-visibilities-calibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-calibrated-all.yml \
 		.pipeline/030-m-modes-calibrated-all \
@@ -20,7 +28,7 @@
 
 .pipeline/101-averaged-m-modes-calibrated-all: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-calibrated-all.yml \
-		.pipeline/030-m-modes-calibrated-all
+		.pipeline/030-m-modes-interpolated-calibrated-all
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-all: \
@@ -112,6 +120,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-calibrated-odd: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-calibrated-odd.yml \
+		.pipeline/001-calibrated-transposed-data \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/032-predicted-visibilities-calibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-calibrated-odd.yml \
 		.pipeline/030-m-modes-calibrated-odd \
@@ -126,7 +142,7 @@
 
 .pipeline/101-averaged-m-modes-calibrated-odd: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-calibrated-odd.yml \
-		.pipeline/030-m-modes-calibrated-odd
+		.pipeline/030-m-modes-interpolated-calibrated-odd
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-odd: \
@@ -218,6 +234,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-calibrated-even: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-calibrated-even.yml \
+		.pipeline/001-calibrated-transposed-data \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/032-predicted-visibilities-calibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-calibrated-even.yml \
 		.pipeline/030-m-modes-calibrated-even \
@@ -232,7 +256,7 @@
 
 .pipeline/101-averaged-m-modes-calibrated-even: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-calibrated-even.yml \
-		.pipeline/030-m-modes-calibrated-even
+		.pipeline/030-m-modes-interpolated-calibrated-even
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-even: \
@@ -330,6 +354,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-peeled-all: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-peeled-all.yml \
+		.pipeline/001-peeled-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-peeled \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-all: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-peeled-all.yml \
 		.pipeline/030-m-modes-peeled-all \
@@ -344,7 +376,7 @@
 
 .pipeline/101-averaged-m-modes-peeled-all: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-peeled-all.yml \
-		.pipeline/030-m-modes-peeled-all
+		.pipeline/030-m-modes-interpolated-peeled-all
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-all: \
@@ -436,6 +468,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-peeled-odd: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-peeled-odd.yml \
+		.pipeline/001-peeled-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-peeled \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-odd: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-peeled-odd.yml \
 		.pipeline/030-m-modes-peeled-odd \
@@ -450,7 +490,7 @@
 
 .pipeline/101-averaged-m-modes-peeled-odd: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-peeled-odd.yml \
-		.pipeline/030-m-modes-peeled-odd
+		.pipeline/030-m-modes-interpolated-peeled-odd
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-odd: \
@@ -542,6 +582,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-peeled-even: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-peeled-even.yml \
+		.pipeline/001-peeled-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-peeled \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-even: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-peeled-even.yml \
 		.pipeline/030-m-modes-peeled-even \
@@ -556,7 +604,7 @@
 
 .pipeline/101-averaged-m-modes-peeled-even: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-peeled-even.yml \
-		.pipeline/030-m-modes-peeled-even
+		.pipeline/030-m-modes-interpolated-peeled-even
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-even: \
@@ -654,6 +702,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-recalibrated-all: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-recalibrated-all.yml \
+		.pipeline/001-recalibrated-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-recalibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-recalibrated-all.yml \
 		.pipeline/030-m-modes-recalibrated-all \
@@ -668,7 +724,7 @@
 
 .pipeline/101-averaged-m-modes-recalibrated-all: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-recalibrated-all.yml \
-		.pipeline/030-m-modes-recalibrated-all
+		.pipeline/030-m-modes-interpolated-recalibrated-all
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-all: \
@@ -760,6 +816,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-recalibrated-odd: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-recalibrated-odd.yml \
+		.pipeline/001-recalibrated-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-recalibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-recalibrated-odd.yml \
 		.pipeline/030-m-modes-recalibrated-odd \
@@ -774,7 +838,7 @@
 
 .pipeline/101-averaged-m-modes-recalibrated-odd: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-recalibrated-odd.yml \
-		.pipeline/030-m-modes-recalibrated-odd
+		.pipeline/030-m-modes-interpolated-recalibrated-odd
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-odd: \
@@ -866,6 +930,14 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/030-m-modes-interpolated-recalibrated-even: \
+		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-interpolated-recalibrated-even.yml \
+		.pipeline/001-recalibrated-transposed-data \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-recalibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-recalibrated-even.yml \
 		.pipeline/030-m-modes-recalibrated-even \
@@ -880,7 +952,7 @@
 
 .pipeline/101-averaged-m-modes-recalibrated-even: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-recalibrated-even.yml \
-		.pipeline/030-m-modes-recalibrated-even
+		.pipeline/030-m-modes-interpolated-recalibrated-even
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-even: \

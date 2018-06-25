@@ -1,0 +1,12 @@
+# This file was auto-generated. Do not edit directly!
+input: 001-calibrated-transposed-data
+input-flags: 002-calibrated-data-flags
+output: 030-m-modes-interpolated-calibrated-even
+metadata: metadata
+hierarchy: hierarchy
+interpolating-visibilities: 032-predicted-visibilities-calibrated
+replacement-threshold: 5
+integrations-per-day: 6628
+delete-input: false
+option: even
+

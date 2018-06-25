@@ -33,6 +33,7 @@ function main()
         for process in processing
             for sample in sampling
                 create_030_getmmodes_yml(makefile, process, sample)
+                create_030_getmmodes_interpolated_yml(makefile, process, sample)
                 create_031_tikhonov_yml(makefile, process, sample)
                 create_101_average_channels_yml(makefile, process, sample)
                 create_103_full_rank_compress_yml(makefile, process, sample)
@@ -65,8 +66,11 @@ function replace_if_different(filename)
         else
             # file has changed, accept changes
             info("File $filename has changed")
-            mv(file1, file2)
+            mv(file1, file2, remove_destination=true)
         end
+    else
+        info("File $filename is new")
+        mv(file1, file2)
     end
 end
 
@@ -114,6 +118,41 @@ function create_030_getmmodes_yml(makefile, process, sample)
 end
 
 function create_030_getmmodes_interpolated_yml(makefile, process, sample)
+    filename = "030-getmmodes-interpolated-$process-$sample.yml"
+    open(joinpath(temp, filename), "w") do file
+        write_header(file)
+        println(file, "input: 001-$process-transposed-data")
+        if process == "recalibrated"
+            warn("SPECIAL CASE: recalibrated data is inheriting flags from peeled data")
+            println(file, "input-flags: 002-peeled-data-flags")
+        else
+            println(file, "input-flags: 002-$process-data-flags")
+        end
+        println(file, "output: 030-m-modes-interpolated-$process-$sample")
+        println(file, "metadata: metadata")
+        println(file, "hierarchy: hierarchy")
+        println(file, "interpolating-visibilities: 032-predicted-visibilities-$process")
+        println(file, "replacement-threshold: 5")
+        println(file, "integrations-per-day: 6628")
+        println(file, "delete-input: false")
+        println(file, "option: $sample")
+        newline(file)
+    end
+    replace_if_different(filename)
+
+    println(makefile, ".pipeline/030-m-modes-interpolated-$process-$sample: \\")
+    println(makefile, "		\$(LIB)/030-getmmodes.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/001-$process-transposed-data \\")
+    if process == "recalibrated"
+        warn("SPECIAL CASE: recalibrated data is inheriting flags from peeled data")
+        println(makefile, "		.pipeline/002-flagged-peeled-data \\")
+    else
+        println(makefile, "		.pipeline/002-flagged-$process-data \\")
+    end
+    println(makefile, "		.pipeline/032-predicted-visibilities-$process \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
 end
 
 function create_031_tikhonov_yml(makefile, process, sample)
@@ -193,7 +232,7 @@ function create_101_average_channels_yml(makefile, process, sample)
     filename = "101-average-channels-m-modes-$process-$sample.yml"
     open(joinpath(temp, filename), "w") do file
         write_header(file)
-        println(file, "input: 030-m-modes-$process-$sample")
+        println(file, "input: 030-m-modes-interpolated-$process-$sample")
         println(file, "output: 101-averaged-m-modes-$process-$sample")
         println(file, "Navg: 10")
         newline(file)
@@ -202,7 +241,7 @@ function create_101_average_channels_yml(makefile, process, sample)
 
     println(makefile, ".pipeline/101-averaged-m-modes-$process-$sample: \\")
     println(makefile, "		\$(LIB)/101-average-channels.jl project.yml $filename \\")
-    println(makefile, "		.pipeline/030-m-modes-$process-$sample")
+    println(makefile, "		.pipeline/030-m-modes-interpolated-$process-$sample")
     println(makefile, "	\$(call launch-remote,1)")
     newline(makefile)
 end

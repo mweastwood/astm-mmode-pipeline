@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-recalibrated-even
+input: 030-m-modes-interpolated-recalibrated-even
 output: 101-averaged-m-modes-recalibrated-even
 Navg: 10
 
