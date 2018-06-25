@@ -41,7 +41,7 @@ function sefd(project, config)
     @sync for worker in workers()
         @async while length(queue) > 0
             integration = shift!(queue)
-            output[:, integration] = remotecall_fetch(measure_sefd, worker, input, integration)
+            output[:, integration-1] = remotecall_fetch(measure_sefd, worker, input, integration)
             increment()
         end
     end
