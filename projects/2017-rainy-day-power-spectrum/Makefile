@@ -44,9 +44,15 @@ recalibrate: \
 
 .PHONY: average
 average: \
-	.pipeline/101-averaged-m-modes-all \
-	.pipeline/101-averaged-m-modes-odd \
-	.pipeline/101-averaged-m-modes-even
+	.pipeline/101-averaged-m-modes-calibrated-all \
+	.pipeline/101-averaged-m-modes-calibrated-odd \
+	.pipeline/101-averaged-m-modes-calibrated-even \
+	.pipeline/101-averaged-m-modes-peeled-all \
+	.pipeline/101-averaged-m-modes-peeled-odd \
+	.pipeline/101-averaged-m-modes-peeled-even \
+	.pipeline/101-averaged-m-modes-recalibrated-all \
+	.pipeline/101-averaged-m-modes-recalibrated-odd \
+	.pipeline/101-averaged-m-modes-recalibrated-even
 
 .PHONY: noise
 noise: \
@@ -171,20 +177,6 @@ endef
 ####################################################################################################
 # TIKHONOV-REGULARIZED IMAGING
 
-.pipeline/030-m-modes%: \
-		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes%.yml \
-		.pipeline/001-peeled-transposed-data \
-		.pipeline/002-flagged-peeled-data \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
-.pipeline/030-m-modes-unpeeled: \
-		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-unpeeled.yml \
-		.pipeline/001-calibrated-transposed-data \
-		.pipeline/002-flagged-calibrated-data \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
 .pipeline/031-dirty-map%: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov%.yml \
 		.pipeline/030-m-modes% \
@@ -245,13 +237,6 @@ endef
 		.pipeline/042-recalibrate-apply
 	$(call launch-remote,1)
 
-.pipeline/030-m-modes-recalibrated: \
-		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated.yml \
-		.pipeline/001-recalibrated-transposed-data \
-		.pipeline/002-flagged-peeled-data \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
 .pipeline/031-dirty-channel-maps-recalibrated: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps-recalibrated.yml \
 		.pipeline/030-m-modes-recalibrated \
@@ -266,9 +251,9 @@ endef
 		.pipeline/000-raw-data
 	$(call launch-remote,4)
 
-.pipeline/101-averaged-m-modes%: \
-		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes%.yml \
-		.pipeline/031-m-modes%
+.pipeline/101-averaged-m-modes-%: \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-%.yml \
+		.pipeline/031-m-modes-%
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-transfer-matrix: \
@@ -303,25 +288,11 @@ endef
 		.pipeline/101-averaged-m-modes
 	$(launch)
 
-.pipeline/112-foreground-filter-moderate%: \
-		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-moderate%.yml \
-		.pipeline/103-full-rank-compression% \
-		.pipeline/110-foreground-covariance-matrix \
-		.pipeline/111-signal-covariance-matrix
-	$(call launch-remote,2)
-
-.pipeline/112-foreground-filter%: \
-		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter%.yml \
-		.pipeline/103-full-rank-compression-all \
-		.pipeline/110-foreground-covariance-matrix \
-		.pipeline/111-signal-covariance-matrix
-	$(call launch-remote,2)
-
-.pipeline/113-difference-even-odd: \
-		$(LIB)/113-difference-m-modes.jl project.yml 113-difference-even-odd.yml \
-		.pipeline/112-foreground-filter-moderate-odd \
-		.pipeline/112-foreground-filter-moderate-even
-	$(call launch-remote,2)
+#.pipeline/113-difference-even-odd: \
+#		$(LIB)/113-difference-m-modes.jl project.yml 113-difference-even-odd.yml \
+#		.pipeline/112-foreground-filter-moderate-odd \
+#		.pipeline/112-foreground-filter-moderate-even
+#	$(call launch-remote,2)
 
 .pipeline/120-basis-covariance-matrices-spherical: \
 		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-spherical.yml \
@@ -333,29 +304,23 @@ endef
 		.pipeline/101-averaged-m-modes
 	$(call launch-remote,2)
 
-.pipeline/121-quadratic-estimator%: \
-		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator%.yml \
-	    .pipeline/112-foreground-filter% \
-		.pipeline/120-basis-covariance-matrices-spherical
-	$(call launch-remote,4)
-
-.pipeline/121-quadratic-estimator-difference-even-odd: \
-		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-difference-even-odd.yml \
-	    .pipeline/113-difference-even-odd \
-		.pipeline/120-basis-covariance-matrices
-	$(call launch-remote,4)
-
-.pipeline/122-signal-injection: \
-		$(LIB)/122-signal-injection.jl project.yml 122-signal-injection.yml \
-		.pipeline/112-foreground-filter-moderate-all
-	$(launch)
-
-.pipeline/121-quadratic-estimator-signal-injection: \
-		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-signal-injection.yml \
-	    .pipeline/112-foreground-filter-moderate-all \
-		.pipeline/120-basis-covariance-matrices \
-		.pipeline/122-signal-injection
-	$(launch)
+#.pipeline/121-quadratic-estimator-difference-even-odd: \
+#		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-difference-even-odd.yml \
+#	    .pipeline/113-difference-even-odd \
+#		.pipeline/120-basis-covariance-matrices
+#	$(call launch-remote,4)
+#
+#.pipeline/122-signal-injection: \
+#		$(LIB)/122-signal-injection.jl project.yml 122-signal-injection.yml \
+#		.pipeline/112-foreground-filter-moderate-all
+#	$(launch)
+#
+#.pipeline/121-quadratic-estimator-signal-injection: \
+#		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-signal-injection.yml \
+#	    .pipeline/112-foreground-filter-moderate-all \
+#		.pipeline/120-basis-covariance-matrices \
+#		.pipeline/122-signal-injection
+#	$(launch)
 
 ####################################################################################################
 # MISC
@@ -365,4 +330,9 @@ endef
 		200-measure-system-equivalent-flux-density.yml \
 		.pipeline/002-flagged-calibrated-data
 	$(call launch-remote,4)
+
+####################################################################################################
+# AUTO-GENERATED RULES
+
+include AutoGenerated.mk
 

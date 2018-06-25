@@ -10,3 +10,4 @@ output-covariance-matrix: 112-filtered-covariance-matrix-peeled-all-moderate
 output-foreground-filter: 112-foreground-filter-peeled-all-moderate
 output-noise-whitener: 112-noise-whitener-peeled-all-moderate
 threshold: 1.0
+

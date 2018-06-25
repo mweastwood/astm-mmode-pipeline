@@ -10,3 +10,4 @@ output-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-all-mild
 output-foreground-filter: 112-foreground-filter-recalibrated-all-mild
 output-noise-whitener: 112-noise-whitener-recalibrated-all-mild
 threshold: 10.0
+

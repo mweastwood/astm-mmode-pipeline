@@ -1,8 +1,10 @@
+# This file was auto-generated. Do not edit directly!
 input: 001-peeled-transposed-data
 input-flags: 002-peeled-data-flags
-output: 030-m-modes
+output: 030-m-modes-peeled-odd
 metadata: metadata
 hierarchy: hierarchy
 integrations-per-day: 6628
 delete-input: false
+option: odd
 
