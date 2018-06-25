@@ -177,24 +177,6 @@ endef
 ####################################################################################################
 # TIKHONOV-REGULARIZED IMAGING
 
-.pipeline/031-dirty-map%: \
-		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov%.yml \
-		.pipeline/030-m-modes% \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
-.pipeline/031-dirty-channel-maps: \
-		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps.yml \
-		.pipeline/030-m-modes-all \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
-.pipeline/031-dirty-channel-maps-unpeeled: \
-		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channel-maps-unpeeled.yml \
-		.pipeline/030-m-modes-unpeeled \
-		.pipeline/100-transfer-matrix
-	$(call launch-remote,1)
-
 #.pipeline/033-difference-maps-even-odd: \
 #		$(LIB)/033-difference-maps.jl project.yml 033-difference-maps-even-odd.yml \
 #		.pipeline/032-dirty-map-odd \

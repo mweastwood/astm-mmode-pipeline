@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 030-m-modes-recalibrated-even
+output-alm: 031-dirty-channel-alm-recalibrated-even
+output-map: 031-dirty-channel-map-recalibrated-even
+output-directory: 031-dirty-channel-maps-recalibrated-even
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

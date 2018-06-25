@@ -1,8 +1,0 @@
-input: 030-m-modes-odd
-output-alm: 031-dirty-alm-odd
-output-map: 031-dirty-map-odd
-metadata: metadata
-transfer-matrix: 100-transfer-matrix
-regularization: 100
-nside: 512
-

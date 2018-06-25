@@ -30,6 +30,7 @@ function main()
         for process in processing
             for sample in sampling
                 create_030_getmmodes_yml(makefile, process, sample)
+                create_031_tikhonov_yml(makefile, process, sample)
                 create_101_average_channels_yml(makefile, process, sample)
                 create_103_full_rank_compress_yml(makefile, process, sample)
                 for filter in filtering
@@ -86,6 +87,57 @@ function create_030_getmmodes_yml(makefile, process, sample)
     println(makefile, "		.pipeline/100-transfer-matrix")
     println(makefile, "	\$(call launch-remote,1)")
     newline(makefile)
+end
+
+function create_030_getmmodes_interpolated_yml(makefile, process, sample)
+end
+
+function create_031_tikhonov_yml(makefile, process, sample)
+    filename = "031-tikhonov-$process-$sample.yml"
+    open(joinpath(@__DIR__, filename), "w") do file
+        write_header(file)
+        println(file, "input: 030-m-modes-$process-$sample")
+        println(file, "output-alm: 031-dirty-alm-$process-$sample")
+        println(file, "output-map: 031-dirty-map-$process-$sample")
+        println(file, "metadata: metadata")
+        println(file, "transfer-matrix: 100-transfer-matrix")
+        println(file, "regularization: 100")
+        println(file, "nside: 512")
+        println(file, "mfs: true")
+        newline(file)
+    end
+
+    filename = "031-tikhonov-channels-$process-$sample.yml"
+    open(joinpath(@__DIR__, filename), "w") do file
+        write_header(file)
+        println(file, "input: 030-m-modes-$process-$sample")
+        println(file, "output-alm: 031-dirty-channel-alm-$process-$sample")
+        println(file, "output-map: 031-dirty-channel-map-$process-$sample")
+        println(file, "output-directory: 031-dirty-channel-maps-$process-$sample")
+        println(file, "metadata: metadata")
+        println(file, "transfer-matrix: 100-transfer-matrix")
+        println(file, "regularization: 100")
+        println(file, "nside: 512")
+        println(file, "mfs: false")
+        newline(file)
+    end
+
+    println(makefile, ".pipeline/031-dirty-map-$process-$sample: \\")
+    println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/030-m-modes-$process-$sample \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
+
+    println(makefile, ".pipeline/031-dirty-channel-maps-$process-$sample: \\")
+    println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/030-m-modes-$process-$sample \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
+end
+
+function create_040_predict_visibilities_yml(makefile, process, sample)
 end
 
 function create_101_average_channels_yml(makefile, process, sample)

@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 030-m-modes-calibrated-all
+output-alm: 031-dirty-channel-alm-calibrated-all
+output-map: 031-dirty-channel-map-calibrated-all
+output-directory: 031-dirty-channel-maps-calibrated-all
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+
