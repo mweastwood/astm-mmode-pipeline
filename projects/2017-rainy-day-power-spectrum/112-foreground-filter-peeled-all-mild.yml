@@ -1,0 +1,12 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-peeled-all
+input-transfer-matrix: 103-compressed-transfer-matrix-peeled-all
+input-noise-matrix: 103-compressed-noise-covariance-matrix-peeled-all
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-peeled-all-mild
+output-transfer-matrix: 112-filtered-transfer-matrix-peeled-all-mild
+output-covariance-matrix: 112-filtered-covariance-matrix-peeled-all-mild
+output-foreground-filter: 112-foreground-filter-peeled-all-mild
+output-noise-whitener: 112-noise-whitener-peeled-all-mild
+threshold: 10.0

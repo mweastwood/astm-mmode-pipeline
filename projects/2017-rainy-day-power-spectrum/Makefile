@@ -98,7 +98,7 @@ define launch
 endef
 
 define launch-remote
-	$(LAUNCH) --remote-workers $(1) -- $(filter-out .pipeline/%,$^)
+	$(LAUNCH) --remote-workers $(1) --exclude 12 -- $(filter-out .pipeline/%,$^)
 	touch $@
 endef
 
@@ -364,5 +364,5 @@ endef
 		$(LIB)/200-measure-system-equivalent-flux-density.jl project.yml \
 		200-measure-system-equivalent-flux-density.yml \
 		.pipeline/002-flagged-calibrated-data
-	$(call launch-remote,1)
+	$(call launch-remote,4)
 

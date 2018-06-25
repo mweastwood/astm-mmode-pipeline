@@ -1,4 +1,4 @@
-input-basis: 120-basis-covariance-matrices
+input-basis: 120-basis-covariance-matrices-spherical
 input-m-modes: 122-signal-injected-m-modes
 input-transfer-matrix: 112-filtered-transfer-matrix-moderate
 input-covariance-matrix: 112-filtered-covariance-matrix-moderate

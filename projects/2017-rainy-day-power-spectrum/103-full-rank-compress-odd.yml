@@ -1,7 +1,0 @@
-input-m-modes: 101-averaged-m-modes-odd
-input-transfer-matrix: 101-averaged-transfer-matrix
-input-noise-matrix: 102-noise-covariance-matrix-odd
-output-m-modes: 103-compressed-m-modes-odd
-output-transfer-matrix: 103-compressed-transfer-matrix-odd
-output-noise-matrix: 103-compressed-noise-covariance-matrix-odd
-
