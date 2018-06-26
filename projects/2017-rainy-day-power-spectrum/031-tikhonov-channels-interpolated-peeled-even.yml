@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-peeled-even
+input: 030-m-modes-interpolated-peeled-even
 output-alm: 031-dirty-channel-alm-interpolated-peeled-even
 output-map: 031-dirty-channel-map-interpolated-peeled-even
 output-directory: 031-dirty-channel-maps-interpolated-peeled-even

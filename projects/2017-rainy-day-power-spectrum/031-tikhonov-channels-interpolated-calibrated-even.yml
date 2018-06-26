@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-calibrated-even
+input: 030-m-modes-interpolated-calibrated-even
 output-alm: 031-dirty-channel-alm-interpolated-calibrated-even
 output-map: 031-dirty-channel-map-interpolated-calibrated-even
 output-directory: 031-dirty-channel-maps-interpolated-calibrated-even
