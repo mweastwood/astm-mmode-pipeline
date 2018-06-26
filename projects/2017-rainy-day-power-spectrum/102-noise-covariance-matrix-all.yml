@@ -1,7 +1,7 @@
 metadata: metadata
 hierarchy: hierarchy
 input: 101-averaged-transfer-matrix
-output: 102-noise-covariance-matrix
+output: 102-noise-covariance-matrix-all
 Tsys: 3250
 beam-solid-angle: 2.441
 

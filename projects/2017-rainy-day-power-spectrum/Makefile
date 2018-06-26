@@ -178,6 +178,11 @@ endef
 		.pipeline/000-raw-data
 	$(call launch-remote,4)
 
+.pipeline/101-averaged-transfer-matrix: \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-transfer-matrix.yml \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/102-noise-covariance-matrix-%: \
 		$(LIB)/102-noise-covariance-matrix.jl project.yml 102-noise-covariance-matrix-%.yml \
 		.pipeline/000-raw-data \
