@@ -35,6 +35,7 @@ function main()
                 create_030_getmmodes_yml(makefile, process, sample)
                 create_030_getmmodes_interpolated_yml(makefile, process, sample)
                 create_031_tikhonov_yml(makefile, process, sample)
+                create_031_tikhonov_interpolated_yml(makefile, process, sample)
                 create_101_average_channels_yml(makefile, process, sample)
                 create_103_full_rank_compress_yml(makefile, process, sample)
                 for filter in filtering
@@ -197,6 +198,53 @@ function create_031_tikhonov_yml(makefile, process, sample)
     println(makefile, ".pipeline/031-dirty-channel-maps-$process-$sample: \\")
     println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
     println(makefile, "		.pipeline/030-m-modes-$process-$sample \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
+end
+
+function create_031_tikhonov_interpolated_yml(makefile, process, sample)
+    filename = "031-tikhonov-interpolated-$process-$sample.yml"
+    open(joinpath(temp, filename), "w") do file
+        write_header(file)
+        println(file, "input: 030-m-modes-interpolated-$process-$sample")
+        println(file, "output-alm: 031-dirty-alm-interpolated-$process-$sample")
+        println(file, "output-map: 031-dirty-map-interpolated-$process-$sample")
+        println(file, "metadata: metadata")
+        println(file, "transfer-matrix: 100-transfer-matrix")
+        println(file, "regularization: 100")
+        println(file, "nside: 512")
+        println(file, "mfs: true")
+        newline(file)
+    end
+    replace_if_different(filename)
+
+    println(makefile, ".pipeline/031-dirty-map-interpolated-$process-$sample: \\")
+    println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/030-m-modes-interpolated-$process-$sample \\")
+    println(makefile, "		.pipeline/100-transfer-matrix")
+    println(makefile, "	\$(call launch-remote,1)")
+    newline(makefile)
+
+    filename = "031-tikhonov-channels-interpolated-$process-$sample.yml"
+    open(joinpath(temp, filename), "w") do file
+        write_header(file)
+        println(file, "input: 030-m-modes-interpolated-$process-$sample")
+        println(file, "output-alm: 031-dirty-channel-alm-interpolated-$process-$sample")
+        println(file, "output-map: 031-dirty-channel-map-interpolated-$process-$sample")
+        println(file, "output-directory: 031-dirty-channel-maps-interpolated-$process-$sample")
+        println(file, "metadata: metadata")
+        println(file, "transfer-matrix: 100-transfer-matrix")
+        println(file, "regularization: 100")
+        println(file, "nside: 512")
+        println(file, "mfs: false")
+        newline(file)
+    end
+    replace_if_different(filename)
+
+    println(makefile, ".pipeline/031-dirty-channel-maps-interpolated-$process-$sample: \\")
+    println(makefile, "		\$(LIB)/031-tikhonov.jl project.yml $filename \\")
+    println(makefile, "		.pipeline/030-m-modes-interpolated-$process-$sample \\")
     println(makefile, "		.pipeline/100-transfer-matrix")
     println(makefile, "	\$(call launch-remote,1)")
     newline(makefile)

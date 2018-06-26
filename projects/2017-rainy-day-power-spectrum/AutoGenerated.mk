@@ -26,6 +26,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-interpolated-calibrated-all: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-calibrated-all.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-calibrated-all: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-calibrated-all.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-calibrated-all: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-calibrated-all.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all
@@ -140,6 +152,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-interpolated-calibrated-odd: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-calibrated-odd.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-odd \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-calibrated-odd: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-calibrated-odd.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-odd \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-calibrated-odd: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-calibrated-odd.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-odd
@@ -251,6 +275,18 @@
 .pipeline/031-dirty-channel-maps-calibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-calibrated-even.yml \
 		.pipeline/030-m-modes-calibrated-even \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-calibrated-even: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-calibrated-even.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-even \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-calibrated-even: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-calibrated-even.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
@@ -374,6 +410,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-interpolated-peeled-all: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-peeled-all.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-peeled-all: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-peeled-all.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-peeled-all: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-peeled-all.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all
@@ -488,6 +536,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-interpolated-peeled-odd: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-peeled-odd.yml \
+		.pipeline/030-m-modes-interpolated-peeled-odd \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-peeled-odd: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-peeled-odd.yml \
+		.pipeline/030-m-modes-interpolated-peeled-odd \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-peeled-odd: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-peeled-odd.yml \
 		.pipeline/030-m-modes-interpolated-peeled-odd
@@ -599,6 +659,18 @@
 .pipeline/031-dirty-channel-maps-peeled-even: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-peeled-even.yml \
 		.pipeline/030-m-modes-peeled-even \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-peeled-even: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-peeled-even.yml \
+		.pipeline/030-m-modes-interpolated-peeled-even \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-peeled-even: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-peeled-even.yml \
+		.pipeline/030-m-modes-interpolated-peeled-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
@@ -722,6 +794,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-interpolated-recalibrated-all: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-recalibrated-all.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-recalibrated-all: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-recalibrated-all.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-recalibrated-all: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-recalibrated-all.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all
@@ -836,6 +920,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-interpolated-recalibrated-odd: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-recalibrated-odd.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-odd \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-recalibrated-odd: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-recalibrated-odd.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-odd \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-recalibrated-odd: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-m-modes-recalibrated-odd.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-odd
@@ -947,6 +1043,18 @@
 .pipeline/031-dirty-channel-maps-recalibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-recalibrated-even.yml \
 		.pipeline/030-m-modes-recalibrated-even \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-recalibrated-even: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-interpolated-recalibrated-even.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-even \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-recalibrated-even: \
+		$(LIB)/031-tikhonov.jl project.yml 031-tikhonov-channels-interpolated-recalibrated-even.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
