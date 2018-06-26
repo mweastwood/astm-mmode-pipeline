@@ -16,66 +16,39 @@ subrfi: .pipeline/011-subrfi
 .PHONY: peel
 peel: .pipeline/020-peeled-data
 
+.PHONY: recalibrate
+recalibrate: \
+	.pipeline/040-recalibrate \
+	.pipeline/041-recalibrate-apply
+
 .PHONY: m-modes
 m-modes: \
-	.pipeline/030-m-modes-all \
-	.pipeline/030-m-modes-unpeeled \
-	.pipeline/030-m-modes-odd \
-	.pipeline/030-m-modes-even
+	.pipeline/030-m-modes-interpolated-calibrated-all \
+	.pipeline/030-m-modes-interpolated-peeled-all \
+	.pipeline/030-m-modes-interpolated-recalibrated-all
 
 .PHONY: dirty-maps
 dirty-maps: \
-	.pipeline/031-dirty-map-all \
-	.pipeline/031-dirty-channel-maps \
-	.pipeline/031-dirty-channel-maps-unpeeled \
-	.pipeline/032-difference-channel-maps \
-	.pipeline/032-difference-channel-maps-unpeeled
+	.pipeline/031-dirty-map-calibrated-all \
+	.pipeline/031-dirty-map-peeled-all \
+	.pipeline/031-dirty-map-recalibrated-all \
+	.pipeline/031-dirty-channel-maps-calibrated-all \
+	.pipeline/031-dirty-channel-maps-peeled-all \
+	.pipeline/031-dirty-channel-maps-recalibrated-all
 
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
 
-.PHONY: predict
-predict: .pipeline/040-predicted-visibilities
-
-.PHONY: recalibrate
-recalibrate: \
-	.pipeline/041-recalibrate \
-	.pipeline/042-recalibrate-apply
-
-.PHONY: average
-average: \
-	.pipeline/101-averaged-m-modes-calibrated-all \
-	.pipeline/101-averaged-m-modes-calibrated-odd \
-	.pipeline/101-averaged-m-modes-calibrated-even \
-	.pipeline/101-averaged-m-modes-peeled-all \
-	.pipeline/101-averaged-m-modes-peeled-odd \
-	.pipeline/101-averaged-m-modes-peeled-even \
-	.pipeline/101-averaged-m-modes-recalibrated-all \
-	.pipeline/101-averaged-m-modes-recalibrated-odd \
-	.pipeline/101-averaged-m-modes-recalibrated-even
-
-.PHONY: noise
-noise: \
+.PHONY: noise-covariance
+noise-covariance: \
 	.pipeline/102-noise-covariance-matrix-all \
 	.pipeline/102-noise-covariance-matrix-odd \
 	.pipeline/102-noise-covariance-matrix-even
 
-.PHONY: compress
-compress: \
-	.pipeline/103-full-rank-compression-all \
-	.pipeline/103-full-rank-compression-odd \
-	.pipeline/103-full-rank-compression-even
-
-.PHONY: filter
-filter: \
-	.pipeline/112-foreground-filter-moderate-all \
-	.pipeline/112-foreground-filter-moderate-odd \
-	.pipeline/112-foreground-filter-moderate-even \
-	.pipeline/112-foreground-filter-mild-all \
-	.pipeline/112-foreground-filter-extreme-all
-
-.PHONY: fisher-matrix
-fisher-matrix: .pipeline/121-fisher-matrix
+.PHONY: sky-covariance
+sky-covariance: \
+	.pipeline/110-foreground-covariance-matrix \
+	.pipeline/111-signal-covariance-matrix
 
 .PHONY: power-spectrum
 power-spectrum: \
@@ -199,8 +172,8 @@ endef
 		.pipeline/000-raw-data
 	$(call launch-remote,4)
 
-.pipeline/102-noise-covariance-matrix%: \
-		$(LIB)/102-noise-covariance-matrix.jl project.yml 102-noise-covariance-matrix%.yml \
+.pipeline/102-noise-covariance-matrix-%: \
+		$(LIB)/102-noise-covariance-matrix.jl project.yml 102-noise-covariance-matrix-%.yml \
 		.pipeline/000-raw-data \
 		.pipeline/100-transfer-matrix \
 		.pipeline/101-averaged-transfer-matrix
