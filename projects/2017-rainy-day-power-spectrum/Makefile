@@ -213,12 +213,12 @@ endef
 
 .pipeline/120-basis-covariance-matrices-spherical: \
 		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-spherical.yml \
-		.pipeline/101-averaged-m-modes-calibrated-all
+		.pipeline/101-averaged-m-modes-peeled-all
 	$(call launch-remote,2)
 
 .pipeline/120-basis-covariance-matrices-cylindrical: \
 		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-cylindrical.yml \
-		.pipeline/101-averaged-m-modes-calibrated-all
+		.pipeline/101-averaged-m-modes-peeled-all
 	$(call launch-remote,2)
 
 #.pipeline/121-quadratic-estimator-difference-even-odd: \
