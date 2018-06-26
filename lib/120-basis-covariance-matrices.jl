@@ -44,7 +44,6 @@ function basis_covariance(project, config)
     bandwidth   = mmodes.bandwidth
 
     queue = collect(1:length(model.power))
-    pool  = CachingPool(workers())
     lck = ReentrantLock()
     prg = Progress(length(queue))
     increment() = (lock(lck); next!(prg); unlock(lck))
@@ -52,7 +51,7 @@ function basis_covariance(project, config)
     @sync for worker in workers()
         @async while length(queue) > 0
             idx = shift!(queue)
-            remotecall_fetch(do_the_thing, pool,
+            remotecall_fetch(do_the_thing, worker,
                              path′, lmax, frequencies, bandwidth,
                              deepcopy(model), idx)
             increment()
@@ -80,7 +79,7 @@ end
 
 function fiducial2d()
     kpara = logspace(log10(0.05), log10(1.05), 20) .* u"Mpc^-1"
-    kperp = linspace(0, 0.02, 10) .* u"Mpc^-1"
+    kperp = linspace(0, 0.03, 10) .* u"Mpc^-1"
     power = zeros(length(kpara), length(kperp)) .* u"K^2*Mpc^3"
     BPJSpec.CylindricalPS((10., 30.), kpara, kperp, power)
 end
