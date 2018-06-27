@@ -89,13 +89,17 @@ function flag!(V, project, config, frequency)
 end
 
 function fold(V, config)
+    _fold(V, config.integrations_per_day)
+end
+
+function _fold(V, integrations_per_day)
     Nbase, Ntime = size(V)
-    numerator   = zeros(eltype(V), Nbase, config.integrations_per_day)
-    denominator = zeros(      Int, Nbase, config.integrations_per_day)
+    numerator   = zeros(eltype(V), Nbase, integrations_per_day)
+    denominator = zeros(      Int, Nbase, integrations_per_day)
     for idx = 1:Ntime, α = 1:Nbase
         if V[α, idx] != 0
-            numerator[  α, mod1(idx, config.integrations_per_day)] += V[α, idx]
-            denominator[α, mod1(idx, config.integrations_per_day)] += 1
+            numerator[  α, mod1(idx, integrations_per_day)] += V[α, idx]
+            denominator[α, mod1(idx, integrations_per_day)] += 1
         end
     end
     no_data = denominator .== 0
@@ -110,26 +114,37 @@ function interpolate!(V, project, config, frequency)
     interpolating_visibilities = BPJSpec.load(joinpath(path, config.interpolating_visibilities))
     W = interpolating_visibilities[frequency]
     @assert size(W) == size(V)
+    _interpolate!(V, W, config.replacement_threshold)
+end
 
-    flags = V .== 0
-    diff  = V .- W
-    σ = sqrt(mean(abs2.(diff[.!flags])))
+function _interpolate!(V, W, replacement_threshold)
+    flags   = V .== 0 # `true` indicates data was flagged
+    missing = W .== 0 # `true` indicates we don't have a replacement value
+    complete_flags = flags .| missing
+
+    # Note that we get baselines with missing data when the baseline isn't represented by the
+    # transfer matrix. This happens, for example, to long baselines when I set a low lmax.
+
+    diff = V .- W
+    σ = sqrt(mean(abs2.(diff[.!complete_flags])))
 
     # Fill in any gaps in the data
     Nbase, Ntime = size(V)
     for α = 1:Nbase
-        all(flags[α, :]) && continue
+        # If a baseline has been completely flagged, don't magically populate it with data
+        all(@view flags[α, :]) && continue
         for time = 1:Ntime
-            if flags[α, time]
+            if !missing[α, time] && flags[α, time]
                 # Replace a gap in the data with the interpolated value
                 V[α, time] = W[α, time]
             end
-            if abs(diff[α, time]) > config.replacement_threshold * σ
+            if !missing[α, time] && abs(diff[α, time]) > replacement_threshold * σ
                 # Replace a visibility that seems to be an outlier
                 V[α, time] = W[α, time]
             end
         end
     end
+    V
 end
 
 function _getmmodes!(output, V, hierarchy, config, frequency)
