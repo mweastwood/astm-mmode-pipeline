@@ -9,6 +9,8 @@ smooth-sawtooth: true
 a-priori-antenna-flags:
     - 1 # spikes
     - 10 # time-series of B is shitty
+    - 44 # time-series of the visibilities doesn't correspond to reality
+    - 45 # time-series of the visibilities doesn't correspond to reality
     - 57 # off
     - 58 # off
     - 60 # off
