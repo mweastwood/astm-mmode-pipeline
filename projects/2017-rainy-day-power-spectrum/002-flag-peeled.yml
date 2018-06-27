@@ -2,6 +2,6 @@ input: 020-peeled-data
 input-transposed: 001-peeled-transposed-data
 output-flags: 002-peeled-data-flags
 metadata: metadata
-visibility-amplitude-threshold: 5 # ratio of absolute value to RMS
+visibility-amplitude-threshold: 4 # ratio of absolute value to RMS
 flag-autocorrelations: true
 
