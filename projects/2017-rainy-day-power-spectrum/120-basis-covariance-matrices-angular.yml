@@ -1,0 +1,4 @@
+input: 101-averaged-m-modes-peeled-all
+output: 120-basis-covariance-matrices-angular
+power-spectrum: angular
+

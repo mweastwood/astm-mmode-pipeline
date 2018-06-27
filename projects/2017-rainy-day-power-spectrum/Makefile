@@ -216,6 +216,11 @@ endef
 #		.pipeline/112-foreground-filter-moderate-even
 #	$(call launch-remote,2)
 
+.pipeline/120-basis-covariance-matrices-angular: \
+		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-angular.yml \
+		.pipeline/101-averaged-m-modes-peeled-all
+	$(call launch-remote,2)
+
 .pipeline/120-basis-covariance-matrices-spherical: \
 		$(LIB)/120-basis-covariance-matrices.jl project.yml 120-basis-covariance-matrices-spherical.yml \
 		.pipeline/101-averaged-m-modes-peeled-all

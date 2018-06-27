@@ -26,17 +26,23 @@ function go(project_file, config_file)
 end
 
 function basis_covariance(project, config)
-    path = Project.workspace(project)
-    path′ = joinpath(path, config.output)
-    isdir(path′) || mkdir(path′)
-
-    if config.powerspectrum == "spherical"
+    if config.powerspectrum == "angular"
+        model = fiducialangular()
+    elseif config.powerspectrum == "spherical"
         model = fiducial1d()
     elseif config.powerspectrum == "cylindrical"
         model = fiducial2d()
     else
         error("unknown power spectrum type $(config.powerspectrum)")
     end
+
+    _basis_covariance(project, config, model)
+end
+
+function _basis_covariance(project, config, model)
+    path = Project.workspace(project)
+    path′ = joinpath(path, config.output)
+    isdir(path′) || mkdir(path′)
 
     mmodes = BPJSpec.load(joinpath(path, config.input))
     lmax        = mmodes.mmax
@@ -51,7 +57,7 @@ function basis_covariance(project, config)
     @sync for worker in workers()
         @async while length(queue) > 0
             idx = shift!(queue)
-            remotecall_fetch(do_the_thing, worker,
+            remotecall_fetch(generate_covariance_matrix, worker,
                              path′, lmax, frequencies, bandwidth,
                              deepcopy(model), idx)
             increment()
@@ -61,13 +67,22 @@ function basis_covariance(project, config)
     save(joinpath(path′, "FIDUCIAL.jld2"), "model", model)
 end
 
-function do_the_thing(path, lmax, frequencies, bandwidth, model, idx)
-    model.power[:]   = 0u"K^2*Mpc^3"
-    model.power[idx] = 1u"K^2*Mpc^3"
+function generate_covariance_matrix(path, lmax, frequencies, bandwidth, model, idx)
+    model.power[:]   = 0 * oneunit(eltype(model.power))
+    model.power[idx] = 1 * oneunit(eltype(model.power))
     file = joinpath(path, @sprintf("%03d", idx))
     matrix = BPJSpec.create(AngularCovarianceMatrix, SingleFile(file),
                             model, lmax, frequencies, bandwidth, rm=true)
     nothing
+end
+
+function fiducialangular()
+    l = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 300]
+    # we will end up integrating over the channel widths, so we need to make sure we need to cover
+    # the full range of frequencies adding a little bit for the channel bandwidth
+    ν = linspace(71.856 - 0.024, 74.448 + 0.024, 11) .* u"MHz"
+    power = zeros(length(l), length(ν)) .* u"K^2"
+    BPJSpec.GeneralForegroundComponent(l, ν, power)
 end
 
 function fiducial1d()
