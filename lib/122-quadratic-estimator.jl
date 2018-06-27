@@ -11,9 +11,8 @@ struct Config
     input_mmodes           :: String
     input_transfermatrix   :: String
     input_covariancematrix :: String
-    input_fishermatrix     :: String # for reusing the Fisher matrix from a different run
+    input_fishermatrix     :: String
     output                 :: String
-    iterations             :: Int
 end
 
 function load(file)
@@ -22,9 +21,8 @@ function load(file)
            dict["input-m-modes"],
            dict["input-transfer-matrix"],
            dict["input-covariance-matrix"],
-           get(dict, "input-fisher-matrix", ""),
-           dict["output"],
-           dict["iterations"])
+           dict["input-fisher-matrix"],
+           dict["output"])
 end
 
 function go(project_file, config_file)
@@ -44,15 +42,8 @@ function fisher(project, config)
     model = FileIO.load(joinpath(path′, "FIDUCIAL.jld2"), "model")
     basis = [BPJSpec.load(joinpath(path′, @sprintf("%03d", idx))) for idx = 1:length(model.power)]
 
-    if config.input_fishermatrix != ""
-        F, b = FileIO.load(joinpath(path, config.input_fishermatrix*".jld2"),
-                           "fisher-information", "noise-bias")
-    else
-        F = fisher_information(transfermatrix, covariancematrix, basis,
-                               iterations=config.iterations)
-        b = noise_bias(transfermatrix, covariancematrix, basis,
-                       iterations=config.iterations)
-    end
+    F, b = FileIO.load(joinpath(path, config.input_fishermatrix*".jld2"),
+                       "fisher-information", "noise-bias")
     q = q_estimator(mmodes, transfermatrix, covariancematrix, basis)
 
     unwindowed_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:unwindowed)
