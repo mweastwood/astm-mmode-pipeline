@@ -23,6 +23,7 @@ end
 
 function load(file)
     dict = YAML.load(open(file))
+    threshold = dict["threshold"] == "Inf" ? Inf : dict["threshold"]
     Config(dict["input-m-modes"],
            dict["input-transfer-matrix"],
            dict["input-noise-matrix"],
@@ -33,7 +34,7 @@ function load(file)
            dict["output-covariance-matrix"],
            dict["output-foreground-filter"],
            dict["output-noise-whitener"],
-           dict["threshold"])
+           threshold)
 end
 
 function go(project_file, config_file)

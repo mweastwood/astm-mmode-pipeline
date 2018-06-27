@@ -125,6 +125,31 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/112-foreground-filter-calibrated-all-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-calibrated-all-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-all \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-calibrated-all-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-all-none-spherical.yml \
+	    .pipeline/112-foreground-filter-calibrated-all-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-calibrated-all-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-all-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-calibrated-all-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-calibrated-all-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-all-none-angular.yml \
+	    .pipeline/112-foreground-filter-calibrated-all-none \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
 .pipeline/030-m-modes-calibrated-odd: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-calibrated-odd.yml \
 		.pipeline/001-calibrated-transposed-data \
@@ -251,6 +276,31 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/112-foreground-filter-calibrated-odd-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-calibrated-odd-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-odd \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-calibrated-odd-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-odd-none-spherical.yml \
+	    .pipeline/112-foreground-filter-calibrated-odd-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-calibrated-odd-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-odd-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-calibrated-odd-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-calibrated-odd-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-odd-none-angular.yml \
+	    .pipeline/112-foreground-filter-calibrated-odd-none \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
 .pipeline/030-m-modes-calibrated-even: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-calibrated-even.yml \
 		.pipeline/001-calibrated-transposed-data \
@@ -374,6 +424,31 @@
 .pipeline/121-quadratic-estimator-calibrated-even-mild-angular: \
 		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-even-mild-angular.yml \
 	    .pipeline/112-foreground-filter-calibrated-even-mild \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
+.pipeline/112-foreground-filter-calibrated-even-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-calibrated-even-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-even \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-calibrated-even-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-even-none-spherical.yml \
+	    .pipeline/112-foreground-filter-calibrated-even-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-calibrated-even-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-even-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-calibrated-even-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-calibrated-even-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-calibrated-even-none-angular.yml \
+	    .pipeline/112-foreground-filter-calibrated-even-none \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
@@ -509,6 +584,31 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/112-foreground-filter-peeled-all-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-peeled-all-none.yml \
+		.pipeline/103-full-rank-compression-peeled-all \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-peeled-all-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-all-none-spherical.yml \
+	    .pipeline/112-foreground-filter-peeled-all-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-peeled-all-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-all-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-peeled-all-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-peeled-all-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-all-none-angular.yml \
+	    .pipeline/112-foreground-filter-peeled-all-none \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
 .pipeline/030-m-modes-peeled-odd: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-peeled-odd.yml \
 		.pipeline/001-peeled-transposed-data \
@@ -635,6 +735,31 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/112-foreground-filter-peeled-odd-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-peeled-odd-none.yml \
+		.pipeline/103-full-rank-compression-peeled-odd \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-peeled-odd-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-odd-none-spherical.yml \
+	    .pipeline/112-foreground-filter-peeled-odd-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-peeled-odd-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-odd-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-peeled-odd-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-peeled-odd-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-odd-none-angular.yml \
+	    .pipeline/112-foreground-filter-peeled-odd-none \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
 .pipeline/030-m-modes-peeled-even: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-peeled-even.yml \
 		.pipeline/001-peeled-transposed-data \
@@ -758,6 +883,31 @@
 .pipeline/121-quadratic-estimator-peeled-even-mild-angular: \
 		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-even-mild-angular.yml \
 	    .pipeline/112-foreground-filter-peeled-even-mild \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
+.pipeline/112-foreground-filter-peeled-even-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-peeled-even-none.yml \
+		.pipeline/103-full-rank-compression-peeled-even \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-peeled-even-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-even-none-spherical.yml \
+	    .pipeline/112-foreground-filter-peeled-even-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-peeled-even-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-even-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-peeled-even-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-peeled-even-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-peeled-even-none-angular.yml \
+	    .pipeline/112-foreground-filter-peeled-even-none \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
@@ -893,6 +1043,31 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/112-foreground-filter-recalibrated-all-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-recalibrated-all-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-all \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-recalibrated-all-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-all-none-spherical.yml \
+	    .pipeline/112-foreground-filter-recalibrated-all-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-recalibrated-all-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-all-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-recalibrated-all-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-recalibrated-all-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-all-none-angular.yml \
+	    .pipeline/112-foreground-filter-recalibrated-all-none \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
 .pipeline/030-m-modes-recalibrated-odd: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated-odd.yml \
 		.pipeline/001-recalibrated-transposed-data \
@@ -1019,6 +1194,31 @@
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 
+.pipeline/112-foreground-filter-recalibrated-odd-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-recalibrated-odd-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-odd \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-recalibrated-odd-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-odd-none-spherical.yml \
+	    .pipeline/112-foreground-filter-recalibrated-odd-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-recalibrated-odd-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-odd-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-recalibrated-odd-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-recalibrated-odd-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-odd-none-angular.yml \
+	    .pipeline/112-foreground-filter-recalibrated-odd-none \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
 .pipeline/030-m-modes-recalibrated-even: \
 		$(LIB)/030-getmmodes.jl project.yml 030-getmmodes-recalibrated-even.yml \
 		.pipeline/001-recalibrated-transposed-data \
@@ -1142,6 +1342,31 @@
 .pipeline/121-quadratic-estimator-recalibrated-even-mild-angular: \
 		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-even-mild-angular.yml \
 	    .pipeline/112-foreground-filter-recalibrated-even-mild \
+		.pipeline/120-basis-covariance-matrices-angular
+	$(call launch-remote,4)
+
+.pipeline/112-foreground-filter-recalibrated-even-none: \
+		$(LIB)/112-foreground-filter.jl project.yml 112-foreground-filter-recalibrated-even-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-even \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-quadratic-estimator-recalibrated-even-none-spherical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-even-none-spherical.yml \
+	    .pipeline/112-foreground-filter-recalibrated-even-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-recalibrated-even-none-cylindrical: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-even-none-cylindrical.yml \
+	    .pipeline/112-foreground-filter-recalibrated-even-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/121-quadratic-estimator-recalibrated-even-none-angular: \
+		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-recalibrated-even-none-angular.yml \
+	    .pipeline/112-foreground-filter-recalibrated-even-none \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,4)
 

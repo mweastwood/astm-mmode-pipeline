@@ -21,7 +21,8 @@ function main()
     # "extreme"  => filter modes with (foregrounds) > 0.1 × (signal)
     # "moderate" => filter modes with (foregrounds) > (signal)
     # "mild"     => filter modes with (foregrounds) > 10 × (signal)
-    filtering  = ("extreme", "moderate", "mild")
+    # "none"     => filter modes with (foregrounds) > ∞ × (signal)
+    filtering  = ("extreme", "moderate", "mild", "none")
 
     # "spherical"   => spherically averaged power spectrum P(k)
     # "cylindrical" => cylindrically averaged power spectrum P(k⟂, k∥)
@@ -325,6 +326,8 @@ function create_112_foreground_filter_yml(makefile, process, sample, filter)
         value = 1.0
     elseif filter == "mild"
         value = 10.0
+    elseif filter == "none"
+        value = Inf
     else
         error("unknown filter")
     end
