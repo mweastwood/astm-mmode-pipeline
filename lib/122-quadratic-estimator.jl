@@ -46,35 +46,35 @@ function fisher(project, config)
                        "fisher-information", "noise-bias")
     q = q_estimator(mmodes, transfermatrix, covariancematrix, basis)
 
-    unwindowed_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:unwindowed)
-    unwindowed_W   = BPJSpec.window_functions(F, unwindowed_M⁻¹)
-    unwindowed_Σ   = BPJSpec.windowed_covariance(F, unwindowed_M⁻¹)
-    unwindowed_p   = unwindowed_M⁻¹\(q-b)
+    #unwindowed_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:unwindowed)
+    #unwindowed_W   = BPJSpec.window_functions(F, unwindowed_M⁻¹)
+    #unwindowed_Σ   = BPJSpec.windowed_covariance(F, unwindowed_M⁻¹)
+    #unwindowed_p   = unwindowed_M⁻¹\(q-b)
 
     minvariance_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:minvariance)
     minvariance_W   = BPJSpec.window_functions(F, minvariance_M⁻¹)
     minvariance_Σ   = BPJSpec.windowed_covariance(F, minvariance_M⁻¹)
     minvariance_p   = minvariance_M⁻¹\(q-b)
 
-    uncorrelated_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:uncorrelated)
-    uncorrelated_W   = BPJSpec.window_functions(F, uncorrelated_M⁻¹)
-    uncorrelated_Σ   = BPJSpec.windowed_covariance(F, uncorrelated_M⁻¹)
-    uncorrelated_p   = uncorrelated_M⁻¹\(q-b)
+    #uncorrelated_M⁻¹ = BPJSpec.inverse_mixing_matrix(F, strategy=:uncorrelated)
+    #uncorrelated_W   = BPJSpec.window_functions(F, uncorrelated_M⁻¹)
+    #uncorrelated_Σ   = BPJSpec.windowed_covariance(F, uncorrelated_M⁻¹)
+    #uncorrelated_p   = uncorrelated_M⁻¹\(q-b)
 
     save(joinpath(path, config.output*".jld2"),
          "21-cm-signal-model", model, "fisher-information", F, "noise-bias", b, "q", q,
-         "unwindowed-inverse-mixing-matrix",     unwindowed_M⁻¹,
          "minvariance-inverse-mixing-matrix",   minvariance_M⁻¹,
-         "uncorrelated-inverse-mixing-matrix", uncorrelated_M⁻¹,
-         "unwindowed-window-functions",     unwindowed_W,
          "minvariance-window-functions",   minvariance_W,
-         "uncorrelated-window-functions", uncorrelated_W,
-         "unwindowed-covariance",     unwindowed_Σ,
          "minvariance-covariance",   minvariance_Σ,
-         "uncorrelated-covariance", uncorrelated_Σ,
-         "unwindowed-p",     unwindowed_p,
-         "minvariance-p",   minvariance_p,
-         "uncorrelated-p", uncorrelated_p)
+         "minvariance-p",   minvariance_p)
+         #"unwindowed-inverse-mixing-matrix",     unwindowed_M⁻¹,
+         #"unwindowed-window-functions",     unwindowed_W,
+         #"unwindowed-covariance",     unwindowed_Σ,
+         #"unwindowed-p",     unwindowed_p,
+         #"uncorrelated-inverse-mixing-matrix", uncorrelated_M⁻¹,
+         #"uncorrelated-window-functions", uncorrelated_W,
+         #"uncorrelated-covariance", uncorrelated_Σ,
+         #"uncorrelated-p", uncorrelated_p)
 end
 
 end
