@@ -56,15 +56,53 @@ sky-covariance: \
 	.pipeline/110-foreground-covariance-matrix \
 	.pipeline/111-signal-covariance-matrix
 
-.PHONY: power-spectrum
-power-spectrum: \
-	.pipeline/121-quadratic-estimator-moderate-all \
-	.pipeline/121-quadratic-estimator-moderate-odd \
-	.pipeline/121-quadratic-estimator-moderate-even \
-	.pipeline/121-quadratic-estimator-difference-even-odd \
-	.pipeline/121-quadratic-estimator-mild-all \
-	.pipeline/121-quadratic-estimator-extreme-all \
-	.pipeline/121-quadratic-estimator-signal-injection
+.PHONY: angular-power-spectrum
+angular-power-spectrum: \
+	.pipeline/122-quadratic-estimator-calibrated-all-none-angular \
+	.pipeline/122-quadratic-estimator-calibrated-odd-none-angular \
+	.pipeline/122-quadratic-estimator-calibrated-even-none-angular \
+	.pipeline/122-quadratic-estimator-peeled-all-none-angular \
+	.pipeline/122-quadratic-estimator-peeled-odd-none-angular \
+	.pipeline/122-quadratic-estimator-peeled-even-none-angular \
+	.pipeline/122-quadratic-estimator-recalibrated-all-none-angular \
+	.pipeline/122-quadratic-estimator-recalibrated-odd-none-angular \
+	.pipeline/122-quadratic-estimator-recalibrated-even-none-angular
+
+.PHONY: spherical-power-spectrum
+spherical-power-spectrum: \
+	.pipeline/122-quadratic-estimator-calibrated-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-odd-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-even-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-all-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-odd-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-even-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-odd-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-even-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-all-extreme-spherical \
+	.pipeline/122-quadratic-estimator-peeled-odd-extreme-spherical \
+	.pipeline/122-quadratic-estimator-peeled-even-extreme-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-odd-mild-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-even-mild-spherical
+
+.PHONY: cylindrical-power-spectrum
+cylindrical-power-spectrum: \
+	.pipeline/122-quadratic-estimator-calibrated-all-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-calibrated-odd-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-calibrated-even-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-all-moderate-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-odd-moderate-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-even-moderate-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-all-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-odd-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-even-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-all-extreme-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-odd-extreme-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-even-extreme-cylindrical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-recalibrated-odd-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-recalibrated-even-mild-cylindrical
 
 .PHONY: sefd
 sefd: .pipeline/200-measure-system-equivalent-flux-density
@@ -199,13 +237,6 @@ endef
 		$(LIB)/111-signal-covariance-matrix.jl project.yml 111-signal-covariance-matrix.yml \
 		.pipeline/101-averaged-m-modes
 	$(launch)
-
-#.pipeline/103-full-rank-compression%: \
-#		$(LIB)/103-full-rank-compress.jl project.yml 103-full-rank-compress%.yml \
-#		.pipeline/101-averaged-m-modes% \
-#		.pipeline/101-averaged-transfer-matrix \
-#		.pipeline/102-noise-covariance-matrix%
-#	$(call launch-remote,1)
 
 ####################################################################################################
 # QUADRATIC ESTIMATOR
