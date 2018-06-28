@@ -390,6 +390,18 @@ end
 
 function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
     filename = "121-fisher-matrix-$sample-$filter-$estimate.yml"
+    if filter == "extreme"
+        num_processes = 4
+    elseif filter == "moderate"
+        num_processes = 4
+    elseif filter == "mild"
+        num_processes = 2
+    elseif filter == "none"
+        num_processes = 1
+    else
+        error("unknown filter")
+    end
+
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
@@ -407,7 +419,7 @@ function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
             \t\t\$(LIB)/121-fisher-matrix.jl project.yml $dirname/$filename \\
             \t\t.pipeline/112-foreground-filter-peeled-$sample-$filter \\
             \t\t.pipeline/120-basis-covariance-matrices-$estimate
-            \t\$(call launch-remote,4)
+            \t\$(call launch-remote,$num_processes)
             """)
 end
 
