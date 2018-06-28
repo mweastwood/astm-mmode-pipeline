@@ -433,7 +433,7 @@ function create_122_quadratic_estimator_yml(makefile, process, sample, filter, e
             \t\t.pipeline/112-foreground-filter-$process-$sample-$filter \\
             \t\t.pipeline/120-basis-covariance-matrices-$estimate \\
             \t\t.pipeline/121-fisher-matrix-$sample-$filter-$estimate
-            \t\$(call launch-remote,4)
+            \t\$(launch)
             """)
 end
 
