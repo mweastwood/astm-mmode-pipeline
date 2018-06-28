@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-angular
+input-m-modes: 112-filtered-m-modes-peeled-all-moderate
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-all-moderate
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-all-moderate
+input-fisher-matrix: 121-fisher-matrix-all-moderate-angular
+output: 122-quadratic-estimator-peeled-all-moderate-angular
+iterations: 1000
+

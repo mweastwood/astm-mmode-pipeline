@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-cylindrical
+input-m-modes: 112-filtered-m-modes-peeled-all-extreme
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-all-extreme
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-all-extreme
+input-fisher-matrix: 121-fisher-matrix-all-extreme-cylindrical
+output: 122-quadratic-estimator-peeled-all-extreme-cylindrical
+iterations: 1000
+

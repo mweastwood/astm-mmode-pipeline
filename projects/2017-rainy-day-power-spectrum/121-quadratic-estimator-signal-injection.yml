@@ -1,8 +1,0 @@
-input-basis: 120-basis-covariance-matrices-spherical
-input-m-modes: 122-signal-injected-m-modes
-input-transfer-matrix: 112-filtered-transfer-matrix-moderate
-input-covariance-matrix: 112-filtered-covariance-matrix-moderate
-input-fisher-matrix: 121-quadratic-estimator-moderate
-output: 121-quadratic-estimator-signal-injection
-iterations: 0
-

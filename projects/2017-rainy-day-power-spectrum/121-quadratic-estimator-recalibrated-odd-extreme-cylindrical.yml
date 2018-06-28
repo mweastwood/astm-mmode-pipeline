@@ -1,8 +1,0 @@
-# This file was auto-generated. Do not edit directly!
-input-basis: 120-basis-covariance-matrices-cylindrical
-input-m-modes: 112-filtered-m-modes-recalibrated-odd-extreme
-input-transfer-matrix: 112-filtered-transfer-matrix-recalibrated-odd-extreme
-input-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-odd-extreme
-output: 121-quadratic-estimator-recalibrated-odd-extreme-cylindrical
-iterations: 1000
-

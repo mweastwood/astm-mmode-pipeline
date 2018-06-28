@@ -1,0 +1,7 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-spherical
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-even-extreme
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-even-extreme
+output: 121-fisher-matrix-even-extreme-spherical
+iterations: 1000
+
