@@ -7,6 +7,10 @@
 const temp = "/dev/shm/mweastwood"
 isdir(temp) || mkpath(temp)
 
+const dirname = "generated-config-files"
+const dir = joinpath(@__DIR__, dirname)
+isdir(dir) || mkpath(dir)
+
 function main()
     # "calibrated"   => only initial gain calibration, no source removal
     # "peeled"       => initial calibration with source removal
@@ -64,7 +68,7 @@ function replace_if_different(filename)
     # don't overwrite a file if it hasn't changed so that we're not triggering Makefile rules all
     # over the place
     file1 = joinpath(temp, filename)
-    file2 = joinpath(@__DIR__, filename)
+    file2 = joinpath(dir,  filename)
     if isfile(file2)
         hash1 = Base.crc32c(read(file1))
         hash2 = Base.crc32c(read(file2))
@@ -118,7 +122,7 @@ function create_030_getmmodes_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/030-m-modes-$process-$sample: \\
-            \t\t\$(LIB)/030-getmmodes.jl project.yml $filename \\
+            \t\t\$(LIB)/030-getmmodes.jl project.yml $dirname/$filename \\
             \t\t.pipeline/001-$process-transposed-data \\
             \t\t.pipeline/002-flagged-$process_flags-data \\
             \t\t.pipeline/100-transfer-matrix
@@ -154,7 +158,7 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/030-m-modes-interpolated-$process-$sample: \\
-            \t\t\$(LIB)/030-getmmodes.jl project.yml $filename \\
+            \t\t\$(LIB)/030-getmmodes.jl project.yml $dirname/$filename \\
             \t\t.pipeline/001-$process-transposed-data \\
             \t\t.pipeline/002-flagged-$process_flags-data \\
             \t\t.pipeline/032-predicted-visibilities-$process \\
@@ -182,7 +186,7 @@ function create_031_tikhonov_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/031-dirty-map-$process-$sample: \\
-            \t\t\$(LIB)/031-tikhonov.jl project.yml $filename \\
+            \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
             \t\t.pipeline/030-m-modes-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
@@ -209,7 +213,7 @@ function create_031_tikhonov_channels_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/031-dirty-channel-maps-$process-$sample: \\
-            \t\t\$(LIB)/031-tikhonov.jl project.yml $filename \\
+            \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
             \t\t.pipeline/030-m-modes-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
@@ -235,7 +239,7 @@ function create_031_tikhonov_interpolated_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/031-dirty-map-interpolated-$process-$sample: \\
-            \t\t\$(LIB)/031-tikhonov.jl project.yml $filename \\
+            \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
             \t\t.pipeline/030-m-modes-interpolated-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
@@ -262,7 +266,7 @@ function create_031_tikhonov_channels_interpolated_yml(makefile, process, sample
 
     println(makefile,
             """.pipeline/031-dirty-channel-maps-interpolated-$process-$sample: \\
-            \t\t\$(LIB)/031-tikhonov.jl project.yml $filename \\
+            \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
             \t\t.pipeline/030-m-modes-interpolated-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
@@ -290,7 +294,7 @@ function create_032_predict_visibilities_yml(makefile, process)
 
     println(makefile,
             """.pipeline/032-predicted-visibilities-$process: \\
-            \t\t\$(LIB)/032-predict-visibilities.jl project.yml $filename \\
+            \t\t\$(LIB)/032-predict-visibilities.jl project.yml $dirname/$filename \\
             \t\t.pipeline/031-dirty-map-$process-all \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
@@ -311,7 +315,7 @@ function create_101_average_channels_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/101-averaged-m-modes-$process-$sample: \\
-            \t\t\$(LIB)/101-average-channels.jl project.yml $filename \\
+            \t\t\$(LIB)/101-average-channels.jl project.yml $dirname/$filename \\
             \t\t.pipeline/030-m-modes-interpolated-$process-$sample
             \t\$(call launch-remote,1)
             """)
@@ -334,7 +338,7 @@ function create_103_full_rank_compress_yml(makefile, process, sample)
 
     println(makefile,
             """.pipeline/103-full-rank-compression-$process-$sample: \\
-            \t\t\$(LIB)/103-full-rank-compress.jl project.yml $filename \\
+            \t\t\$(LIB)/103-full-rank-compress.jl project.yml $dirname/$filename \\
             \t\t.pipeline/101-averaged-m-modes-$process-$sample \\
             \t\t.pipeline/101-averaged-transfer-matrix \\
             \t\t.pipeline/102-noise-covariance-matrix-$sample
@@ -376,7 +380,7 @@ function create_112_foreground_filter_yml(makefile, process, sample, filter)
 
     println(makefile,
             """.pipeline/112-foreground-filter-$process-$sample-$filter: \\
-            \t\t\$(LIB)/112-foreground-filter.jl project.yml $filename \\
+            \t\t\$(LIB)/112-foreground-filter.jl project.yml $dirname/$filename \\
             \t\t.pipeline/103-full-rank-compression-$process-$sample \\
             \t\t.pipeline/110-foreground-covariance-matrix \\
             \t\t.pipeline/111-signal-covariance-matrix
@@ -400,7 +404,7 @@ function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
 
     println(makefile,
             """.pipeline/121-fisher-matrix-$sample-$filter-$estimate: \\
-            \t\t\$(LIB)/121-fisher-matrix.jl project.yml $filename \\
+            \t\t\$(LIB)/121-fisher-matrix.jl project.yml $dirname/$filename \\
             \t\t.pipeline/112-foreground-filter-peeled-$sample-$filter \\
             \t\t.pipeline/120-basis-covariance-matrices-$estimate
             \t\$(call launch-remote,4)
@@ -425,7 +429,7 @@ function create_122_quadratic_estimator_yml(makefile, process, sample, filter, e
 
     println(makefile,
             """.pipeline/122-quadratic-estimator-$process-$sample-$filter-$estimate: \\
-            \t\t\$(LIB)/122-quadratic-estimator.jl project.yml $filename \\
+            \t\t\$(LIB)/122-quadratic-estimator.jl project.yml $dirname/$filename \\
             \t\t.pipeline/112-foreground-filter-$process-$sample-$filter \\
             \t\t.pipeline/120-basis-covariance-matrices-$estimate \\
             \t\t.pipeline/121-fisher-matrix-$sample-$filter-$estimate
