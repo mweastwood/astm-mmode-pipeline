@@ -33,7 +33,6 @@ function fisher(project, config)
     path  = Project.workspace(project)
     path′ = joinpath(path, config.input_basis)
 
-    mmodes           = BPJSpec.load(joinpath(path, config.input_mmodes))
     transfermatrix   = BPJSpec.load(joinpath(path, config.input_transfermatrix))
     covariancematrix = BPJSpec.load(joinpath(path, config.input_covariancematrix))
 
