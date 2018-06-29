@@ -392,12 +392,16 @@ function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
     filename = "121-fisher-matrix-$sample-$filter-$estimate.yml"
     if filter == "extreme"
         num_processes = 4
+        iterations = 1000
     elseif filter == "moderate"
         num_processes = 4
+        iterations = 1000
     elseif filter == "mild"
         num_processes = 2
+        iterations = 1000
     elseif filter == "none"
         num_processes = 1
+        iterations = 100
     else
         error("unknown filter")
     end
@@ -409,7 +413,7 @@ function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
                 input-transfer-matrix: 112-filtered-transfer-matrix-peeled-$sample-$filter
                 input-covariance-matrix: 112-filtered-covariance-matrix-peeled-$sample-$filter
                 output: 121-fisher-matrix-$sample-$filter-$estimate
-                iterations: 1000
+                iterations: $iterations
                 """)
     end
     replace_if_different(filename)
