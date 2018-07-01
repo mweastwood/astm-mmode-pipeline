@@ -1,9 +1,9 @@
 input: 002-flagged-calibrated-data
-output-calibration: 041-recalibration-solution
+output-calibration: 040-recalibration-solution
 metadata: metadata
 sky-model: calibration-sky-model.json
-additional-model-visibilities: 040-predicted-visibilities
-test-image: 041-recalibration-image
+additional-model-visibilities: 032-predicted-visibilities-peeled
+test-image: 040-recalibration-image
 integrations: 1600:1800
 channels-at-a-time: 5
 maxiter: 200
