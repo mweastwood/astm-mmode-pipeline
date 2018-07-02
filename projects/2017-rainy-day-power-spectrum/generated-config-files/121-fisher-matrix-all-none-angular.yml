@@ -1,7 +1,7 @@
 # This file was auto-generated. Do not edit directly!
 input-basis: 120-basis-covariance-matrices-angular
-input-transfer-matrix: 112-filtered-transfer-matrix-peeled-all-none
-input-covariance-matrix: 112-filtered-covariance-matrix-peeled-all-none
+input-transfer-matrix: 103-compressed-transfer-matrix-peeled-all
+input-covariance-matrix: 103-compressed-noise-covariance-matrix-peeled-all
 output: 121-fisher-matrix-all-none-angular
 iterations: 100
 

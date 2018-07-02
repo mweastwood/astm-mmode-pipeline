@@ -406,51 +406,99 @@ function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
         error("unknown filter")
     end
 
-    open(joinpath(temp, filename), "w") do file
-        println(file,
-                """$HEADER
-                input-basis: 120-basis-covariance-matrices-$estimate
-                input-transfer-matrix: 112-filtered-transfer-matrix-peeled-$sample-$filter
-                input-covariance-matrix: 112-filtered-covariance-matrix-peeled-$sample-$filter
-                output: 121-fisher-matrix-$sample-$filter-$estimate
-                iterations: $iterations
+    if filter == "none" && estimate == "angular"
+        open(joinpath(temp, filename), "w") do file
+            println(file,
+                    """$HEADER
+                    input-basis: 120-basis-covariance-matrices-$estimate
+                    input-transfer-matrix: 103-compressed-transfer-matrix-peeled-$sample
+                    input-covariance-matrix: 103-compressed-noise-covariance-matrix-peeled-$sample
+                    output: 121-fisher-matrix-$sample-$filter-$estimate
+                    iterations: $iterations
+                    """)
+        end
+        replace_if_different(filename)
+
+        println(makefile,
+                """.pipeline/121-fisher-matrix-$sample-$filter-$estimate: \\
+                \t\t\$(LIB)/121-fisher-matrix.jl project.yml $dirname/$filename \\
+                \t\t.pipeline/103-full-rank-compression-peeled-$sample \\
+                \t\t.pipeline/120-basis-covariance-matrices-$estimate
+                \t\$(call launch-remote,$num_processes)
+                """)
+    else
+        open(joinpath(temp, filename), "w") do file
+            println(file,
+                    """$HEADER
+                    input-basis: 120-basis-covariance-matrices-$estimate
+                    input-transfer-matrix: 112-filtered-transfer-matrix-peeled-$sample-$filter
+                    input-covariance-matrix: 112-filtered-covariance-matrix-peeled-$sample-$filter
+                    output: 121-fisher-matrix-$sample-$filter-$estimate
+                    iterations: $iterations
+                    """)
+        end
+        replace_if_different(filename)
+
+        println(makefile,
+                """.pipeline/121-fisher-matrix-$sample-$filter-$estimate: \\
+                \t\t\$(LIB)/121-fisher-matrix.jl project.yml $dirname/$filename \\
+                \t\t.pipeline/112-foreground-filter-peeled-$sample-$filter \\
+                \t\t.pipeline/120-basis-covariance-matrices-$estimate
+                \t\$(call launch-remote,$num_processes)
                 """)
     end
-    replace_if_different(filename)
-
-    println(makefile,
-            """.pipeline/121-fisher-matrix-$sample-$filter-$estimate: \\
-            \t\t\$(LIB)/121-fisher-matrix.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/112-foreground-filter-peeled-$sample-$filter \\
-            \t\t.pipeline/120-basis-covariance-matrices-$estimate
-            \t\$(call launch-remote,$num_processes)
-            """)
 end
 
 function create_122_quadratic_estimator_yml(makefile, process, sample, filter, estimate)
     filename = "122-quadratic-estimator-$process-$sample-$filter-$estimate.yml"
-    open(joinpath(temp, filename), "w") do file
-        println(file,
-                """$HEADER
-                input-basis: 120-basis-covariance-matrices-$estimate
-                input-m-modes: 112-filtered-m-modes-$process-$sample-$filter
-                input-transfer-matrix: 112-filtered-transfer-matrix-$process-$sample-$filter
-                input-covariance-matrix: 112-filtered-covariance-matrix-$process-$sample-$filter
-                input-fisher-matrix: 121-fisher-matrix-$sample-$filter-$estimate
-                output: 122-quadratic-estimator-$process-$sample-$filter-$estimate
-                iterations: 1000
+
+    if filter == "none" && estimate == "angular"
+        open(joinpath(temp, filename), "w") do file
+            println(file,
+                    """$HEADER
+                    input-basis: 120-basis-covariance-matrices-$estimate
+                    input-m-modes: 103-compressed-m-modes-$process-$sample
+                    input-transfer-matrix: 103-compressed-transfer-matrix-$process-$sample
+                    input-covariance-matrix: 103-compressed-noise-covariance-matrix-$process-$sample
+                    input-fisher-matrix: 121-fisher-matrix-$sample-$filter-$estimate
+                    output: 122-quadratic-estimator-$process-$sample-$filter-$estimate
+                    iterations: 1000
+                    """)
+        end
+        replace_if_different(filename)
+
+        println(makefile,
+                """.pipeline/122-quadratic-estimator-$process-$sample-$filter-$estimate: \\
+                \t\t\$(LIB)/122-quadratic-estimator.jl project.yml $dirname/$filename \\
+                \t\t.pipeline/103-full-rank-compression-$process-$sample \\
+                \t\t.pipeline/120-basis-covariance-matrices-$estimate \\
+                \t\t.pipeline/121-fisher-matrix-$sample-$filter-$estimate
+                \t\$(launch)
+                """)
+    else
+        open(joinpath(temp, filename), "w") do file
+            println(file,
+                    """$HEADER
+                    input-basis: 120-basis-covariance-matrices-$estimate
+                    input-m-modes: 112-filtered-m-modes-$process-$sample-$filter
+                    input-transfer-matrix: 112-filtered-transfer-matrix-$process-$sample-$filter
+                    input-covariance-matrix: 112-filtered-covariance-matrix-$process-$sample-$filter
+                    input-fisher-matrix: 121-fisher-matrix-$sample-$filter-$estimate
+                    output: 122-quadratic-estimator-$process-$sample-$filter-$estimate
+                    iterations: 1000
+                    """)
+        end
+        replace_if_different(filename)
+
+        println(makefile,
+                """.pipeline/122-quadratic-estimator-$process-$sample-$filter-$estimate: \\
+                \t\t\$(LIB)/122-quadratic-estimator.jl project.yml $dirname/$filename \\
+                \t\t.pipeline/112-foreground-filter-$process-$sample-$filter \\
+                \t\t.pipeline/120-basis-covariance-matrices-$estimate \\
+                \t\t.pipeline/121-fisher-matrix-$sample-$filter-$estimate
+                \t\$(launch)
                 """)
     end
-    replace_if_different(filename)
-
-    println(makefile,
-            """.pipeline/122-quadratic-estimator-$process-$sample-$filter-$estimate: \\
-            \t\t\$(LIB)/122-quadratic-estimator.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/112-foreground-filter-$process-$sample-$filter \\
-            \t\t.pipeline/120-basis-covariance-matrices-$estimate \\
-            \t\t.pipeline/121-fisher-matrix-$sample-$filter-$estimate
-            \t\$(launch)
-            """)
 end
 
 main()

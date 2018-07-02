@@ -158,7 +158,7 @@
 
 .pipeline/122-quadratic-estimator-calibrated-all-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-none-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-all-none \
+		.pipeline/103-full-rank-compression-calibrated-all \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-all-none-angular
 	$(launch)
@@ -321,7 +321,7 @@
 
 .pipeline/122-quadratic-estimator-calibrated-odd-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-none-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-odd-none \
+		.pipeline/103-full-rank-compression-calibrated-odd \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-odd-none-angular
 	$(launch)
@@ -484,7 +484,7 @@
 
 .pipeline/122-quadratic-estimator-calibrated-even-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-none-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-even-none \
+		.pipeline/103-full-rank-compression-calibrated-even \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-even-none-angular
 	$(launch)
@@ -719,13 +719,13 @@
 
 .pipeline/121-fisher-matrix-all-none-angular: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-none-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-none \
+		.pipeline/103-full-rank-compression-peeled-all \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-all-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-all-none-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-none \
+		.pipeline/103-full-rank-compression-peeled-all \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-all-none-angular
 	$(launch)
@@ -954,13 +954,13 @@
 
 .pipeline/121-fisher-matrix-odd-none-angular: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-none-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-none \
+		.pipeline/103-full-rank-compression-peeled-odd \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-odd-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-odd-none-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-none \
+		.pipeline/103-full-rank-compression-peeled-odd \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-odd-none-angular
 	$(launch)
@@ -1189,13 +1189,13 @@
 
 .pipeline/121-fisher-matrix-even-none-angular: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-none-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-none \
+		.pipeline/103-full-rank-compression-peeled-even \
 		.pipeline/120-basis-covariance-matrices-angular
 	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-even-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-even-none-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-none \
+		.pipeline/103-full-rank-compression-peeled-even \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-even-none-angular
 	$(launch)
@@ -1364,7 +1364,7 @@
 
 .pipeline/122-quadratic-estimator-recalibrated-all-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-none-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-all-none \
+		.pipeline/103-full-rank-compression-recalibrated-all \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-all-none-angular
 	$(launch)
@@ -1527,7 +1527,7 @@
 
 .pipeline/122-quadratic-estimator-recalibrated-odd-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-none-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-odd-none \
+		.pipeline/103-full-rank-compression-recalibrated-odd \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-odd-none-angular
 	$(launch)
@@ -1690,7 +1690,7 @@
 
 .pipeline/122-quadratic-estimator-recalibrated-even-none-angular: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-none-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-even-none \
+		.pipeline/103-full-rank-compression-recalibrated-even \
 		.pipeline/120-basis-covariance-matrices-angular \
 		.pipeline/121-fisher-matrix-even-none-angular
 	$(launch)

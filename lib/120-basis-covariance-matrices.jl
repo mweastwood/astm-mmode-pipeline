@@ -77,11 +77,11 @@ function generate_covariance_matrix(path, lmax, frequencies, bandwidth, model, i
 end
 
 function fiducialangular()
-    l = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 300]
+    l = [0, 1, 2, 4, 8, 16, 32, 64, 96, 128, 192, 256, 300]
     # we will end up integrating over the channel widths, so we need to make sure we need to cover
     # the full range of frequencies adding a little bit for the channel bandwidth
     ν = linspace(71.856 - 0.024, 74.448 + 0.024, 11) .* u"MHz"
-    power = zeros(length(l), length(ν)) .* u"K^2"
+    power = zeros(length(l), length(ν)) .* u"K"
     BPJSpec.GeneralForegroundComponent(l, ν, power)
 end
 
