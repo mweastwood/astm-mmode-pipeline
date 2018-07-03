@@ -39,8 +39,8 @@ function fisher(project, config)
     transfermatrix   = BPJSpec.load(joinpath(path, config.input_transfermatrix))
     covariancematrix = BPJSpec.load(joinpath(path, config.input_covariancematrix))
 
-    model = FileIO.load(joinpath(path′, "FIDUCIAL.jld2"), "model")
-    basis = [BPJSpec.load(joinpath(path′, @sprintf("%03d", idx))) for idx = 1:length(model.power)]
+    basis, model = FileIO.load(joinpath(path, config.input_basis*".jld2"),
+                               "covariance-matrices", "model")
 
     F, b = FileIO.load(joinpath(path, config.input_fishermatrix*".jld2"),
                        "fisher-information", "noise-bias")
@@ -62,7 +62,7 @@ function fisher(project, config)
     #uncorrelated_p   = uncorrelated_M⁻¹\(q-b)
 
     save(joinpath(path, config.output*".jld2"),
-         "21-cm-signal-model", model, "fisher-information", F, "noise-bias", b, "q", q,
+         "signal-model", model, "fisher-information", F, "noise-bias", b, "q", q,
          "minvariance-inverse-mixing-matrix",   minvariance_M⁻¹,
          "minvariance-window-functions",   minvariance_W,
          "minvariance-covariance",   minvariance_Σ,

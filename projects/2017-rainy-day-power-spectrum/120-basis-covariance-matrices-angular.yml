@@ -1,4 +1,30 @@
 input: 101-averaged-m-modes-peeled-all
 output: 120-basis-covariance-matrices-angular
 power-spectrum: angular
+l:
+    - 0
+    - 30
+    - 60
+    - 90
+    - 120
+    - 150
+    - 180
+    - 210
+    - 240
+    - 270
+    - 300
+frequencies:
+    # we will end up integrating over the channel widths, so we need to make sure we need to cover
+    # the full range of frequencies adding a little bit for the channel bandwidth
+    - 71.832
+    - 72.096
+    - 72.360
+    - 72.624
+    - 72.888
+    - 73.152
+    - 73.416
+    - 73.680
+    - 73.944
+    - 74.208
+    - 74.472
 

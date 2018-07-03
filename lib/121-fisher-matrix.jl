@@ -36,14 +36,14 @@ function fisher(project, config)
     transfermatrix   = BPJSpec.load(joinpath(path, config.input_transfermatrix))
     covariancematrix = BPJSpec.load(joinpath(path, config.input_covariancematrix))
 
-    model = FileIO.load(joinpath(path′, "FIDUCIAL.jld2"), "model")
-    basis = [BPJSpec.load(joinpath(path′, @sprintf("%03d", idx))) for idx = 1:length(model.power)]
+    basis, model = FileIO.load(joinpath(path, config.input_basis*".jld2"),
+                               "covariance-matrices", "model")
 
     F = fisher_information(transfermatrix, covariancematrix, basis, iterations=config.iterations)
     b = noise_bias(transfermatrix, covariancematrix, basis, iterations=config.iterations)
 
     save(joinpath(path, config.output*".jld2"),
-         "21-cm-signal-model", model, "fisher-information", F, "noise-bias", b)
+         "signal-model", model, "fisher-information", F, "noise-bias", b)
 end
 
 end
