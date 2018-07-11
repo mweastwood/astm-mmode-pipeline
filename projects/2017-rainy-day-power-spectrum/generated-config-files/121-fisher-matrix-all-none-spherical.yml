@@ -3,5 +3,5 @@ input-basis: 120-basis-covariance-matrices-spherical
 input-transfer-matrix: 112-filtered-transfer-matrix-peeled-all-none
 input-covariance-matrix: 112-filtered-covariance-matrix-peeled-all-none
 output: 121-fisher-matrix-all-none-spherical
-iterations: 200
+iterations: 1000
 

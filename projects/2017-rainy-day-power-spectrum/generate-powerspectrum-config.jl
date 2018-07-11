@@ -401,7 +401,7 @@ function create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
         iterations = 1000
     elseif filter == "none"
         num_processes = 1
-        iterations = 200
+        iterations = 1000
     else
         error("unknown filter")
     end

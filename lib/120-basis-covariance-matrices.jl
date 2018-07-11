@@ -91,7 +91,7 @@ function generate_covariance_matrix(lmax, frequencies, bandwidth, model, idx)
 end
 
 function getmodel(psconfig::AngularConfig)
-    power = zeros(length(psconfig.l), length(psconfig.ν)) .* u"K"
+    power = zeros(length(psconfig.l), length(psconfig.ν)) .* u"K^2"
     BPJSpec.GeneralForegroundComponent(psconfig.l, psconfig.ν, power)
 end
 

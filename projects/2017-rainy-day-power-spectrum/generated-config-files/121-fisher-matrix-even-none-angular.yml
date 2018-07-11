@@ -3,5 +3,5 @@ input-basis: 120-basis-covariance-matrices-angular
 input-transfer-matrix: 103-compressed-transfer-matrix-peeled-even
 input-covariance-matrix: 103-compressed-noise-covariance-matrix-peeled-even
 output: 121-fisher-matrix-even-none-angular
-iterations: 200
+iterations: 1000
 
