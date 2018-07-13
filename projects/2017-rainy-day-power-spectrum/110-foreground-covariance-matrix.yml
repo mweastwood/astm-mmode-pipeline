@@ -1,3 +1,8 @@
 input: 101-averaged-m-modes-peeled-all
 output: 110-foreground-covariance-matrix
+nu: 130.
+A: 3500.
+alpha: 2.9
+beta:  2.8
+zeta:  4.0
 
