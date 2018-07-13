@@ -133,8 +133,8 @@ function compute_p(F, q)
     Σ = Array{Matrix{Float64}}(Nfreq)
     for β = 1:Nfreq
         # Don't use any information from `m == 0`
-        F′ = sum(F[2:end, 1])
-        q′ = sum(q[2:end, 1])
+        F′ = sum(F[2:end, β])
+        q′ = sum(q[2:end, β])
 
         # Select only values of `l` that are well measured
         # TODO make this configurable
