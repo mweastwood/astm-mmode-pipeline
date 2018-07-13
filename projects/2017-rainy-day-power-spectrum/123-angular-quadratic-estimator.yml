@@ -1,0 +1,7 @@
+input-m-modes: 103-compressed-m-modes-peeled-all
+input-transfer-matrix: 103-compressed-transfer-matrix-peeled-all
+input-noise-covariance: 103-compressed-noise-covariance-matrix-peeled-all
+input-sky-covariance: 110-foreground-covariance-matrix
+output: 123-angular-quadratic-estimator
+snr-threshold: 100
+

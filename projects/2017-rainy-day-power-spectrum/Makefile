@@ -262,6 +262,12 @@ endef
 		.pipeline/101-averaged-m-modes-peeled-all
 	$(call launch-remote,2)
 
+.pipeline/123-angular-quadratic-estimator: \
+		$(LIB)/123-angular-quadratic-estimator.jl project.yml 123-angular-quadratic-estimator.yml \
+		.pipeline/103-full-rank-compression-peeled-all \
+		.pipeline/110-foreground-covariance-matrix
+	$(call launch-remote,1)
+
 #.pipeline/121-quadratic-estimator-difference-even-odd: \
 #		$(LIB)/121-quadratic-estimator.jl project.yml 121-quadratic-estimator-difference-even-odd.yml \
 #	    .pipeline/113-difference-even-odd \

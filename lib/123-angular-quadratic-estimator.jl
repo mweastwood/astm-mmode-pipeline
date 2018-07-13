@@ -4,8 +4,11 @@
 module Driver
 
 using BPJSpec
+using FileIO, JLD2
 using ProgressMeter
 using YAML
+
+include("Project.jl")
 
 struct Config
     input_mmodes           :: String
@@ -142,7 +145,7 @@ function compute_p(F, q)
         # Now compute the power spectrum and covariance
         M⁻¹  = BPJSpec.inverse_mixing_matrix(F′, strategy=:unwindowed)
         W    = BPJSpec.window_functions(F′, M⁻¹)
-        Σ[β] = BPJSpec.windowed_covariance(F′[selection, selection], Minv)
+        Σ[β] = BPJSpec.windowed_covariance(F′, M⁻¹)
         p[β] = M⁻¹ \ q′
     end
     p, Σ
