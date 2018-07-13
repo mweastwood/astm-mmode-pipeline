@@ -72,13 +72,6 @@
 		.pipeline/121-fisher-matrix-all-extreme-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-calibrated-all-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-extreme-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-all-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-calibrated-all-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-all-moderate.yml \
 		.pipeline/103-full-rank-compression-calibrated-all \
@@ -98,13 +91,6 @@
 		.pipeline/112-foreground-filter-calibrated-all-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-all-moderate-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-calibrated-all-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-moderate-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-all-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-calibrated-all-mild: \
@@ -128,13 +114,6 @@
 		.pipeline/121-fisher-matrix-all-mild-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-calibrated-all-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-mild-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-all-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-calibrated-all-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-all-none.yml \
 		.pipeline/103-full-rank-compression-calibrated-all \
@@ -154,13 +133,6 @@
 		.pipeline/112-foreground-filter-calibrated-all-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-all-none-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-calibrated-all-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-none-angular.yml \
-		.pipeline/103-full-rank-compression-calibrated-all \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-none-angular
 	$(launch)
 
 .pipeline/030-m-modes-calibrated-odd: \
@@ -235,13 +207,6 @@
 		.pipeline/121-fisher-matrix-odd-extreme-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-calibrated-odd-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-extreme-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-odd-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-calibrated-odd-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-odd-moderate.yml \
 		.pipeline/103-full-rank-compression-calibrated-odd \
@@ -261,13 +226,6 @@
 		.pipeline/112-foreground-filter-calibrated-odd-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-odd-moderate-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-calibrated-odd-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-moderate-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-odd-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-calibrated-odd-mild: \
@@ -291,13 +249,6 @@
 		.pipeline/121-fisher-matrix-odd-mild-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-calibrated-odd-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-mild-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-odd-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-calibrated-odd-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-odd-none.yml \
 		.pipeline/103-full-rank-compression-calibrated-odd \
@@ -317,13 +268,6 @@
 		.pipeline/112-foreground-filter-calibrated-odd-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-odd-none-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-calibrated-odd-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-none-angular.yml \
-		.pipeline/103-full-rank-compression-calibrated-odd \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-none-angular
 	$(launch)
 
 .pipeline/030-m-modes-calibrated-even: \
@@ -398,13 +342,6 @@
 		.pipeline/121-fisher-matrix-even-extreme-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-calibrated-even-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-extreme-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-even-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-calibrated-even-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-even-moderate.yml \
 		.pipeline/103-full-rank-compression-calibrated-even \
@@ -424,13 +361,6 @@
 		.pipeline/112-foreground-filter-calibrated-even-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-even-moderate-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-calibrated-even-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-moderate-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-even-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-calibrated-even-mild: \
@@ -454,13 +384,6 @@
 		.pipeline/121-fisher-matrix-even-mild-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-calibrated-even-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-mild-angular.yml \
-		.pipeline/112-foreground-filter-calibrated-even-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-calibrated-even-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-even-none.yml \
 		.pipeline/103-full-rank-compression-calibrated-even \
@@ -480,13 +403,6 @@
 		.pipeline/112-foreground-filter-calibrated-even-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-even-none-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-calibrated-even-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-none-angular.yml \
-		.pipeline/103-full-rank-compression-calibrated-even \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-none-angular
 	$(launch)
 
 .pipeline/032-predicted-visibilities-calibrated: \
@@ -579,19 +495,6 @@
 		.pipeline/121-fisher-matrix-all-extreme-cylindrical
 	$(launch)
 
-.pipeline/121-fisher-matrix-all-extreme-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-extreme-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-extreme \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,4)
-
-.pipeline/122-quadratic-estimator-peeled-all-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-all-extreme-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-peeled-all-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-all-moderate.yml \
 		.pipeline/103-full-rank-compression-peeled-all \
@@ -623,19 +526,6 @@
 		.pipeline/112-foreground-filter-peeled-all-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-all-moderate-cylindrical
-	$(launch)
-
-.pipeline/121-fisher-matrix-all-moderate-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-moderate-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-moderate \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,4)
-
-.pipeline/122-quadratic-estimator-peeled-all-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-all-moderate-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-peeled-all-mild: \
@@ -671,19 +561,6 @@
 		.pipeline/121-fisher-matrix-all-mild-cylindrical
 	$(launch)
 
-.pipeline/121-fisher-matrix-all-mild-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-mild-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-mild \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,2)
-
-.pipeline/122-quadratic-estimator-peeled-all-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-all-mild-angular.yml \
-		.pipeline/112-foreground-filter-peeled-all-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-peeled-all-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-all-none.yml \
 		.pipeline/103-full-rank-compression-peeled-all \
@@ -715,19 +592,6 @@
 		.pipeline/112-foreground-filter-peeled-all-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-all-none-cylindrical
-	$(launch)
-
-.pipeline/121-fisher-matrix-all-none-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-none-angular.yml \
-		.pipeline/103-full-rank-compression-peeled-all \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,1)
-
-.pipeline/122-quadratic-estimator-peeled-all-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-all-none-angular.yml \
-		.pipeline/103-full-rank-compression-peeled-all \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-none-angular
 	$(launch)
 
 .pipeline/030-m-modes-peeled-odd: \
@@ -814,19 +678,6 @@
 		.pipeline/121-fisher-matrix-odd-extreme-cylindrical
 	$(launch)
 
-.pipeline/121-fisher-matrix-odd-extreme-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-extreme-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-extreme \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,4)
-
-.pipeline/122-quadratic-estimator-peeled-odd-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-odd-extreme-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-peeled-odd-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-odd-moderate.yml \
 		.pipeline/103-full-rank-compression-peeled-odd \
@@ -858,19 +709,6 @@
 		.pipeline/112-foreground-filter-peeled-odd-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-odd-moderate-cylindrical
-	$(launch)
-
-.pipeline/121-fisher-matrix-odd-moderate-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-moderate-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-moderate \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,4)
-
-.pipeline/122-quadratic-estimator-peeled-odd-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-odd-moderate-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-peeled-odd-mild: \
@@ -906,19 +744,6 @@
 		.pipeline/121-fisher-matrix-odd-mild-cylindrical
 	$(launch)
 
-.pipeline/121-fisher-matrix-odd-mild-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-mild-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-mild \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,2)
-
-.pipeline/122-quadratic-estimator-peeled-odd-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-odd-mild-angular.yml \
-		.pipeline/112-foreground-filter-peeled-odd-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-peeled-odd-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-odd-none.yml \
 		.pipeline/103-full-rank-compression-peeled-odd \
@@ -950,19 +775,6 @@
 		.pipeline/112-foreground-filter-peeled-odd-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-odd-none-cylindrical
-	$(launch)
-
-.pipeline/121-fisher-matrix-odd-none-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-none-angular.yml \
-		.pipeline/103-full-rank-compression-peeled-odd \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,1)
-
-.pipeline/122-quadratic-estimator-peeled-odd-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-odd-none-angular.yml \
-		.pipeline/103-full-rank-compression-peeled-odd \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-none-angular
 	$(launch)
 
 .pipeline/030-m-modes-peeled-even: \
@@ -1049,19 +861,6 @@
 		.pipeline/121-fisher-matrix-even-extreme-cylindrical
 	$(launch)
 
-.pipeline/121-fisher-matrix-even-extreme-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-extreme-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-extreme \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,4)
-
-.pipeline/122-quadratic-estimator-peeled-even-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-even-extreme-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-peeled-even-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-even-moderate.yml \
 		.pipeline/103-full-rank-compression-peeled-even \
@@ -1093,19 +892,6 @@
 		.pipeline/112-foreground-filter-peeled-even-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-even-moderate-cylindrical
-	$(launch)
-
-.pipeline/121-fisher-matrix-even-moderate-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-moderate-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-moderate \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,4)
-
-.pipeline/122-quadratic-estimator-peeled-even-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-even-moderate-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-peeled-even-mild: \
@@ -1141,19 +927,6 @@
 		.pipeline/121-fisher-matrix-even-mild-cylindrical
 	$(launch)
 
-.pipeline/121-fisher-matrix-even-mild-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-mild-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-mild \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,2)
-
-.pipeline/122-quadratic-estimator-peeled-even-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-even-mild-angular.yml \
-		.pipeline/112-foreground-filter-peeled-even-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-peeled-even-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-even-none.yml \
 		.pipeline/103-full-rank-compression-peeled-even \
@@ -1185,19 +958,6 @@
 		.pipeline/112-foreground-filter-peeled-even-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-even-none-cylindrical
-	$(launch)
-
-.pipeline/121-fisher-matrix-even-none-angular: \
-		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-none-angular.yml \
-		.pipeline/103-full-rank-compression-peeled-even \
-		.pipeline/120-basis-covariance-matrices-angular
-	$(call launch-remote,1)
-
-.pipeline/122-quadratic-estimator-peeled-even-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-even-none-angular.yml \
-		.pipeline/103-full-rank-compression-peeled-even \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-none-angular
 	$(launch)
 
 .pipeline/032-predicted-visibilities-peeled: \
@@ -1278,13 +1038,6 @@
 		.pipeline/121-fisher-matrix-all-extreme-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-recalibrated-all-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-extreme-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-all-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-recalibrated-all-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-all-moderate.yml \
 		.pipeline/103-full-rank-compression-recalibrated-all \
@@ -1304,13 +1057,6 @@
 		.pipeline/112-foreground-filter-recalibrated-all-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-all-moderate-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-recalibrated-all-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-moderate-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-all-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-recalibrated-all-mild: \
@@ -1334,13 +1080,6 @@
 		.pipeline/121-fisher-matrix-all-mild-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-recalibrated-all-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-mild-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-all-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-recalibrated-all-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-all-none.yml \
 		.pipeline/103-full-rank-compression-recalibrated-all \
@@ -1360,13 +1099,6 @@
 		.pipeline/112-foreground-filter-recalibrated-all-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-all-none-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-recalibrated-all-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-none-angular.yml \
-		.pipeline/103-full-rank-compression-recalibrated-all \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-all-none-angular
 	$(launch)
 
 .pipeline/030-m-modes-recalibrated-odd: \
@@ -1441,13 +1173,6 @@
 		.pipeline/121-fisher-matrix-odd-extreme-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-recalibrated-odd-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-extreme-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-odd-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-recalibrated-odd-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-odd-moderate.yml \
 		.pipeline/103-full-rank-compression-recalibrated-odd \
@@ -1467,13 +1192,6 @@
 		.pipeline/112-foreground-filter-recalibrated-odd-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-odd-moderate-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-recalibrated-odd-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-moderate-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-odd-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-recalibrated-odd-mild: \
@@ -1497,13 +1215,6 @@
 		.pipeline/121-fisher-matrix-odd-mild-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-recalibrated-odd-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-mild-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-odd-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-recalibrated-odd-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-odd-none.yml \
 		.pipeline/103-full-rank-compression-recalibrated-odd \
@@ -1523,13 +1234,6 @@
 		.pipeline/112-foreground-filter-recalibrated-odd-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-odd-none-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-recalibrated-odd-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-none-angular.yml \
-		.pipeline/103-full-rank-compression-recalibrated-odd \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-odd-none-angular
 	$(launch)
 
 .pipeline/030-m-modes-recalibrated-even: \
@@ -1604,13 +1308,6 @@
 		.pipeline/121-fisher-matrix-even-extreme-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-recalibrated-even-extreme-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-extreme-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-even-extreme \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-extreme-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-recalibrated-even-moderate: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-even-moderate.yml \
 		.pipeline/103-full-rank-compression-recalibrated-even \
@@ -1630,13 +1327,6 @@
 		.pipeline/112-foreground-filter-recalibrated-even-moderate \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-even-moderate-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-recalibrated-even-moderate-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-moderate-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-even-moderate \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-moderate-angular
 	$(launch)
 
 .pipeline/112-foreground-filter-recalibrated-even-mild: \
@@ -1660,13 +1350,6 @@
 		.pipeline/121-fisher-matrix-even-mild-cylindrical
 	$(launch)
 
-.pipeline/122-quadratic-estimator-recalibrated-even-mild-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-mild-angular.yml \
-		.pipeline/112-foreground-filter-recalibrated-even-mild \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-mild-angular
-	$(launch)
-
 .pipeline/112-foreground-filter-recalibrated-even-none: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-even-none.yml \
 		.pipeline/103-full-rank-compression-recalibrated-even \
@@ -1686,13 +1369,6 @@
 		.pipeline/112-foreground-filter-recalibrated-even-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-even-none-cylindrical
-	$(launch)
-
-.pipeline/122-quadratic-estimator-recalibrated-even-none-angular: \
-		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-none-angular.yml \
-		.pipeline/103-full-rank-compression-recalibrated-even \
-		.pipeline/120-basis-covariance-matrices-angular \
-		.pipeline/121-fisher-matrix-even-none-angular
 	$(launch)
 
 .pipeline/032-predicted-visibilities-recalibrated: \

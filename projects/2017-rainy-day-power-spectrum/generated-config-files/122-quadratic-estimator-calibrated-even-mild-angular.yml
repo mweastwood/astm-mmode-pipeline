@@ -1,9 +1,0 @@
-# This file was auto-generated. Do not edit directly!
-input-basis: 120-basis-covariance-matrices-angular
-input-m-modes: 112-filtered-m-modes-calibrated-even-mild
-input-transfer-matrix: 112-filtered-transfer-matrix-calibrated-even-mild
-input-covariance-matrix: 112-filtered-covariance-matrix-calibrated-even-mild
-input-fisher-matrix: 121-fisher-matrix-even-mild-angular
-output: 122-quadratic-estimator-calibrated-even-mild-angular
-iterations: 1000
-

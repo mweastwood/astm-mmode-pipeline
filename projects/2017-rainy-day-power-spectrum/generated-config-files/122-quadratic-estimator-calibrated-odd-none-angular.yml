@@ -1,9 +1,0 @@
-# This file was auto-generated. Do not edit directly!
-input-basis: 120-basis-covariance-matrices-angular
-input-m-modes: 103-compressed-m-modes-calibrated-odd
-input-transfer-matrix: 103-compressed-transfer-matrix-calibrated-odd
-input-covariance-matrix: 103-compressed-noise-covariance-matrix-calibrated-odd
-input-fisher-matrix: 121-fisher-matrix-odd-none-angular
-output: 122-quadratic-estimator-calibrated-odd-none-angular
-iterations: 1000
-

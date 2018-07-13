@@ -1,9 +1,0 @@
-# This file was auto-generated. Do not edit directly!
-input-basis: 120-basis-covariance-matrices-angular
-input-m-modes: 103-compressed-m-modes-recalibrated-all
-input-transfer-matrix: 103-compressed-transfer-matrix-recalibrated-all
-input-covariance-matrix: 103-compressed-noise-covariance-matrix-recalibrated-all
-input-fisher-matrix: 121-fisher-matrix-all-none-angular
-output: 122-quadratic-estimator-recalibrated-all-none-angular
-iterations: 1000
-
