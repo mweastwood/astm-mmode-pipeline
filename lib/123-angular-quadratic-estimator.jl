@@ -7,7 +7,7 @@ using BPJSpec
 using ProgressMeter
 using YAML
 
-function angular_quadratic_estimator(transfermatrix, mmodes)
+function angular_quadratic_estimator(transfermatrix, mmodes, noise_covariance, sky_covariance)
     #mmodes         = BPJSpec.load(joinpath(path, config.mmodes))
     #transfermatrix = BPJSpec.load(joinpath(path, config.transfermatrix))
 
@@ -26,7 +26,10 @@ function angular_quadratic_estimator(transfermatrix, mmodes)
     @sync for worker in workers()
         @async while length(queue) > 0
             m, β = shift!(queue)
-            F′, q′ = remotecall_fetch(compute_F_q, worker, transfermatrix, mmodes, m, β)
+            F′, q′ = remotecall_fetch(compute_F_q, worker,
+                                      transfermatrix, mmodes,
+                                      noise_covariance, sky_covariance,
+                                      m, β)
             F[m+1, β] = F′
             q[m+1, β] = q′
             increment()
@@ -37,32 +40,52 @@ function angular_quadratic_estimator(transfermatrix, mmodes)
 end
 
 
-function compute_F_q(transfermatrix, mmodes, m, β)
-    B = transfermatrix[m, β]
-    v = mmodes[m, β]
+function compute_F_q(transfermatrix, mmodes,
+                     noise_covariance, sky_covariance,
+                     m, β)
+
+    B =   transfermatrix[m, β]
+    v =           mmodes[m, β]
+    N = noise_covariance[m, β]    |> BPJSpec.fix
+    S = B*sky_covariance[m, β]*B' |> BPJSpec.fix
+
+    # Discard low SNR modes
+    filter = snr_filter(S, N, 100)
+    B = filter'*B
+    v = filter'*v
+    C = filter'*(N + S)*filter
+
     lmax = transfermatrix.mmax
     F = zeros(lmax + 1, lmax + 1)
     q = zeros(lmax + 1)
-    _compute_F_q!(F, q, B, v, lmax, m)
+    _compute_F_q!(F, q, B, v, C, lmax, m)
 end
 
-function _compute_F_q!(F, q, B, v, lmax, m)
-    Bv = B'*v
+function _compute_F_q!(F, q, B, v, C, lmax, m)
+    Bv = B'*(C\v)
     for l = m:lmax
         idx1 = l - m + 1
         jdx1 = l + 1
         col1 = @view B[:, idx1]
+        Ccol1 = C \ col1
         q[jdx1] = abs2(Bv[idx1])
-        F[jdx1, jdx1] = abs2(dot(col1, col1))
+        F[jdx1, jdx1] = abs2(dot(Ccol1, col1))
         for l′ = l+1:lmax
             idx2 = l′ - m + 1
             jdx2 = l′ + 1
             col2 = @view B[:, idx2]
-            F[jdx1, jdx2] = abs2(dot(col1, col2))
+            F[jdx1, jdx2] = abs2(dot(Ccol1, col2))
             F[jdx2, jdx1] = F[jdx1, jdx2]
         end 
     end
     F, q
+end
+
+function snr_filter(S, N, threshold)
+    λ, V = eig(S, N)
+    idx = searchsortedlast(λ, threshold)
+    cut = λ .> threshold
+    V[:, cut]
 end
 
 end
