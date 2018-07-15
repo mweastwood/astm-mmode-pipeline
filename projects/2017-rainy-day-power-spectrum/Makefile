@@ -56,18 +56,6 @@ sky-covariance: \
 	.pipeline/110-foreground-covariance-matrix \
 	.pipeline/111-signal-covariance-matrix
 
-.PHONY: angular-power-spectrum
-angular-power-spectrum: \
-	.pipeline/122-quadratic-estimator-calibrated-all-none-angular \
-	.pipeline/122-quadratic-estimator-calibrated-odd-none-angular \
-	.pipeline/122-quadratic-estimator-calibrated-even-none-angular \
-	.pipeline/122-quadratic-estimator-peeled-all-none-angular \
-	.pipeline/122-quadratic-estimator-peeled-odd-none-angular \
-	.pipeline/122-quadratic-estimator-peeled-even-none-angular \
-	.pipeline/122-quadratic-estimator-recalibrated-all-none-angular \
-	.pipeline/122-quadratic-estimator-recalibrated-odd-none-angular \
-	.pipeline/122-quadratic-estimator-recalibrated-even-none-angular
-
 .PHONY: spherical-power-spectrum
 spherical-power-spectrum: \
 	.pipeline/122-quadratic-estimator-calibrated-all-mild-spherical \
@@ -121,7 +109,7 @@ define launch
 endef
 
 define launch-remote
-	$(LAUNCH) --remote-workers $(1) --exclude 12 -- $(filter-out .pipeline/%,$^)
+	$(LAUNCH) --remote-workers $(1) -- $(filter-out .pipeline/%,$^)
 	touch $@
 endef
 
