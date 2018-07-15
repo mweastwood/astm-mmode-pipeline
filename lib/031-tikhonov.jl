@@ -65,7 +65,7 @@ function tikhonov(project, config)
         writehealpix(joinpath(path, config.output_map*".fits"), map,
                      coordsys="G", replace=true)
     else
-        Nfreq = length(alm.frequencies)
+        Nfreq = getNfreq(alm)
         if !isdir(joinpath(path, config.output_directory))
             mkpath(joinpath(path, config.output_directory))
         end
@@ -81,6 +81,9 @@ function tikhonov(project, config)
     end
 end
 
+getNfreq(alm::MFBlockVector) = length(alm.frequencies)
+getNfreq(alm::MBlockVector) = length(alm[0]) ÷ (alm.mmax + 1)
+
 function create_map(alm::MBlockVector, metadata, nside)
     lmax = mmax = alm.mmax
     _alm = Alm(Complex128, lmax, mmax)
@@ -88,6 +91,19 @@ function create_map(alm::MBlockVector, metadata, nside)
         block = alm[m]
         for l = m:mmax
             @lm _alm[l, m] = block[l - m + 1]
+        end
+    end
+    alm2map(_alm, nside)
+end
+
+function create_map(alm::MBlockVector, metadata, nside, β)
+    lmax = mmax = alm.mmax
+    _alm = Alm(Complex128, lmax, mmax)
+    for m = 1:lmax
+        block = alm[m]
+        for l = m:mmax
+            idx = (lmax - m + 1) * (β - 1) + l - m + 1
+            @lm _alm[l, m] = block[idx]
         end
     end
     alm2map(_alm, nside)

@@ -48,6 +48,7 @@ function main()
                 create_103_full_rank_compress_yml(makefile, process, sample)
                 for filter in filtering
                     create_112_foreground_filter_yml(makefile, process, sample, filter)
+                    create_031_tikhonov_filtered_yml(makefile, process, sample, filter)
                     for estimate in estimator
                         if process == "peeled"
                             create_121_fisher_matrix_yml(makefile, sample, filter, estimate)
@@ -269,6 +270,32 @@ function create_031_tikhonov_channels_interpolated_yml(makefile, process, sample
             \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
             \t\t.pipeline/030-m-modes-interpolated-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
+            \t\$(call launch-remote,1)
+            """)
+end
+
+function create_031_tikhonov_filtered_yml(makefile, process, sample, filter)
+    filename = "031-tikhonov-filtered-$process-$sample-$filter.yml"
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input: 112-filtered-m-modes-$process-$sample-$filter
+                output-alm: 031-dirty-alm-filtered-$process-$sample-$filter
+                output-map: 031-dirty-channel-map-filtered-$process-$sample-$filter
+                output-directory: 031-dirty-channel-maps-filtered-$process-$sample-$filter
+                metadata: metadata
+                transfer-matrix: 112-filtered-transfer-matrix-$process-$sample-$filter
+                regularization: 0.1
+                nside: 512
+                mfs: false
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/031-dirty-map-filtered-$process-$sample-$filter: \\
+            \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/112-foreground-filter-$process-$sample-$filter
             \t\$(call launch-remote,1)
             """)
 end

@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-recalibrated-odd-moderate
+output-alm: 031-dirty-alm-filtered-recalibrated-odd-moderate
+output-map: 031-dirty-channel-map-filtered-recalibrated-odd-moderate
+output-directory: 031-dirty-channel-maps-filtered-recalibrated-odd-moderate
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-recalibrated-odd-moderate
+regularization: 0.1
+nside: 512
+mfs: false
+

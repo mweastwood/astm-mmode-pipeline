@@ -42,6 +42,18 @@ dirty-maps: \
 	.pipeline/031-dirty-channel-maps-interpolated-peeled-all \
 	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-all
 
+.PHONY: filtered-maps
+filtered-maps: \
+	.pipeline/031-dirty-map-filtered-calibrated-all-mild \
+	.pipeline/031-dirty-map-filtered-peeled-all-mild \
+	.pipeline/031-dirty-map-filtered-recalibrated-all-mild \
+	.pipeline/031-dirty-map-filtered-calibrated-all-moderate \
+	.pipeline/031-dirty-map-filtered-peeled-all-moderate \
+	.pipeline/031-dirty-map-filtered-recalibrated-all-moderate \
+	.pipeline/031-dirty-map-filtered-calibrated-all-extreme \
+	.pipeline/031-dirty-map-filtered-peeled-all-extreme \
+	.pipeline/031-dirty-map-filtered-recalibrated-all-extreme
+
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
 

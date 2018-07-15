@@ -58,6 +58,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-calibrated-all-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-all-extreme.yml \
+		.pipeline/112-foreground-filter-calibrated-all-extreme
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-calibrated-all-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-calibrated-all-extreme \
@@ -78,6 +83,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-all-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-all-moderate.yml \
+		.pipeline/112-foreground-filter-calibrated-all-moderate
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-calibrated-all-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-moderate-spherical.yml \
@@ -100,6 +110,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-calibrated-all-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-all-mild.yml \
+		.pipeline/112-foreground-filter-calibrated-all-mild
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-calibrated-all-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-mild-spherical.yml \
 		.pipeline/112-foreground-filter-calibrated-all-mild \
@@ -120,6 +135,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-all-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-all-none.yml \
+		.pipeline/112-foreground-filter-calibrated-all-none
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-calibrated-all-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-all-none-spherical.yml \
@@ -193,6 +213,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-calibrated-odd-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-odd-extreme.yml \
+		.pipeline/112-foreground-filter-calibrated-odd-extreme
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-calibrated-odd-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-calibrated-odd-extreme \
@@ -213,6 +238,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-odd-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-odd-moderate.yml \
+		.pipeline/112-foreground-filter-calibrated-odd-moderate
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-calibrated-odd-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-moderate-spherical.yml \
@@ -235,6 +265,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-calibrated-odd-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-odd-mild.yml \
+		.pipeline/112-foreground-filter-calibrated-odd-mild
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-calibrated-odd-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-mild-spherical.yml \
 		.pipeline/112-foreground-filter-calibrated-odd-mild \
@@ -255,6 +290,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-odd-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-odd-none.yml \
+		.pipeline/112-foreground-filter-calibrated-odd-none
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-calibrated-odd-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-odd-none-spherical.yml \
@@ -328,6 +368,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-calibrated-even-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-even-extreme.yml \
+		.pipeline/112-foreground-filter-calibrated-even-extreme
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-calibrated-even-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-calibrated-even-extreme \
@@ -348,6 +393,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-even-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-even-moderate.yml \
+		.pipeline/112-foreground-filter-calibrated-even-moderate
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-calibrated-even-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-moderate-spherical.yml \
@@ -370,6 +420,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-calibrated-even-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-even-mild.yml \
+		.pipeline/112-foreground-filter-calibrated-even-mild
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-calibrated-even-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-mild-spherical.yml \
 		.pipeline/112-foreground-filter-calibrated-even-mild \
@@ -390,6 +445,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-even-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-even-none.yml \
+		.pipeline/112-foreground-filter-calibrated-even-none
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-calibrated-even-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-even-none-spherical.yml \
@@ -469,6 +529,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-peeled-all-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-all-extreme.yml \
+		.pipeline/112-foreground-filter-peeled-all-extreme
+	$(call launch-remote,1)
+
 .pipeline/121-fisher-matrix-all-extreme-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-all-extreme \
@@ -501,6 +566,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-all-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-all-moderate.yml \
+		.pipeline/112-foreground-filter-peeled-all-moderate
+	$(call launch-remote,1)
 
 .pipeline/121-fisher-matrix-all-moderate-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-moderate-spherical.yml \
@@ -535,6 +605,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-peeled-all-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-all-mild.yml \
+		.pipeline/112-foreground-filter-peeled-all-mild
+	$(call launch-remote,1)
+
 .pipeline/121-fisher-matrix-all-mild-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-all-mild \
@@ -567,6 +642,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-all-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-all-none.yml \
+		.pipeline/112-foreground-filter-peeled-all-none
+	$(call launch-remote,1)
 
 .pipeline/121-fisher-matrix-all-none-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-all-none-spherical.yml \
@@ -652,6 +732,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-peeled-odd-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-odd-extreme.yml \
+		.pipeline/112-foreground-filter-peeled-odd-extreme
+	$(call launch-remote,1)
+
 .pipeline/121-fisher-matrix-odd-extreme-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-odd-extreme \
@@ -684,6 +769,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-odd-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-odd-moderate.yml \
+		.pipeline/112-foreground-filter-peeled-odd-moderate
+	$(call launch-remote,1)
 
 .pipeline/121-fisher-matrix-odd-moderate-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-moderate-spherical.yml \
@@ -718,6 +808,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-peeled-odd-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-odd-mild.yml \
+		.pipeline/112-foreground-filter-peeled-odd-mild
+	$(call launch-remote,1)
+
 .pipeline/121-fisher-matrix-odd-mild-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-odd-mild \
@@ -750,6 +845,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-odd-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-odd-none.yml \
+		.pipeline/112-foreground-filter-peeled-odd-none
+	$(call launch-remote,1)
 
 .pipeline/121-fisher-matrix-odd-none-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-odd-none-spherical.yml \
@@ -835,6 +935,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-peeled-even-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-even-extreme.yml \
+		.pipeline/112-foreground-filter-peeled-even-extreme
+	$(call launch-remote,1)
+
 .pipeline/121-fisher-matrix-even-extreme-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-even-extreme \
@@ -867,6 +972,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-even-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-even-moderate.yml \
+		.pipeline/112-foreground-filter-peeled-even-moderate
+	$(call launch-remote,1)
 
 .pipeline/121-fisher-matrix-even-moderate-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-moderate-spherical.yml \
@@ -901,6 +1011,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-peeled-even-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-even-mild.yml \
+		.pipeline/112-foreground-filter-peeled-even-mild
+	$(call launch-remote,1)
+
 .pipeline/121-fisher-matrix-even-mild-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-even-mild \
@@ -933,6 +1048,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-even-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-even-none.yml \
+		.pipeline/112-foreground-filter-peeled-even-none
+	$(call launch-remote,1)
 
 .pipeline/121-fisher-matrix-even-none-spherical: \
 		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-even-none-spherical.yml \
@@ -1024,6 +1144,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-recalibrated-all-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-all-extreme.yml \
+		.pipeline/112-foreground-filter-recalibrated-all-extreme
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-recalibrated-all-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-recalibrated-all-extreme \
@@ -1044,6 +1169,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-all-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-all-moderate.yml \
+		.pipeline/112-foreground-filter-recalibrated-all-moderate
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-recalibrated-all-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-moderate-spherical.yml \
@@ -1066,6 +1196,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-recalibrated-all-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-all-mild.yml \
+		.pipeline/112-foreground-filter-recalibrated-all-mild
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-recalibrated-all-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-mild-spherical.yml \
 		.pipeline/112-foreground-filter-recalibrated-all-mild \
@@ -1086,6 +1221,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-all-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-all-none.yml \
+		.pipeline/112-foreground-filter-recalibrated-all-none
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-recalibrated-all-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-all-none-spherical.yml \
@@ -1159,6 +1299,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-recalibrated-odd-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-odd-extreme.yml \
+		.pipeline/112-foreground-filter-recalibrated-odd-extreme
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-recalibrated-odd-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-recalibrated-odd-extreme \
@@ -1179,6 +1324,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-odd-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-odd-moderate.yml \
+		.pipeline/112-foreground-filter-recalibrated-odd-moderate
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-recalibrated-odd-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-moderate-spherical.yml \
@@ -1201,6 +1351,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-recalibrated-odd-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-odd-mild.yml \
+		.pipeline/112-foreground-filter-recalibrated-odd-mild
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-recalibrated-odd-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-mild-spherical.yml \
 		.pipeline/112-foreground-filter-recalibrated-odd-mild \
@@ -1221,6 +1376,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-odd-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-odd-none.yml \
+		.pipeline/112-foreground-filter-recalibrated-odd-none
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-recalibrated-odd-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-odd-none-spherical.yml \
@@ -1294,6 +1454,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-recalibrated-even-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-even-extreme.yml \
+		.pipeline/112-foreground-filter-recalibrated-even-extreme
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-recalibrated-even-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-recalibrated-even-extreme \
@@ -1314,6 +1479,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-even-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-even-moderate.yml \
+		.pipeline/112-foreground-filter-recalibrated-even-moderate
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-recalibrated-even-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-moderate-spherical.yml \
@@ -1336,6 +1506,11 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/031-dirty-map-filtered-recalibrated-even-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-even-mild.yml \
+		.pipeline/112-foreground-filter-recalibrated-even-mild
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-recalibrated-even-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-mild-spherical.yml \
 		.pipeline/112-foreground-filter-recalibrated-even-mild \
@@ -1356,6 +1531,11 @@
 		.pipeline/110-foreground-covariance-matrix \
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-even-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-even-none.yml \
+		.pipeline/112-foreground-filter-recalibrated-even-none
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-recalibrated-even-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-even-none-spherical.yml \

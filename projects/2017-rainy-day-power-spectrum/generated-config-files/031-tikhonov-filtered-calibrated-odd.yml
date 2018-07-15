@@ -1,0 +1,10 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-calibrated-odd-none
+output-alm: 031-dirty-alm-filtered-calibrated-odd-none
+output-map: 031-dirty-map-filtered-calibrated-odd-none
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-calibrated-odd-none
+regularization: 1
+nside: 512
+mfs: false
+
