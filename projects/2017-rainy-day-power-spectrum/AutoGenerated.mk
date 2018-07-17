@@ -471,6 +471,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/101-averaged-m-modes-predicted-calibrated: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-predicted-calibrated.yml \
+		.pipeline/032-predicted-visibilities-calibrated
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-predicted-calibrated: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-predicted-calibrated.yml \
+		.pipeline/101-averaged-m-modes-predicted-calibrated \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-all
+	$(call launch-remote,1)
+
 .pipeline/030-m-modes-peeled-all: \
 		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-peeled-all.yml \
 		.pipeline/001-peeled-transposed-data \
@@ -1086,6 +1098,18 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/101-averaged-m-modes-predicted-peeled: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-predicted-peeled.yml \
+		.pipeline/032-predicted-visibilities-peeled
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-predicted-peeled: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-predicted-peeled.yml \
+		.pipeline/101-averaged-m-modes-predicted-peeled \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-all
+	$(call launch-remote,1)
+
 .pipeline/030-m-modes-recalibrated-all: \
 		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-recalibrated-all.yml \
 		.pipeline/001-recalibrated-transposed-data \
@@ -1555,5 +1579,17 @@
 		$(LIB)/032-predict-visibilities.jl project.yml generated-config-files/032-predict-visibilities-recalibrated.yml \
 		.pipeline/031-dirty-map-recalibrated-all \
 		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-predicted-recalibrated: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-predicted-recalibrated.yml \
+		.pipeline/032-predicted-visibilities-recalibrated
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-predicted-recalibrated: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-predicted-recalibrated.yml \
+		.pipeline/101-averaged-m-modes-predicted-recalibrated \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 

@@ -1,0 +1,8 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 101-averaged-m-modes-predicted-calibrated
+input-transfer-matrix: 101-averaged-transfer-matrix
+input-noise-matrix: 102-noise-covariance-matrix-all
+output-m-modes: 103-compressed-m-modes-predicted-calibrated
+output-transfer-matrix: 103-compressed-transfer-matrix-predicted-calibrated
+output-noise-matrix: 103-compressed-noise-covariance-matrix-predicted-calibrated
+

@@ -58,6 +58,8 @@ function main()
                 end
             end
             create_032_predict_visibilities_yml(makefile, process)
+            create_101_average_channels_predicted_yml(makefile, process)
+            create_103_full_rank_compress_predicted_yml(makefile, process)
         end
     end
 
@@ -348,6 +350,26 @@ function create_101_average_channels_yml(makefile, process, sample)
             """)
 end
 
+function create_101_average_channels_predicted_yml(makefile, process)
+    filename = "101-average-channels-m-modes-predicted-$process.yml"
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input: 032-predicted-m-modes-$process
+                output: 101-averaged-m-modes-predicted-$process
+                Navg: 10
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/101-averaged-m-modes-predicted-$process: \\
+            \t\t\$(LIB)/101-average-channels.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/032-predicted-visibilities-$process
+            \t\$(call launch-remote,1)
+            """)
+end
+
 function create_103_full_rank_compress_yml(makefile, process, sample)
     filename = "103-full-rank-compress-$process-$sample.yml"
     open(joinpath(temp, filename), "w") do file
@@ -369,6 +391,31 @@ function create_103_full_rank_compress_yml(makefile, process, sample)
             \t\t.pipeline/101-averaged-m-modes-$process-$sample \\
             \t\t.pipeline/101-averaged-transfer-matrix \\
             \t\t.pipeline/102-noise-covariance-matrix-$sample
+            \t\$(call launch-remote,1)
+            """)
+end
+
+function create_103_full_rank_compress_predicted_yml(makefile, process)
+    filename = "103-full-rank-compress-predicted-$process.yml"
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input-m-modes: 101-averaged-m-modes-predicted-$process
+                input-transfer-matrix: 101-averaged-transfer-matrix
+                input-noise-matrix: 102-noise-covariance-matrix-all
+                output-m-modes: 103-compressed-m-modes-predicted-$process
+                output-transfer-matrix: 103-compressed-transfer-matrix-predicted-$process
+                output-noise-matrix: 103-compressed-noise-covariance-matrix-predicted-$process
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/103-full-rank-compression-predicted-$process: \\
+            \t\t\$(LIB)/103-full-rank-compress.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/101-averaged-m-modes-predicted-$process \\
+            \t\t.pipeline/101-averaged-transfer-matrix \\
+            \t\t.pipeline/102-noise-covariance-matrix-all
             \t\$(call launch-remote,1)
             """)
 end

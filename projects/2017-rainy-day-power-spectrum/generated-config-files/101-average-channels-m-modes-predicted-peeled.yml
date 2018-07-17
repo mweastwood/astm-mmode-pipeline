@@ -1,0 +1,5 @@
+# This file was auto-generated. Do not edit directly!
+input: 032-predicted-m-modes-peeled
+output: 101-averaged-m-modes-predicted-peeled
+Navg: 10
+
