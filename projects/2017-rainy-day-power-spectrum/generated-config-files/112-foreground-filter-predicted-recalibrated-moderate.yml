@@ -1,0 +1,13 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-predicted-recalibrated
+input-transfer-matrix: 103-compressed-transfer-matrix-predicted-recalibrated
+input-noise-matrix: 103-compressed-noise-covariance-matrix-predicted-recalibrated
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-predicted-recalibrated-moderate
+output-transfer-matrix: 112-filtered-transfer-matrix-predicted-recalibrated-moderate
+output-covariance-matrix: 112-filtered-covariance-matrix-predicted-recalibrated-moderate
+output-foreground-filter: 112-foreground-filter-predicted-recalibrated-moderate
+output-noise-whitener: 112-noise-whitener-predicted-recalibrated-moderate
+threshold: 1.0
+

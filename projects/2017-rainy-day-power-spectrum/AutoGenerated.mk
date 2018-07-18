@@ -483,6 +483,34 @@
 		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
+.pipeline/112-foreground-filter-predicted-calibrated-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-calibrated-extreme.yml \
+		.pipeline/103-full-rank-compression-predicted-calibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-calibrated-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-calibrated-moderate.yml \
+		.pipeline/103-full-rank-compression-predicted-calibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-calibrated-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-calibrated-mild.yml \
+		.pipeline/103-full-rank-compression-predicted-calibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-calibrated-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-calibrated-none.yml \
+		.pipeline/103-full-rank-compression-predicted-calibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
 .pipeline/030-m-modes-peeled-all: \
 		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-peeled-all.yml \
 		.pipeline/001-peeled-transposed-data \
@@ -1110,6 +1138,34 @@
 		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
+.pipeline/112-foreground-filter-predicted-peeled-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-peeled-extreme.yml \
+		.pipeline/103-full-rank-compression-predicted-peeled \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-peeled-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-peeled-moderate.yml \
+		.pipeline/103-full-rank-compression-predicted-peeled \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-peeled-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-peeled-mild.yml \
+		.pipeline/103-full-rank-compression-predicted-peeled \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-peeled-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-peeled-none.yml \
+		.pipeline/103-full-rank-compression-predicted-peeled \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
 .pipeline/030-m-modes-recalibrated-all: \
 		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-recalibrated-all.yml \
 		.pipeline/001-recalibrated-transposed-data \
@@ -1592,4 +1648,32 @@
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-predicted-recalibrated-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-recalibrated-extreme.yml \
+		.pipeline/103-full-rank-compression-predicted-recalibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-recalibrated-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-recalibrated-moderate.yml \
+		.pipeline/103-full-rank-compression-predicted-recalibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-recalibrated-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-recalibrated-mild.yml \
+		.pipeline/103-full-rank-compression-predicted-recalibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/112-foreground-filter-predicted-recalibrated-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-predicted-recalibrated-none.yml \
+		.pipeline/103-full-rank-compression-predicted-recalibrated \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
 

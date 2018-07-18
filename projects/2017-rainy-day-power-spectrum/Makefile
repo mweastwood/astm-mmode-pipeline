@@ -68,6 +68,18 @@ sky-covariance: \
 	.pipeline/110-foreground-covariance-matrix \
 	.pipeline/111-signal-covariance-matrix
 
+.PHONY: filter-predicted
+filter-predicted: \
+	.pipeline/112-foreground-filter-predicted-calibrated-mild \
+	.pipeline/112-foreground-filter-predicted-calibrated-moderate \
+	.pipeline/112-foreground-filter-predicted-calibrated-extreme \
+	.pipeline/112-foreground-filter-predicted-peeled-mild \
+	.pipeline/112-foreground-filter-predicted-peeled-moderate \
+	.pipeline/112-foreground-filter-predicted-peeled-extreme \
+	.pipeline/112-foreground-filter-predicted-recalibrated-mild \
+	.pipeline/112-foreground-filter-predicted-recalibrated-moderate \
+	.pipeline/112-foreground-filter-predicted-recalibrated-extreme
+
 .PHONY: spherical-power-spectrum
 spherical-power-spectrum: \
 	.pipeline/122-quadratic-estimator-calibrated-all-mild-spherical \

@@ -11,6 +11,11 @@ const dirname = "generated-config-files"
 const dir = joinpath(@__DIR__, dirname)
 isdir(dir) || mkpath(dir)
 
+const filter_strength = Dict("extreme"  =>  0.1,
+                             "moderate" =>  1.0,
+                             "mild"     => 10.0,
+                             "none"     =>  Inf)
+
 function main()
     # "calibrated"   => only initial gain calibration, no source removal
     # "peeled"       => initial calibration with source removal
@@ -60,6 +65,9 @@ function main()
             create_032_predict_visibilities_yml(makefile, process)
             create_101_average_channels_predicted_yml(makefile, process)
             create_103_full_rank_compress_predicted_yml(makefile, process)
+            for filter in filtering
+                create_112_foreground_filter_predicted_yml(makefile, process, filter)
+            end
         end
     end
 
@@ -422,17 +430,7 @@ end
 
 function create_112_foreground_filter_yml(makefile, process, sample, filter)
     filename = "112-foreground-filter-$process-$sample-$filter.yml"
-    if filter == "extreme"
-        value = 0.1
-    elseif filter == "moderate"
-        value = 1.0
-    elseif filter == "mild"
-        value = 10.0
-    elseif filter == "none"
-        value = Inf
-    else
-        error("unknown filter")
-    end
+    value = filter_strength[filter]
 
     open(joinpath(temp, filename), "w") do file
         println(file,
@@ -456,6 +454,38 @@ function create_112_foreground_filter_yml(makefile, process, sample, filter)
             """.pipeline/112-foreground-filter-$process-$sample-$filter: \\
             \t\t\$(LIB)/112-foreground-filter.jl project.yml $dirname/$filename \\
             \t\t.pipeline/103-full-rank-compression-$process-$sample \\
+            \t\t.pipeline/110-foreground-covariance-matrix \\
+            \t\t.pipeline/111-signal-covariance-matrix
+            \t\$(call launch-remote,2)
+            """)
+end
+
+function create_112_foreground_filter_predicted_yml(makefile, process, filter)
+    filename = "112-foreground-filter-predicted-$process-$filter.yml"
+    value = filter_strength[filter]
+
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input-m-modes: 103-compressed-m-modes-predicted-$process
+                input-transfer-matrix: 103-compressed-transfer-matrix-predicted-$process
+                input-noise-matrix: 103-compressed-noise-covariance-matrix-predicted-$process
+                input-foreground-matrix: 110-foreground-covariance-matrix
+                input-signal-matrix: 111-signal-covariance-matrix
+                output-m-modes: 112-filtered-m-modes-predicted-$process-$filter
+                output-transfer-matrix: 112-filtered-transfer-matrix-predicted-$process-$filter
+                output-covariance-matrix: 112-filtered-covariance-matrix-predicted-$process-$filter
+                output-foreground-filter: 112-foreground-filter-predicted-$process-$filter
+                output-noise-whitener: 112-noise-whitener-predicted-$process-$filter
+                threshold: $value
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/112-foreground-filter-predicted-$process-$filter: \\
+            \t\t\$(LIB)/112-foreground-filter.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/103-full-rank-compression-predicted-$process \\
             \t\t.pipeline/110-foreground-covariance-matrix \\
             \t\t.pipeline/111-signal-covariance-matrix
             \t\$(call launch-remote,2)
