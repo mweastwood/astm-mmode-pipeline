@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 030-m-modes-peeled-night
+output-alm: 031-dirty-channel-alm-peeled-night
+output-map: 031-dirty-channel-map-peeled-night
+output-directory: 031-dirty-channel-maps-peeled-night
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

@@ -1,0 +1,7 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-cylindrical
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-night-extreme
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-night-extreme
+output: 121-fisher-matrix-night-extreme-cylindrical
+iterations: 1000
+

@@ -1,0 +1,10 @@
+# This file was auto-generated. Do not edit directly!
+input: 030-m-modes-interpolated-recalibrated-night
+output-alm: 031-dirty-alm-interpolated-recalibrated-night
+output-map: 031-dirty-map-interpolated-recalibrated-night
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: true
+

@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 030-m-modes-interpolated-calibrated-day
+output-alm: 031-dirty-channel-alm-interpolated-calibrated-day
+output-map: 031-dirty-channel-map-interpolated-calibrated-day
+output-directory: 031-dirty-channel-maps-interpolated-calibrated-day
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

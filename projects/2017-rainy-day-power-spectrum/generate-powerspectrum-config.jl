@@ -25,7 +25,9 @@ function main()
     # "all"  => all visibilities are used to estimate the m-modes
     # "odd"  => only odd-numbered visibilities are used to estimate the m-modes
     # "even" => only even-numbered visibilities are used to estimate the m-modes
-    sampling   = ("all", "odd", "even")
+    # "day"  => only day-time visibilities are used to estimate the m-modes
+    # "even" => only night-time visibilities are used to estimate the m-modes
+    sampling   = ("all", "odd", "even", "day", "night")
 
     # "extreme"  => filter modes with (foregrounds) > 0.1 × (signal)
     # "moderate" => filter modes with (foregrounds) > (signal)

@@ -149,14 +149,37 @@ end
 
 function _getmmodes!(output, V, hierarchy, config, frequency)
     Ntime = size(V, 2)
-    odd  = @view V[:, 1:2:end]
-    even = @view V[:, 2:2:end]
     if config.option == "odd"
-        W  = odd
+        # select only odd numbered integrations
+        W  = @view V[:, 1:2:end]
         dϕ = 0.0
     elseif config.option == "even"
-        W  = even
+        # select only even numbered integrations
+        W  = @view V[:, 2:2:end]
         dϕ = -2π/Ntime
+    elseif config.option == "day" || config.option == "night"
+        # select only integrations from the day/night-time
+        # (and apply a Blackman-Harris window function)
+        # TODO change the definition of day/night from being hard coded
+        sunrise = 755
+        sunset  = 3745
+
+        if config.option == "day"
+            N = sunset - sunrise + 1
+            W = circshift(V, (0, 1-sunrise))
+            dϕ = -2π/Ntime * (sunrise-1)
+        else
+            N = config.integrations_per_day - (sunset - sunrise + 1)
+            W = circshift(V, (0,  -sunset))
+            dϕ = -2π/Ntime * sunset
+        end
+        W[:, N+1:end] = 0
+
+        for n = 0:N-1
+            W[:, n+1] .*= (0.35875 - 0.48829cos((2π*n)/(N-1))
+                                   + 0.14128cos((4π*n)/(N-1))
+                                   - 0.01168cos((6π*n)/(N-1)))
+        end
     else
         W  = V
         dϕ = 0.0

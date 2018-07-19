@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-peeled-day-mild
+output-alm: 031-dirty-alm-filtered-peeled-day-mild
+output-map: 031-dirty-channel-map-filtered-peeled-day-mild
+output-directory: 031-dirty-channel-maps-filtered-peeled-day-mild
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-peeled-day-mild
+regularization: 0.1
+nside: 512
+mfs: false
+

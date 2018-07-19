@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-spherical
+input-m-modes: 112-filtered-m-modes-calibrated-night-none
+input-transfer-matrix: 112-filtered-transfer-matrix-calibrated-night-none
+input-covariance-matrix: 112-filtered-covariance-matrix-calibrated-night-none
+input-fisher-matrix: 121-fisher-matrix-night-none-spherical
+output: 122-quadratic-estimator-calibrated-night-none-spherical
+iterations: 1000
+

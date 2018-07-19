@@ -1,0 +1,13 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-peeled-day
+input-transfer-matrix: 103-compressed-transfer-matrix-peeled-day
+input-noise-matrix: 103-compressed-noise-covariance-matrix-peeled-day
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-peeled-day-extreme
+output-transfer-matrix: 112-filtered-transfer-matrix-peeled-day-extreme
+output-covariance-matrix: 112-filtered-covariance-matrix-peeled-day-extreme
+output-foreground-filter: 112-foreground-filter-peeled-day-extreme
+output-noise-whitener: 112-noise-whitener-peeled-day-extreme
+threshold: 0.1
+

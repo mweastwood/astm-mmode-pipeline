@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-spherical
+input-m-modes: 112-filtered-m-modes-recalibrated-day-extreme
+input-transfer-matrix: 112-filtered-transfer-matrix-recalibrated-day-extreme
+input-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-day-extreme
+input-fisher-matrix: 121-fisher-matrix-day-extreme-spherical
+output: 122-quadratic-estimator-recalibrated-day-extreme-spherical
+iterations: 1000
+

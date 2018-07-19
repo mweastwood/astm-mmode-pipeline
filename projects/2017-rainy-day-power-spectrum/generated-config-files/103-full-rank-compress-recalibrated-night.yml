@@ -1,0 +1,8 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 101-averaged-m-modes-recalibrated-night
+input-transfer-matrix: 101-averaged-transfer-matrix
+input-noise-matrix: 102-noise-covariance-matrix-night
+output-m-modes: 103-compressed-m-modes-recalibrated-night
+output-transfer-matrix: 103-compressed-transfer-matrix-recalibrated-night
+output-noise-matrix: 103-compressed-noise-covariance-matrix-recalibrated-night
+
