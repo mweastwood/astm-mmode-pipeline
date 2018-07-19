@@ -54,6 +54,21 @@ filtered-maps: \
 	.pipeline/031-dirty-map-filtered-peeled-all-extreme \
 	.pipeline/031-dirty-map-filtered-recalibrated-all-extreme
 
+.PHONY: day-night-maps
+day-night-maps: \
+	.pipeline/031-dirty-map-interpolated-calibrated-day \
+	.pipeline/031-dirty-map-interpolated-peeled-day \
+	.pipeline/031-dirty-map-interpolated-recalibrated-day \
+	.pipeline/031-dirty-map-interpolated-calibrated-night \
+	.pipeline/031-dirty-map-interpolated-peeled-night \
+	.pipeline/031-dirty-map-interpolated-recalibrated-night \
+	.pipeline/031-dirty-channel-maps-interpolated-calibrated-day \
+	.pipeline/031-dirty-channel-maps-interpolated-peeled-day \
+	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-day \
+	.pipeline/031-dirty-channel-maps-interpolated-calibrated-night \
+	.pipeline/031-dirty-channel-maps-interpolated-peeled-night \
+	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-night
+
 .PHONY: transfer-matrix
 transfer-matrix: .pipeline/100-transfer-matrix
 
@@ -98,23 +113,23 @@ spherical-power-spectrum: \
 	.pipeline/122-quadratic-estimator-recalibrated-odd-mild-spherical \
 	.pipeline/122-quadratic-estimator-recalibrated-even-mild-spherical
 
-.PHONY: cylindrical-power-spectrum
-cylindrical-power-spectrum: \
-	.pipeline/122-quadratic-estimator-calibrated-all-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-calibrated-odd-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-calibrated-even-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-all-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-odd-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-even-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-all-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-odd-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-even-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-all-extreme-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-odd-extreme-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-even-extreme-cylindrical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-recalibrated-odd-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-recalibrated-even-mild-cylindrical
+#.PHONY: cylindrical-power-spectrum
+#cylindrical-power-spectrum: \
+#	.pipeline/122-quadratic-estimator-calibrated-all-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-calibrated-odd-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-calibrated-even-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-all-moderate-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-odd-moderate-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-even-moderate-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-all-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-odd-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-even-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-all-extreme-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-odd-extreme-cylindrical \
+#	.pipeline/122-quadratic-estimator-peeled-even-extreme-cylindrical \
+#	.pipeline/122-quadratic-estimator-recalibrated-all-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-recalibrated-odd-mild-cylindrical \
+#	.pipeline/122-quadratic-estimator-recalibrated-even-mild-cylindrical
 
 .PHONY: sefd
 sefd: .pipeline/200-measure-system-equivalent-flux-density
