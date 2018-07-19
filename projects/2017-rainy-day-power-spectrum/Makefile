@@ -54,6 +54,21 @@ filtered-maps: \
 	.pipeline/031-dirty-map-filtered-peeled-all-extreme \
 	.pipeline/031-dirty-map-filtered-recalibrated-all-extreme
 
+.PHONY: even-odd-maps
+even-odd-maps: \
+	.pipeline/031-dirty-map-interpolated-calibrated-even \
+	.pipeline/031-dirty-map-interpolated-peeled-even \
+	.pipeline/031-dirty-map-interpolated-recalibrated-even \
+	.pipeline/031-dirty-map-interpolated-calibrated-odd \
+	.pipeline/031-dirty-map-interpolated-peeled-odd \
+	.pipeline/031-dirty-map-interpolated-recalibrated-odd \
+	.pipeline/031-dirty-channel-maps-interpolated-calibrated-even \
+	.pipeline/031-dirty-channel-maps-interpolated-peeled-even \
+	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-even \
+	.pipeline/031-dirty-channel-maps-interpolated-calibrated-odd \
+	.pipeline/031-dirty-channel-maps-interpolated-peeled-odd \
+	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-odd
+
 .PHONY: day-night-maps
 day-night-maps: \
 	.pipeline/031-dirty-map-interpolated-calibrated-day \
@@ -98,20 +113,36 @@ filter-predicted: \
 .PHONY: spherical-power-spectrum
 spherical-power-spectrum: \
 	.pipeline/122-quadratic-estimator-calibrated-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-all-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-all-extreme-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-mild-spherical \
+
+.PHONY: spherical-power-spectrum-even-odd
+spherical-power-spectrum-even-odd: \
 	.pipeline/122-quadratic-estimator-calibrated-odd-mild-spherical \
 	.pipeline/122-quadratic-estimator-calibrated-even-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-all-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-odd-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-even-moderate-spherical \
-	.pipeline/122-quadratic-estimator-peeled-all-mild-spherical \
 	.pipeline/122-quadratic-estimator-peeled-odd-mild-spherical \
 	.pipeline/122-quadratic-estimator-peeled-even-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-all-extreme-spherical \
 	.pipeline/122-quadratic-estimator-peeled-odd-extreme-spherical \
 	.pipeline/122-quadratic-estimator-peeled-even-extreme-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-mild-spherical \
 	.pipeline/122-quadratic-estimator-recalibrated-odd-mild-spherical \
 	.pipeline/122-quadratic-estimator-recalibrated-even-mild-spherical
+
+.PHONY: spherical-power-spectrum-day-night
+spherical-power-spectrum-day-night: \
+	.pipeline/122-quadratic-estimator-calibrated-day-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-night-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-day-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-night-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-day-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-night-mild-spherical \
+	.pipeline/122-quadratic-estimator-peeled-day-extreme-spherical \
+	.pipeline/122-quadratic-estimator-peeled-night-extreme-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-day-mild-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-night-mild-spherical
 
 #.PHONY: cylindrical-power-spectrum
 #cylindrical-power-spectrum: \
