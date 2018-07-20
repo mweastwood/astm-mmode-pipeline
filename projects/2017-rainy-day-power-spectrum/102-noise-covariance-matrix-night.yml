@@ -1,0 +1,8 @@
+metadata: metadata
+hierarchy: hierarchy
+input: 101-averaged-transfer-matrix
+output: 102-noise-covariance-matrix-night
+# Scale the system temperature to account for fewer integrations
+Tsys: 4596.194077712559 # 3250*sqrt(2)
+beam-solid-angle: 2.441
+

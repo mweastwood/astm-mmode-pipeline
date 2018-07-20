@@ -133,16 +133,12 @@ spherical-power-spectrum-even-odd: \
 
 .PHONY: spherical-power-spectrum-day-night
 spherical-power-spectrum-day-night: \
-	.pipeline/122-quadratic-estimator-calibrated-day-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-night-mild-spherical \
 	.pipeline/122-quadratic-estimator-peeled-day-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-night-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-day-mild-spherical \
 	.pipeline/122-quadratic-estimator-peeled-night-mild-spherical \
 	.pipeline/122-quadratic-estimator-peeled-day-extreme-spherical \
-	.pipeline/122-quadratic-estimator-peeled-night-extreme-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-day-mild-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-night-mild-spherical
+	.pipeline/122-quadratic-estimator-peeled-night-extreme-spherical
 
 #.PHONY: cylindrical-power-spectrum
 #cylindrical-power-spectrum: \
