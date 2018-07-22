@@ -2,6 +2,7 @@ input: 101-averaged-m-modes-peeled-all
 output: 120-basis-covariance-matrices-cylindrical
 power-spectrum: cylindrical
 kpara:
+    - 0.0
     - 0.05
     - 0.0586895
     - 0.0688892

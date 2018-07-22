@@ -36,7 +36,7 @@ function load(file)
     elseif config.powerspectrum == "spherical"
         psconfig = SphericalConfig(dict["k"] .* u"Mpc^-1")
     elseif config.powerspectrum == "cylindrical"
-        psconfig = CylindricalConfig(dict["kpara"] .* u"Mpc^-1", dict["kpara"] .* u"Mpc^-1")
+        psconfig = CylindricalConfig(dict["kpara"] .* u"Mpc^-1", dict["kperp"] .* u"Mpc^-1")
     else
         error("unknown power spectrum type $(config.powerspectrum)")
     end
