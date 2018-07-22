@@ -65,6 +65,7 @@ function main()
                 end
             end
             create_032_predict_visibilities_yml(makefile, process)
+            create_033_transfer_flags_yml(makefile, process)
             create_101_average_channels_predicted_yml(makefile, process)
             create_103_full_rank_compress_predicted_yml(makefile, process)
             for filter in filtering
@@ -340,6 +341,27 @@ function create_032_predict_visibilities_yml(makefile, process)
             """)
 end
 
+function create_033_transfer_flags_yml(makefile, process)
+    filename = "033-transfer-flags-$process.yml"
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input-predicted: 032-predicted-m-modes-$process
+                input-measured: 030-m-modes-$process-all
+                output: 033-predicted-m-modes-$process
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/033-transfer-flags-$process: \\
+            \t\t\$(LIB)/033-transfer-flags.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/030-m-modes-$process-all \\
+            \t\t.pipeline/032-predicted-visibilities-$process
+            \t\$(call launch-remote,1)
+            """)
+end
+
 function create_101_average_channels_yml(makefile, process, sample)
     filename = "101-average-channels-m-modes-$process-$sample.yml"
     open(joinpath(temp, filename), "w") do file
@@ -365,7 +387,7 @@ function create_101_average_channels_predicted_yml(makefile, process)
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
-                input: 032-predicted-m-modes-$process
+                input: 033-predicted-m-modes-$process
                 output: 101-averaged-m-modes-predicted-$process
                 Navg: 10
                 """)
@@ -375,7 +397,7 @@ function create_101_average_channels_predicted_yml(makefile, process)
     println(makefile,
             """.pipeline/101-averaged-m-modes-predicted-$process: \\
             \t\t\$(LIB)/101-average-channels.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/032-predicted-visibilities-$process
+            \t\t.pipeline/033-transfer-flags-$process
             \t\$(call launch-remote,1)
             """)
 end

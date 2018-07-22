@@ -781,9 +781,15 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-calibrated: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		.pipeline/030-m-modes-calibrated-all \
+		.pipeline/032-predicted-visibilities-calibrated
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-predicted-calibrated: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-predicted-calibrated.yml \
-		.pipeline/032-predicted-visibilities-calibrated
+		.pipeline/033-transfer-flags-calibrated
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-predicted-calibrated: \
@@ -1842,9 +1848,15 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-peeled: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		.pipeline/030-m-modes-peeled-all \
+		.pipeline/032-predicted-visibilities-peeled
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-predicted-peeled: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-predicted-peeled.yml \
-		.pipeline/032-predicted-visibilities-peeled
+		.pipeline/033-transfer-flags-peeled
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-predicted-peeled: \
@@ -2663,9 +2675,15 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-recalibrated: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		.pipeline/030-m-modes-recalibrated-all \
+		.pipeline/032-predicted-visibilities-recalibrated
+	$(call launch-remote,1)
+
 .pipeline/101-averaged-m-modes-predicted-recalibrated: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-predicted-recalibrated.yml \
-		.pipeline/032-predicted-visibilities-recalibrated
+		.pipeline/033-transfer-flags-recalibrated
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-predicted-recalibrated: \
