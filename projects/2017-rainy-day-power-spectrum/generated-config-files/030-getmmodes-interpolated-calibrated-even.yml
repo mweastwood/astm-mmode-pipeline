@@ -7,7 +7,7 @@ hierarchy: hierarchy
 interpolating-visibilities: 032-predicted-visibilities-calibrated
 flagging-m-modes: 
 replacement-threshold: 5
-flagging-threshold: 100
+flagging-threshold: 5
 integrations-per-day: 6628
 delete-input: false
 option: even

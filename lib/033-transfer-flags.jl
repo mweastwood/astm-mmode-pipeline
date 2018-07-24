@@ -1,5 +1,4 @@
-# The predicted m-modes don't have any flags applied to them, this routine will take flags from a
-# different set of m-modes, and apply them to the predicted m-modes.
+# Take flags from one set of m-modes and apply them to a different set of m-modes.
 module Driver
 
 using BPJSpec
@@ -30,7 +29,7 @@ function transfer_flags(project, config)
     path = Project.workspace(project)
     to_flag         = BPJSpec.load(joinpath(path, config.input_to_flag))
     already_flagged = BPJSpec.load(joinpath(path, config.input_already_flagged))
-    output = similar(predicted, MultipleFiles(joinpath(path, config.output))) |> ProgressBar
+    output = similar(to_flag, MultipleFiles(joinpath(path, config.output))) |> ProgressBar
     @. output = _transfer_flags(to_flag, already_flagged)
 end
 

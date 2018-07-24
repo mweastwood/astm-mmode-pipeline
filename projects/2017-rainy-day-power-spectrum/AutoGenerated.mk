@@ -16,7 +16,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-calibrated-all: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-all.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/030-m-modes-interpolated-calibrated-all
 	$(call launch-remote,1)
@@ -177,7 +177,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-calibrated-odd: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-odd.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/030-m-modes-interpolated-calibrated-odd
 	$(call launch-remote,1)
@@ -338,7 +338,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-calibrated-even: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-even.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/030-m-modes-interpolated-calibrated-even
 	$(call launch-remote,1)
@@ -499,7 +499,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-calibrated-day: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-day.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/030-m-modes-interpolated-calibrated-day
 	$(call launch-remote,1)
@@ -660,7 +660,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-calibrated-night: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-night.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/030-m-modes-interpolated-calibrated-night
 	$(call launch-remote,1)
@@ -812,7 +812,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-calibrated: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-predicted-calibrated.yml \
 		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/032-predicted-visibilities-calibrated
 	$(call launch-remote,1)
@@ -873,7 +873,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-peeled-all: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-all.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/030-m-modes-interpolated-peeled-all
 	$(call launch-remote,1)
@@ -1082,7 +1082,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-peeled-odd: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-odd.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/030-m-modes-interpolated-peeled-odd
 	$(call launch-remote,1)
@@ -1291,7 +1291,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-peeled-even: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-even.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/030-m-modes-interpolated-peeled-even
 	$(call launch-remote,1)
@@ -1500,7 +1500,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-peeled-day: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-day.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/030-m-modes-interpolated-peeled-day
 	$(call launch-remote,1)
@@ -1709,7 +1709,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-peeled-night: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-night.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/030-m-modes-interpolated-peeled-night
 	$(call launch-remote,1)
@@ -1909,7 +1909,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-peeled: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-predicted-peeled.yml \
 		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/032-predicted-visibilities-peeled
 	$(call launch-remote,1)
@@ -1970,7 +1970,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-recalibrated-all: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-all.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/030-m-modes-interpolated-recalibrated-all
 	$(call launch-remote,1)
@@ -2131,7 +2131,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-recalibrated-odd: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-odd.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/030-m-modes-interpolated-recalibrated-odd
 	$(call launch-remote,1)
@@ -2292,7 +2292,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-recalibrated-even: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-even.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/030-m-modes-interpolated-recalibrated-even
 	$(call launch-remote,1)
@@ -2453,7 +2453,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-recalibrated-day: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-day.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/030-m-modes-interpolated-recalibrated-day
 	$(call launch-remote,1)
@@ -2614,7 +2614,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-recalibrated-night: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-night.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/030-m-modes-interpolated-recalibrated-night
 	$(call launch-remote,1)
@@ -2766,7 +2766,7 @@
 	$(call launch-remote,1)
 
 .pipeline/033-transfer-flags-recalibrated: \
-		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-predicted-recalibrated.yml \
 		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/032-predicted-visibilities-recalibrated
 	$(call launch-remote,1)

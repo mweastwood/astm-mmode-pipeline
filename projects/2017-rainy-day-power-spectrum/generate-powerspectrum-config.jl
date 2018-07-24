@@ -173,7 +173,7 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
                 interpolating-visibilities: 032-predicted-visibilities-$process
                 flagging-m-modes: $flagging_m_modes
                 replacement-threshold: 5
-                flagging-threshold: 100
+                flagging-threshold: 5
                 integrations-per-day: 6628
                 delete-input: false
                 option: $sample
@@ -358,7 +358,7 @@ function create_033_transfer_flags_yml(makefile, process, sample)
     # these rules somewhat (otherwise later operations need to sometimes grab data with these
     # updated flags and sometimes not)
 
-    filename = "033-transfer-flags-$process.yml"
+    filename = "033-transfer-flags-$process-$sample.yml"
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
@@ -379,7 +379,7 @@ function create_033_transfer_flags_yml(makefile, process, sample)
 end
 
 function create_033_transfer_flags_predicted_yml(makefile, process)
-    filename = "033-transfer-flags-$process.yml"
+    filename = "033-transfer-flags-predicted-$process.yml"
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
