@@ -173,7 +173,7 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
                 interpolating-visibilities: 032-predicted-visibilities-$process
                 flagging-m-modes: $flagging_m_modes
                 replacement-threshold: 5
-                flagging-threshold: 5
+                flagging-threshold: 3
                 integrations-per-day: 6628
                 delete-input: false
                 option: $sample

@@ -208,18 +208,12 @@ function flag_mmodes!(measured, project, config)
 end
 
 function _flag_mmodes(measured, predicted, threshold)
-    diff = measured .- predicted
-    σ = mad(diff)
-    flags = abs2.(diff) .> threshold*σ
+    diff  = abs.(measured .- predicted)
+    flags = (measured .== 0) .| (predicted .== 0)
+    σ = median(diff[.!flags])
+    flags .|= diff .> threshold*σ
     measured[flags] = 0
     measured
-end
-
-mad(vector) = median_no_zero(abs, vector)
-
-function median_no_zero(predicate::Function, data)
-    selection = data .!= 0
-    median(predicate.(@view data[selection]))
 end
 
 end
