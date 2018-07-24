@@ -2,4 +2,5 @@
 input-to-flag: 032-predicted-m-modes-recalibrated
 input-already-flagged: 030-m-modes-interpolated-recalibrated-all
 output: 033-predicted-m-modes-recalibrated
+same-across-all-frequencies: true
 

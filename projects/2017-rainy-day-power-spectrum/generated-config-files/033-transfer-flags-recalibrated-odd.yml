@@ -2,4 +2,5 @@
 input-to-flag: 030-m-modes-interpolated-recalibrated-odd
 input-already-flagged: 030-m-modes-interpolated-recalibrated-all
 output: 033-m-modes-interpolated-recalibrated-odd
+same-across-all-frequencies: true
 

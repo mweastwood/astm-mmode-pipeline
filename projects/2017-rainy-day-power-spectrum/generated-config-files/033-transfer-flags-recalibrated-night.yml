@@ -2,4 +2,5 @@
 input-to-flag: 030-m-modes-interpolated-recalibrated-night
 input-already-flagged: 030-m-modes-interpolated-recalibrated-all
 output: 033-m-modes-interpolated-recalibrated-night
+same-across-all-frequencies: true
 

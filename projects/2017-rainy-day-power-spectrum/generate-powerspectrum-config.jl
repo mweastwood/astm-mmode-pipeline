@@ -368,6 +368,7 @@ function create_033_transfer_flags_yml(makefile, process, sample)
                 input-to-flag: 030-m-modes-interpolated-$process-$sample
                 input-already-flagged: 030-m-modes-interpolated-$process-all
                 output: 033-m-modes-interpolated-$process-$sample
+                same-across-all-frequencies: true
                 """)
     end
     replace_if_different(filename)
@@ -389,6 +390,7 @@ function create_033_transfer_flags_predicted_yml(makefile, process)
                 input-to-flag: 032-predicted-m-modes-$process
                 input-already-flagged: 030-m-modes-interpolated-$process-all
                 output: 033-predicted-m-modes-$process
+                same-across-all-frequencies: true
                 """)
     end
     replace_if_different(filename)
