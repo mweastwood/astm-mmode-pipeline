@@ -15,6 +15,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-calibrated-all: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-all
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-all.yml \
 		.pipeline/030-m-modes-calibrated-all \
@@ -29,19 +35,19 @@
 
 .pipeline/031-dirty-map-interpolated-calibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-all.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/033-transfer-flags-calibrated-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-calibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-all.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/033-transfer-flags-calibrated-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-calibrated-all: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-all.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-all
+		.pipeline/033-transfer-flags-calibrated-all
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-all: \
@@ -170,6 +176,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-calibrated-odd: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-odd
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-odd.yml \
 		.pipeline/030-m-modes-calibrated-odd \
@@ -184,19 +196,19 @@
 
 .pipeline/031-dirty-map-interpolated-calibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-odd.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-odd \
+		.pipeline/033-transfer-flags-calibrated-odd \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-calibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-odd.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-odd \
+		.pipeline/033-transfer-flags-calibrated-odd \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-calibrated-odd: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-odd.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-odd
+		.pipeline/033-transfer-flags-calibrated-odd
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-odd: \
@@ -325,6 +337,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-calibrated-even: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-even
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-even.yml \
 		.pipeline/030-m-modes-calibrated-even \
@@ -339,19 +357,19 @@
 
 .pipeline/031-dirty-map-interpolated-calibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-even.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-even \
+		.pipeline/033-transfer-flags-calibrated-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-calibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-even.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-even \
+		.pipeline/033-transfer-flags-calibrated-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-calibrated-even: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-even.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-even
+		.pipeline/033-transfer-flags-calibrated-even
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-even: \
@@ -480,6 +498,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-calibrated-day: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-day
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-day.yml \
 		.pipeline/030-m-modes-calibrated-day \
@@ -494,19 +518,19 @@
 
 .pipeline/031-dirty-map-interpolated-calibrated-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-day.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-day \
+		.pipeline/033-transfer-flags-calibrated-day \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-calibrated-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-day.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-day \
+		.pipeline/033-transfer-flags-calibrated-day \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-calibrated-day: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-day.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-day
+		.pipeline/033-transfer-flags-calibrated-day
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-day: \
@@ -635,6 +659,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-calibrated-night: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-night
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-calibrated-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-night.yml \
 		.pipeline/030-m-modes-calibrated-night \
@@ -649,19 +679,19 @@
 
 .pipeline/031-dirty-map-interpolated-calibrated-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-night.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-night \
+		.pipeline/033-transfer-flags-calibrated-night \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-calibrated-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-night.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-night \
+		.pipeline/033-transfer-flags-calibrated-night \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-calibrated-night: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-night.yml \
-		.pipeline/030-m-modes-interpolated-calibrated-night
+		.pipeline/033-transfer-flags-calibrated-night
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-calibrated-night: \
@@ -783,7 +813,7 @@
 
 .pipeline/033-transfer-flags-calibrated: \
 		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated.yml \
-		.pipeline/030-m-modes-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
 		.pipeline/032-predicted-visibilities-calibrated
 	$(call launch-remote,1)
 
@@ -842,6 +872,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-peeled-all: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-all
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-all.yml \
 		.pipeline/030-m-modes-peeled-all \
@@ -856,19 +892,19 @@
 
 .pipeline/031-dirty-map-interpolated-peeled-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-all.yml \
-		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/033-transfer-flags-peeled-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-peeled-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-all.yml \
-		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/033-transfer-flags-peeled-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-peeled-all: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-all.yml \
-		.pipeline/030-m-modes-interpolated-peeled-all
+		.pipeline/033-transfer-flags-peeled-all
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-all: \
@@ -1045,6 +1081,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-peeled-odd: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-odd
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-odd.yml \
 		.pipeline/030-m-modes-peeled-odd \
@@ -1059,19 +1101,19 @@
 
 .pipeline/031-dirty-map-interpolated-peeled-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-odd.yml \
-		.pipeline/030-m-modes-interpolated-peeled-odd \
+		.pipeline/033-transfer-flags-peeled-odd \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-peeled-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-odd.yml \
-		.pipeline/030-m-modes-interpolated-peeled-odd \
+		.pipeline/033-transfer-flags-peeled-odd \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-peeled-odd: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-odd.yml \
-		.pipeline/030-m-modes-interpolated-peeled-odd
+		.pipeline/033-transfer-flags-peeled-odd
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-odd: \
@@ -1248,6 +1290,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-peeled-even: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-even
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-even.yml \
 		.pipeline/030-m-modes-peeled-even \
@@ -1262,19 +1310,19 @@
 
 .pipeline/031-dirty-map-interpolated-peeled-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-even.yml \
-		.pipeline/030-m-modes-interpolated-peeled-even \
+		.pipeline/033-transfer-flags-peeled-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-peeled-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-even.yml \
-		.pipeline/030-m-modes-interpolated-peeled-even \
+		.pipeline/033-transfer-flags-peeled-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-peeled-even: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-even.yml \
-		.pipeline/030-m-modes-interpolated-peeled-even
+		.pipeline/033-transfer-flags-peeled-even
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-even: \
@@ -1451,6 +1499,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-peeled-day: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-day
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-day.yml \
 		.pipeline/030-m-modes-peeled-day \
@@ -1465,19 +1519,19 @@
 
 .pipeline/031-dirty-map-interpolated-peeled-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-day.yml \
-		.pipeline/030-m-modes-interpolated-peeled-day \
+		.pipeline/033-transfer-flags-peeled-day \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-peeled-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-day.yml \
-		.pipeline/030-m-modes-interpolated-peeled-day \
+		.pipeline/033-transfer-flags-peeled-day \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-peeled-day: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-day.yml \
-		.pipeline/030-m-modes-interpolated-peeled-day
+		.pipeline/033-transfer-flags-peeled-day
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-day: \
@@ -1654,6 +1708,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-peeled-night: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-night
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-peeled-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-night.yml \
 		.pipeline/030-m-modes-peeled-night \
@@ -1668,19 +1728,19 @@
 
 .pipeline/031-dirty-map-interpolated-peeled-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-night.yml \
-		.pipeline/030-m-modes-interpolated-peeled-night \
+		.pipeline/033-transfer-flags-peeled-night \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-peeled-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-night.yml \
-		.pipeline/030-m-modes-interpolated-peeled-night \
+		.pipeline/033-transfer-flags-peeled-night \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-peeled-night: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-night.yml \
-		.pipeline/030-m-modes-interpolated-peeled-night
+		.pipeline/033-transfer-flags-peeled-night
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-peeled-night: \
@@ -1850,7 +1910,7 @@
 
 .pipeline/033-transfer-flags-peeled: \
 		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled.yml \
-		.pipeline/030-m-modes-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-all \
 		.pipeline/032-predicted-visibilities-peeled
 	$(call launch-remote,1)
 
@@ -1909,6 +1969,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-recalibrated-all: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-all
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-all.yml \
 		.pipeline/030-m-modes-recalibrated-all \
@@ -1923,19 +1989,19 @@
 
 .pipeline/031-dirty-map-interpolated-recalibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-all.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/033-transfer-flags-recalibrated-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-recalibrated-all: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-all.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/033-transfer-flags-recalibrated-all \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-recalibrated-all: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-all.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-all
+		.pipeline/033-transfer-flags-recalibrated-all
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-all: \
@@ -2064,6 +2130,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-recalibrated-odd: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-odd
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-odd.yml \
 		.pipeline/030-m-modes-recalibrated-odd \
@@ -2078,19 +2150,19 @@
 
 .pipeline/031-dirty-map-interpolated-recalibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-odd.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-odd \
+		.pipeline/033-transfer-flags-recalibrated-odd \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-recalibrated-odd: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-odd.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-odd \
+		.pipeline/033-transfer-flags-recalibrated-odd \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-recalibrated-odd: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-odd.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-odd
+		.pipeline/033-transfer-flags-recalibrated-odd
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-odd: \
@@ -2219,6 +2291,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-recalibrated-even: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-even
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-even.yml \
 		.pipeline/030-m-modes-recalibrated-even \
@@ -2233,19 +2311,19 @@
 
 .pipeline/031-dirty-map-interpolated-recalibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-even.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-even \
+		.pipeline/033-transfer-flags-recalibrated-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-recalibrated-even: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-even.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-even \
+		.pipeline/033-transfer-flags-recalibrated-even \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-recalibrated-even: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-even.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-even
+		.pipeline/033-transfer-flags-recalibrated-even
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-even: \
@@ -2374,6 +2452,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-recalibrated-day: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-day
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-day.yml \
 		.pipeline/030-m-modes-recalibrated-day \
@@ -2388,19 +2472,19 @@
 
 .pipeline/031-dirty-map-interpolated-recalibrated-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-day.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-day \
+		.pipeline/033-transfer-flags-recalibrated-day \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-recalibrated-day: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-day.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-day \
+		.pipeline/033-transfer-flags-recalibrated-day \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-recalibrated-day: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-day.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-day
+		.pipeline/033-transfer-flags-recalibrated-day
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-day: \
@@ -2529,6 +2613,12 @@
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
+.pipeline/033-transfer-flags-recalibrated-night: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-night
+	$(call launch-remote,1)
+
 .pipeline/031-dirty-map-recalibrated-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-night.yml \
 		.pipeline/030-m-modes-recalibrated-night \
@@ -2543,19 +2633,19 @@
 
 .pipeline/031-dirty-map-interpolated-recalibrated-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-night.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-night \
+		.pipeline/033-transfer-flags-recalibrated-night \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/031-dirty-channel-maps-interpolated-recalibrated-night: \
 		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-night.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-night \
+		.pipeline/033-transfer-flags-recalibrated-night \
 		.pipeline/100-transfer-matrix
 	$(call launch-remote,1)
 
 .pipeline/101-averaged-m-modes-recalibrated-night: \
 		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-night.yml \
-		.pipeline/030-m-modes-interpolated-recalibrated-night
+		.pipeline/033-transfer-flags-recalibrated-night
 	$(call launch-remote,1)
 
 .pipeline/103-full-rank-compression-recalibrated-night: \
@@ -2677,7 +2767,7 @@
 
 .pipeline/033-transfer-flags-recalibrated: \
 		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated.yml \
-		.pipeline/030-m-modes-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
 		.pipeline/032-predicted-visibilities-recalibrated
 	$(call launch-remote,1)
 

@@ -16,7 +16,9 @@ struct Config
     metadata     :: String
     hierarchy    :: String
     interpolating_visibilities :: String
+    flagging_mmodes            :: String
     replacement_threshold :: Float64
+    flagging_threshold    :: Float64
     integrations_per_day  :: Int
     delete_input :: Bool
     option       :: String
@@ -31,7 +33,9 @@ function load(file)
            dict["metadata"],
            dict["hierarchy"],
            get(dict, "interpolating-visibilities", ""),
+           get(dict, "flagging-m-modes", ""),
            get(dict, "replacement-threshold", 0.0),
+           get(dict, "flagging-threshold", 0.0),
            dict["integrations-per-day"],
            dict["delete-input"],
            option)
@@ -70,6 +74,10 @@ function getmmodes(project, config)
                             hierarchy, project, config, frequency)
             increment()
         end
+    end
+
+    if config.flagging_mmodes != ""
+        flag_mmodes!(output, project, config)
     end
 end
 
@@ -188,6 +196,30 @@ function _getmmodes!(output, V, hierarchy, config, frequency)
     transposed_array = permutedims(W, (2, 1))
     # compute the m-modes
     compute!(MModes, output, hierarchy, transposed_array, frequency; dϕ=dϕ)
+end
+
+function flag_mmodes!(measured, project, config)
+    # flag m-modes that differ too much from a prediction
+    path = Project.workspace(project)
+    predicted = BPJSpec.load(joinpath(path, config.flagging_mmodes))
+    _flag(measured, predicted) = _flag_mmodes(measured, predicted, config.flagging_threshold)
+    output = ProgressBar(measured)
+    @. output = _flag(measured, predicted)
+end
+
+function _flag_mmodes(measured, predicted, threshold)
+    diff = measured .- predicted
+    σ = mad(diff)
+    flags = abs2.(diff) .> threshold*σ
+    measured[flags] = 0
+    measured
+end
+
+mad(vector) = median_no_zero(abs, vector)
+
+function median_no_zero(predicate::Function, data)
+    selection = data .!= 0
+    median(predicate.(@view data[selection]))
 end
 
 end

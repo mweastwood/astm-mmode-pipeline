@@ -8,15 +8,15 @@ using YAML
 include("Project.jl")
 
 struct Config
-    input_predicted :: String
-    input_measured  :: String
-    output          :: String
+    input_to_flag :: String
+    input_already_flagged :: String
+    output :: String
 end
 
 function load(file)
     dict = YAML.load(open(file))
-    Config(dict["input-predicted"],
-           dict["input-measured"],
+    Config(dict["input-to-flag"],
+           dict["input-already-flagged"],
            dict["output"])
 end
 
@@ -28,15 +28,15 @@ end
 
 function transfer_flags(project, config)
     path = Project.workspace(project)
-    predicted = BPJSpec.load(joinpath(path, config.input_predicted))
-    measured  = BPJSpec.load(joinpath(path, config.input_measured))
+    to_flag         = BPJSpec.load(joinpath(path, config.input_to_flag))
+    already_flagged = BPJSpec.load(joinpath(path, config.input_already_flagged))
     output = similar(predicted, MultipleFiles(joinpath(path, config.output))) |> ProgressBar
-    @. output = _transfer_flags(predicted, measured)
+    @. output = _transfer_flags(to_flag, already_flagged)
 end
 
-function _transfer_flags(predicted, measured)
-    output = copy(predicted)
-    output[measured .== 0] = 0
+function _transfer_flags(to_flag, already_flagged)
+    output = copy(to_flag)
+    output[already_flagged .== 0] = 0
     output
 end
 

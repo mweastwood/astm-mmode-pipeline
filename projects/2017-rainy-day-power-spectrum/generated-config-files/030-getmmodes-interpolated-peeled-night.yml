@@ -5,7 +5,9 @@ output: 030-m-modes-interpolated-peeled-night
 metadata: metadata
 hierarchy: hierarchy
 interpolating-visibilities: 032-predicted-visibilities-peeled
+flagging-m-modes: 
 replacement-threshold: 5
+flagging-threshold: 100
 integrations-per-day: 6628
 delete-input: false
 option: night

@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-interpolated-peeled-day
+input: 033-m-modes-interpolated-peeled-day
 output-alm: 031-dirty-channel-alm-interpolated-peeled-day
 output-map: 031-dirty-channel-map-interpolated-peeled-day
 output-directory: 031-dirty-channel-maps-interpolated-peeled-day

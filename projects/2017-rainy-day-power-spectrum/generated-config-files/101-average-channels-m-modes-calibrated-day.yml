@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-interpolated-calibrated-day
+input: 033-m-modes-interpolated-calibrated-day
 output: 101-averaged-m-modes-calibrated-day
 Navg: 10
 

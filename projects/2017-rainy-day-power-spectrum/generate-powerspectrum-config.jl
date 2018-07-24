@@ -47,6 +47,7 @@ function main()
             for sample in sampling
                 create_030_getmmodes_yml(makefile, process, sample)
                 create_030_getmmodes_interpolated_yml(makefile, process, sample)
+                create_033_transfer_flags_yml(makefile, process, sample)
                 create_031_tikhonov_yml(makefile, process, sample)
                 create_031_tikhonov_channels_yml(makefile, process, sample)
                 create_031_tikhonov_interpolated_yml(makefile, process, sample)
@@ -65,7 +66,7 @@ function main()
                 end
             end
             create_032_predict_visibilities_yml(makefile, process)
-            create_033_transfer_flags_yml(makefile, process)
+            create_033_transfer_flags_predicted_yml(makefile, process)
             create_101_average_channels_predicted_yml(makefile, process)
             create_103_full_rank_compress_predicted_yml(makefile, process)
             for filter in filtering
@@ -153,6 +154,14 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
         process_flags = process
     end
 
+    # Only flag more data if we're computing the m-modes with all available data. The other
+    # samplings will inherit flags from this.
+    if sample == "all"
+        flagging_m_modes = "032-predicted-m-modes-$process"
+    else
+        flagging_m_modes = ""
+    end
+
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
@@ -162,7 +171,9 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
                 metadata: metadata
                 hierarchy: hierarchy
                 interpolating-visibilities: 032-predicted-visibilities-$process
+                flagging-m-modes: $flagging_m_modes
                 replacement-threshold: 5
+                flagging-threshold: 100
                 integrations-per-day: 6628
                 delete-input: false
                 option: $sample
@@ -239,7 +250,7 @@ function create_031_tikhonov_interpolated_yml(makefile, process, sample)
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
-                input: 030-m-modes-interpolated-$process-$sample
+                input: 033-m-modes-interpolated-$process-$sample
                 output-alm: 031-dirty-alm-interpolated-$process-$sample
                 output-map: 031-dirty-map-interpolated-$process-$sample
                 metadata: metadata
@@ -254,7 +265,7 @@ function create_031_tikhonov_interpolated_yml(makefile, process, sample)
     println(makefile,
             """.pipeline/031-dirty-map-interpolated-$process-$sample: \\
             \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/030-m-modes-interpolated-$process-$sample \\
+            \t\t.pipeline/033-transfer-flags-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
             """)
@@ -265,7 +276,7 @@ function create_031_tikhonov_channels_interpolated_yml(makefile, process, sample
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
-                input: 030-m-modes-interpolated-$process-$sample
+                input: 033-m-modes-interpolated-$process-$sample
                 output-alm: 031-dirty-channel-alm-interpolated-$process-$sample
                 output-map: 031-dirty-channel-map-interpolated-$process-$sample
                 output-directory: 031-dirty-channel-maps-interpolated-$process-$sample
@@ -281,7 +292,7 @@ function create_031_tikhonov_channels_interpolated_yml(makefile, process, sample
     println(makefile,
             """.pipeline/031-dirty-channel-maps-interpolated-$process-$sample: \\
             \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/030-m-modes-interpolated-$process-$sample \\
+            \t\t.pipeline/033-transfer-flags-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
             \t\$(call launch-remote,1)
             """)
@@ -341,13 +352,39 @@ function create_032_predict_visibilities_yml(makefile, process)
             """)
 end
 
-function create_033_transfer_flags_yml(makefile, process)
+function create_033_transfer_flags_yml(makefile, process, sample)
+    # note that when `sample == "all"`, this will simply copy the m-modes without changing
+    # everything, but allowing this copy operation to happen simplifies the dependency chain of
+    # these rules somewhat (otherwise later operations need to sometimes grab data with these
+    # updated flags and sometimes not)
+
     filename = "033-transfer-flags-$process.yml"
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
-                input-predicted: 032-predicted-m-modes-$process
-                input-measured: 030-m-modes-$process-all
+                input-to-flag: 030-m-modes-interpolated-$process-$sample
+                input-already-flagged: 030-m-modes-interpolated-$process-all
+                output: 033-m-modes-interpolated-$process-$sample
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/033-transfer-flags-$process-$sample: \\
+            \t\t\$(LIB)/033-transfer-flags.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/030-m-modes-interpolated-$process-all \\
+            \t\t.pipeline/030-m-modes-interpolated-$process-$sample
+            \t\$(call launch-remote,1)
+            """)
+end
+
+function create_033_transfer_flags_predicted_yml(makefile, process)
+    filename = "033-transfer-flags-$process.yml"
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input-to-flag: 032-predicted-m-modes-$process
+                input-already-flagged: 030-m-modes-interpolated-$process-all
                 output: 033-predicted-m-modes-$process
                 """)
     end
@@ -356,7 +393,7 @@ function create_033_transfer_flags_yml(makefile, process)
     println(makefile,
             """.pipeline/033-transfer-flags-$process: \\
             \t\t\$(LIB)/033-transfer-flags.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/030-m-modes-$process-all \\
+            \t\t.pipeline/030-m-modes-interpolated-$process-all \\
             \t\t.pipeline/032-predicted-visibilities-$process
             \t\$(call launch-remote,1)
             """)
@@ -367,7 +404,7 @@ function create_101_average_channels_yml(makefile, process, sample)
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
-                input: 030-m-modes-interpolated-$process-$sample
+                input: 033-m-modes-interpolated-$process-$sample
                 output: 101-averaged-m-modes-$process-$sample
                 Navg: 10
                 """)
@@ -377,7 +414,7 @@ function create_101_average_channels_yml(makefile, process, sample)
     println(makefile,
             """.pipeline/101-averaged-m-modes-$process-$sample: \\
             \t\t\$(LIB)/101-average-channels.jl project.yml $dirname/$filename \\
-            \t\t.pipeline/030-m-modes-interpolated-$process-$sample
+            \t\t.pipeline/033-transfer-flags-$process-$sample
             \t\$(call launch-remote,1)
             """)
 end

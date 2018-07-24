@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-interpolated-calibrated-even
+input: 033-m-modes-interpolated-calibrated-even
 output-alm: 031-dirty-alm-interpolated-calibrated-even
 output-map: 031-dirty-map-interpolated-calibrated-even
 metadata: metadata

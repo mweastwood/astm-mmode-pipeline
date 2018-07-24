@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-interpolated-calibrated-night
+input: 033-m-modes-interpolated-calibrated-night
 output-alm: 031-dirty-channel-alm-interpolated-calibrated-night
 output-map: 031-dirty-channel-map-interpolated-calibrated-night
 output-directory: 031-dirty-channel-maps-interpolated-calibrated-night

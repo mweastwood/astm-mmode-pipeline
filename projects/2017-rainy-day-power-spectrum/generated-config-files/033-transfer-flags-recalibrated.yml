@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input-predicted: 032-predicted-m-modes-recalibrated
-input-measured: 030-m-modes-recalibrated-all
+input-to-flag: 032-predicted-m-modes-recalibrated
+input-already-flagged: 030-m-modes-interpolated-recalibrated-all
 output: 033-predicted-m-modes-recalibrated
 

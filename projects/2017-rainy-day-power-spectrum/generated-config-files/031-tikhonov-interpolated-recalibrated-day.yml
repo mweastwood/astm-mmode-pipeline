@@ -1,5 +1,5 @@
 # This file was auto-generated. Do not edit directly!
-input: 030-m-modes-interpolated-recalibrated-day
+input: 033-m-modes-interpolated-recalibrated-day
 output-alm: 031-dirty-alm-interpolated-recalibrated-day
 output-map: 031-dirty-map-interpolated-recalibrated-day
 metadata: metadata
