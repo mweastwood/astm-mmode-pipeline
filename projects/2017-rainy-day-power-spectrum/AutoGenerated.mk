@@ -57,6 +57,11 @@
 		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-calibrated-all: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-all.yml \
+		.pipeline/103-full-rank-compression-calibrated-all
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-calibrated-all-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-all-extreme.yml \
 		.pipeline/103-full-rank-compression-calibrated-all \
@@ -216,6 +221,11 @@
 		.pipeline/101-averaged-m-modes-calibrated-odd \
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-odd
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-calibrated-odd: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-odd.yml \
+		.pipeline/103-full-rank-compression-calibrated-odd
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-odd-extreme: \
@@ -379,6 +389,11 @@
 		.pipeline/102-noise-covariance-matrix-even
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-calibrated-even: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-even.yml \
+		.pipeline/103-full-rank-compression-calibrated-even
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-calibrated-even-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-even-extreme.yml \
 		.pipeline/103-full-rank-compression-calibrated-even \
@@ -540,6 +555,11 @@
 		.pipeline/102-noise-covariance-matrix-day
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-calibrated-day: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-day.yml \
+		.pipeline/103-full-rank-compression-calibrated-day
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-calibrated-day-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-day-extreme.yml \
 		.pipeline/103-full-rank-compression-calibrated-day \
@@ -699,6 +719,11 @@
 		.pipeline/101-averaged-m-modes-calibrated-night \
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-night
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-calibrated-night: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-night.yml \
+		.pipeline/103-full-rank-compression-calibrated-night
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-night-extreme: \
@@ -970,6 +995,11 @@
 		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-peeled-all: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-all.yml \
+		.pipeline/103-full-rank-compression-peeled-all
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-peeled-all-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-all-extreme.yml \
 		.pipeline/103-full-rank-compression-peeled-all \
@@ -1177,6 +1207,11 @@
 		.pipeline/101-averaged-m-modes-peeled-odd \
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-odd
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-peeled-odd: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-odd.yml \
+		.pipeline/103-full-rank-compression-peeled-odd
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-odd-extreme: \
@@ -1388,6 +1423,11 @@
 		.pipeline/102-noise-covariance-matrix-even
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-peeled-even: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-even.yml \
+		.pipeline/103-full-rank-compression-peeled-even
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-peeled-even-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-even-extreme.yml \
 		.pipeline/103-full-rank-compression-peeled-even \
@@ -1597,6 +1637,11 @@
 		.pipeline/102-noise-covariance-matrix-day
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-peeled-day: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-day.yml \
+		.pipeline/103-full-rank-compression-peeled-day
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-peeled-day-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-day-extreme.yml \
 		.pipeline/103-full-rank-compression-peeled-day \
@@ -1804,6 +1849,11 @@
 		.pipeline/101-averaged-m-modes-peeled-night \
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-night
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-peeled-night: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-night.yml \
+		.pipeline/103-full-rank-compression-peeled-night
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-night-extreme: \
@@ -2123,6 +2173,11 @@
 		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-recalibrated-all: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-all.yml \
+		.pipeline/103-full-rank-compression-recalibrated-all
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-recalibrated-all-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-all-extreme.yml \
 		.pipeline/103-full-rank-compression-recalibrated-all \
@@ -2282,6 +2337,11 @@
 		.pipeline/101-averaged-m-modes-recalibrated-odd \
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-odd
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-recalibrated-odd: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-odd.yml \
+		.pipeline/103-full-rank-compression-recalibrated-odd
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-odd-extreme: \
@@ -2445,6 +2505,11 @@
 		.pipeline/102-noise-covariance-matrix-even
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-recalibrated-even: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-even.yml \
+		.pipeline/103-full-rank-compression-recalibrated-even
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-recalibrated-even-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-even-extreme.yml \
 		.pipeline/103-full-rank-compression-recalibrated-even \
@@ -2606,6 +2671,11 @@
 		.pipeline/102-noise-covariance-matrix-day
 	$(call launch-remote,1)
 
+.pipeline/031-dirty-map-compressed-recalibrated-day: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-day.yml \
+		.pipeline/103-full-rank-compression-recalibrated-day
+	$(call launch-remote,1)
+
 .pipeline/112-foreground-filter-recalibrated-day-extreme: \
 		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-day-extreme.yml \
 		.pipeline/103-full-rank-compression-recalibrated-day \
@@ -2765,6 +2835,11 @@
 		.pipeline/101-averaged-m-modes-recalibrated-night \
 		.pipeline/101-averaged-transfer-matrix \
 		.pipeline/102-noise-covariance-matrix-night
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-recalibrated-night: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-night.yml \
+		.pipeline/103-full-rank-compression-recalibrated-night
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-night-extreme: \

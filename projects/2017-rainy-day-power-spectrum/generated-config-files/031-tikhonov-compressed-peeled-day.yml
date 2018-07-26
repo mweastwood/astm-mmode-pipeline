@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 103-compressed-m-modes-peeled-day
+output-alm: 031-dirty-alm-compressed-peeled-day
+output-map: 031-dirty-channel-map-compressed-peeled-day
+output-directory: 031-dirty-channel-maps-compressed-peeled-day
+metadata: metadata
+transfer-matrix: 103-compressed-transfer-matrix-peeled-day
+regularization: 100
+nside: 512
+mfs: false
+

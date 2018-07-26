@@ -54,6 +54,7 @@ function main()
                 create_031_tikhonov_channels_interpolated_yml(makefile, process, sample)
                 create_101_average_channels_yml(makefile, process, sample)
                 create_103_full_rank_compress_yml(makefile, process, sample)
+                create_031_tikhonov_compressed_yml(makefile, process, sample)
                 for filter in filtering
                     create_112_foreground_filter_yml(makefile, process, sample, filter)
                     create_031_tikhonov_filtered_yml(makefile, process, sample, filter)
@@ -297,6 +298,32 @@ function create_031_tikhonov_channels_interpolated_yml(makefile, process, sample
             \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
             \t\t.pipeline/033-transfer-flags-$process-$sample \\
             \t\t.pipeline/100-transfer-matrix
+            \t\$(call launch-remote,1)
+            """)
+end
+
+function create_031_tikhonov_compressed_yml(makefile, process, sample)
+    filename = "031-tikhonov-compressed-$process-$sample.yml"
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input: 103-compressed-m-modes-$process-$sample
+                output-alm: 031-dirty-alm-compressed-$process-$sample
+                output-map: 031-dirty-channel-map-compressed-$process-$sample
+                output-directory: 031-dirty-channel-maps-compressed-$process-$sample
+                metadata: metadata
+                transfer-matrix: 103-compressed-transfer-matrix-$process-$sample
+                regularization: 100
+                nside: 512
+                mfs: false
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/031-dirty-map-compressed-$process-$sample: \\
+            \t\t\$(LIB)/031-tikhonov.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/103-full-rank-compression-$process-$sample
             \t\$(call launch-remote,1)
             """)
 end
