@@ -1,5 +1,35 @@
 .PHONY: all
-all: dirty-maps power-spectrum
+all: \
+	dirty-maps \
+	filtered-maps \
+	even-odd-maps \
+	day-night-maps \
+	angular-power-spectrum \
+	spherical-power-spectrum \
+	spherical-power-spectrum-even-odd \
+	spherical-power-spectrum-day-night \
+	cylindrical-power-spectrum \
+	sefd
+
+BIN=../../bin
+LIB=../../lib
+JULIA=julia-0.6 --color=yes -O3
+LAUNCH=$(JULIA) -- $(BIN)/launch.jl
+
+define launch
+	$(LAUNCH) $(filter-out .pipeline/%,$^)
+	touch $@
+endef
+
+define launch-remote
+	$(LAUNCH) --remote-workers $(1) -- $(filter-out .pipeline/%,$^)
+	touch $@
+endef
+
+# Some of these targets require significant resources on a machine and so we cannot reliably run
+# anything in parallel. Currently there is no way to mark specific targets as ".NOTPARALLEL", so for
+# now we have to mark the entire Makefile.
+.NOTPARALLEL:
 
 .PHONY: raw
 raw: .pipeline/000-raw-data
@@ -29,12 +59,6 @@ m-modes: \
 
 .PHONY: dirty-maps
 dirty-maps: \
-	.pipeline/031-dirty-map-calibrated-all \
-	.pipeline/031-dirty-map-peeled-all \
-	.pipeline/031-dirty-map-recalibrated-all \
-	.pipeline/031-dirty-channel-maps-calibrated-all \
-	.pipeline/031-dirty-channel-maps-peeled-all \
-	.pipeline/031-dirty-channel-maps-recalibrated-all \
 	.pipeline/031-dirty-map-interpolated-calibrated-all \
 	.pipeline/031-dirty-map-interpolated-peeled-all \
 	.pipeline/031-dirty-map-interpolated-recalibrated-all \
@@ -61,26 +85,16 @@ even-odd-maps: \
 	.pipeline/031-dirty-map-interpolated-recalibrated-even \
 	.pipeline/031-dirty-map-interpolated-calibrated-odd \
 	.pipeline/031-dirty-map-interpolated-peeled-odd \
-	.pipeline/031-dirty-map-interpolated-recalibrated-odd \
-	.pipeline/031-dirty-channel-maps-interpolated-calibrated-even \
-	.pipeline/031-dirty-channel-maps-interpolated-peeled-even \
-	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-even \
-	.pipeline/031-dirty-channel-maps-interpolated-calibrated-odd \
-	.pipeline/031-dirty-channel-maps-interpolated-peeled-odd \
-	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-odd
+	.pipeline/031-dirty-map-interpolated-recalibrated-odd
 
 .PHONY: day-night-maps
 day-night-maps: \
-	.pipeline/031-dirty-map-interpolated-calibrated-day \
 	.pipeline/031-dirty-map-interpolated-peeled-day \
 	.pipeline/031-dirty-map-interpolated-recalibrated-day \
-	.pipeline/031-dirty-map-interpolated-calibrated-night \
 	.pipeline/031-dirty-map-interpolated-peeled-night \
 	.pipeline/031-dirty-map-interpolated-recalibrated-night \
-	.pipeline/031-dirty-channel-maps-interpolated-calibrated-day \
 	.pipeline/031-dirty-channel-maps-interpolated-peeled-day \
 	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-day \
-	.pipeline/031-dirty-channel-maps-interpolated-calibrated-night \
 	.pipeline/031-dirty-channel-maps-interpolated-peeled-night \
 	.pipeline/031-dirty-channel-maps-interpolated-recalibrated-night
 
@@ -105,10 +119,14 @@ angular-power-spectrum: \
 .PHONY: spherical-power-spectrum
 spherical-power-spectrum: \
 	.pipeline/122-quadratic-estimator-calibrated-all-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-all-extreme-spherical \
 	.pipeline/122-quadratic-estimator-peeled-all-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-all-mild-spherical \
 	.pipeline/122-quadratic-estimator-peeled-all-extreme-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-moderate-spherical
+	.pipeline/122-quadratic-estimator-recalibrated-all-moderate-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-mild-spherical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-extreme-spherical
 
 .PHONY: spherical-power-spectrum-even-odd
 spherical-power-spectrum-even-odd: \
@@ -128,40 +146,23 @@ spherical-power-spectrum-day-night: \
 	.pipeline/122-quadratic-estimator-peeled-day-extreme-spherical \
 	.pipeline/122-quadratic-estimator-peeled-night-extreme-spherical
 
-.PHONY: cylindrical-power-spectrum-even-odd
-cylindrical-power-spectrum-even-odd: \
-	.pipeline/122-quadratic-estimator-peeled-odd-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-even-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-odd-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-even-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-odd-extreme-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-even-extreme-cylindrical
+.PHONY: cylindrical-power-spectrum
+cylindrical-power-spectrum: \
+	.pipeline/122-quadratic-estimator-calibrated-all-moderate-cylindrical \
+	.pipeline/122-quadratic-estimator-calibrated-all-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-calibrated-all-extreme-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-all-moderate-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-all-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-peeled-all-extreme-cylindrical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-moderate-cylindrical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-mild-cylindrical \
+	.pipeline/122-quadratic-estimator-recalibrated-all-extreme-cylindrical
 
 .PHONY: sefd
 sefd: .pipeline/200-measure-system-equivalent-flux-density
 
 #.PHONY: signal-injection
 #signal-injection: .pipeline/123-injected-quadratic-estimator
-
-BIN=../../bin
-LIB=../../lib
-JULIA=julia-0.6 --color=yes -O3
-LAUNCH=$(JULIA) -- $(BIN)/launch.jl
-
-define launch
-	$(LAUNCH) $(filter-out .pipeline/%,$^)
-	touch $@
-endef
-
-define launch-remote
-	$(LAUNCH) --remote-workers $(1) -- $(filter-out .pipeline/%,$^)
-	touch $@
-endef
-
-# Some of these targets require significant resources on a machine and so we cannot reliably run
-# anything in parallel. Currently there is no way to mark specific targets as ".NOTPARALLEL", so for
-# now we have to mark the entire Makefile.
-.NOTPARALLEL:
 
 ####################################################################################################
 # DATA REDUCTION
