@@ -19,11 +19,13 @@ LAUNCH=$(JULIA) -- $(BIN)/launch.jl
 define launch
 	$(LAUNCH) $(filter-out .pipeline/%,$^)
 	touch $@
+	mail -s "[Pipeline] Completed Job" michael.w.eastwood@gmail.com <<< "$@"
 endef
 
 define launch-remote
 	$(LAUNCH) --remote-workers $(1) -- $(filter-out .pipeline/%,$^)
 	touch $@
+	mail -s "[Pipeline] Completed Job" michael.w.eastwood@gmail.com <<< "$@"
 endef
 
 # Some of these targets require significant resources on a machine and so we cannot reliably run
