@@ -5,7 +5,7 @@ output: 030-m-modes-interpolated-recalibrated-day
 metadata: metadata
 hierarchy: hierarchy
 interpolating-visibilities: 032-predicted-visibilities-recalibrated
-flagging-m-modes: 
+
 replacement-threshold: 5
 flagging-threshold: 3
 integrations-per-day: 6628

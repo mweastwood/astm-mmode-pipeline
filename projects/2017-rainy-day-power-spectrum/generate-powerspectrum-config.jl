@@ -160,7 +160,7 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
     # Only flag more data if we're computing the m-modes with all available data. The other
     # samplings will inherit flags from this.
     if sample == "all"
-        flagging_m_modes = "032-predicted-m-modes-$process"
+        flagging_m_modes = "flagging-m-modes: 032-predicted-m-modes-$process"
     else
         flagging_m_modes = ""
     end
@@ -174,7 +174,7 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
                 metadata: metadata
                 hierarchy: hierarchy
                 interpolating-visibilities: 032-predicted-visibilities-$process
-                flagging-m-modes: $flagging_m_modes
+                $flagging_m_modes
                 replacement-threshold: 5
                 flagging-threshold: 3
                 integrations-per-day: 6628
