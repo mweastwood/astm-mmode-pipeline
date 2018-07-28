@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 103-compressed-m-modes-recalibrated-xx
+output-alm: 031-dirty-alm-compressed-recalibrated-xx
+output-map: 031-dirty-channel-map-compressed-recalibrated-xx
+output-directory: 031-dirty-channel-maps-compressed-recalibrated-xx
+metadata: metadata
+transfer-matrix: 103-compressed-transfer-matrix-recalibrated-xx
+regularization: 100
+nside: 512
+mfs: false
+

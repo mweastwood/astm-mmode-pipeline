@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 033-m-modes-interpolated-peeled-xx
+output-alm: 031-dirty-channel-alm-interpolated-peeled-xx
+output-map: 031-dirty-channel-map-interpolated-peeled-xx
+output-directory: 031-dirty-channel-maps-interpolated-peeled-xx
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

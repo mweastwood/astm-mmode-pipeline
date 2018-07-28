@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-peeled-yy-extreme
+output-alm: 031-dirty-alm-filtered-peeled-yy-extreme
+output-map: 031-dirty-channel-map-filtered-peeled-yy-extreme
+output-directory: 031-dirty-channel-maps-filtered-peeled-yy-extreme
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-peeled-yy-extreme
+regularization: 0.1
+nside: 512
+mfs: false
+

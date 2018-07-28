@@ -1,0 +1,6 @@
+# This file was auto-generated. Do not edit directly!
+input-to-flag: 030-m-modes-interpolated-peeled-xx
+input-already-flagged: 030-m-modes-interpolated-peeled-all
+output: 033-m-modes-interpolated-peeled-xx
+same-across-all-frequencies: true
+

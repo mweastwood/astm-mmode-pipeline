@@ -27,7 +27,9 @@ function main()
     # "even" => only even-numbered visibilities are used to estimate the m-modes
     # "day"  => only day-time visibilities are used to estimate the m-modes
     # "even" => only night-time visibilities are used to estimate the m-modes
-    sampling   = ("all", "odd", "even", "day", "night")
+    # "xx"   => xx polarization only
+    # "yy"   => yy polarization only
+    sampling   = ("all", "odd", "even", "day", "night", "xx", "yy")
 
     # "extreme"  => filter modes with (foregrounds) > 0.1 × (signal)
     # "moderate" => filter modes with (foregrounds) > (signal)
@@ -45,8 +47,12 @@ function main()
         newline(makefile)
         for process in processing
             for sample in sampling
-                create_030_getmmodes_yml(makefile, process, sample)
-                create_030_getmmodes_interpolated_yml(makefile, process, sample)
+                if sample in ("xx", "yy")
+                    create_030_getmmodes_polarized_yml(makefile, process, sample)
+                else
+                    create_030_getmmodes_yml(makefile, process, sample)
+                    create_030_getmmodes_interpolated_yml(makefile, process, sample)
+                end
                 create_033_transfer_flags_yml(makefile, process, sample)
                 create_031_tikhonov_yml(makefile, process, sample)
                 create_031_tikhonov_channels_yml(makefile, process, sample)
@@ -189,6 +195,43 @@ function create_030_getmmodes_interpolated_yml(makefile, process, sample)
             """.pipeline/030-m-modes-interpolated-$process-$sample: \\
             \t\t\$(LIB)/030-getmmodes.jl project.yml $dirname/$filename \\
             \t\t.pipeline/001-$process-transposed-data \\
+            \t\t.pipeline/002-flagged-$process_flags-data \\
+            \t\t.pipeline/032-predicted-visibilities-$process \\
+            \t\t.pipeline/100-transfer-matrix
+            \t\$(call launch-remote,1)
+            """)
+end
+
+function create_030_getmmodes_polarized_yml(makefile, process, sample)
+    filename = "030-getmmodes-interpolated-$process-$sample.yml"
+    if process == "recalibrated"
+        warn("SPECIAL CASE: recalibrated data is inheriting flags from peeled data")
+        process_flags = "peeled"
+    else
+        process_flags = process
+    end
+
+    open(joinpath(temp, filename), "w") do file
+        println(file,
+                """$HEADER
+                input: 001-$process-transposed-data-$sample
+                input-flags: 002-$process_flags-data-flags
+                output: 030-m-modes-interpolated-$process-$sample
+                metadata: metadata
+                hierarchy: hierarchy
+                interpolating-visibilities: 032-predicted-visibilities-$process
+                replacement-threshold: 5
+                integrations-per-day: 6628
+                delete-input: false
+                option: $sample
+                """)
+    end
+    replace_if_different(filename)
+
+    println(makefile,
+            """.pipeline/030-m-modes-interpolated-$process-$sample: \\
+            \t\t\$(LIB)/030-getmmodes.jl project.yml $dirname/$filename \\
+            \t\t.pipeline/001-$process-transposed-data-$sample \\
             \t\t.pipeline/002-flagged-$process_flags-data \\
             \t\t.pipeline/032-predicted-visibilities-$process \\
             \t\t.pipeline/100-transfer-matrix

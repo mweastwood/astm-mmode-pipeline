@@ -221,6 +221,16 @@ sefd: .pipeline/200-measure-system-equivalent-flux-density
 		.pipeline/020-peeled-data
 	$(call launch-remote,1)
 
+.pipeline/001-peeled-transposed-data-xx: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-peeled-xx.yml \
+		.pipeline/020-peeled-data
+	$(call launch-remote,1)
+
+.pipeline/001-peeled-transposed-data-yy: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-peeled-yy.yml \
+		.pipeline/020-peeled-data
+	$(call launch-remote,1)
+
 .pipeline/002-flagged-peeled-data: \
 		$(LIB)/002-flag.jl project.yml 002-flag-peeled.yml \
 		.pipeline/020-peeled-data \

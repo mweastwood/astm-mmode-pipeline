@@ -1,0 +1,5 @@
+input: 020-peeled-data
+output: 001-peeled-transposed-data-yy
+metadata: metadata
+polarization: yy
+

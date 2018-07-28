@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-cylindrical
+input-m-modes: 112-filtered-m-modes-recalibrated-yy-none
+input-transfer-matrix: 112-filtered-transfer-matrix-recalibrated-yy-none
+input-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-yy-none
+input-fisher-matrix: 121-fisher-matrix-yy-none-cylindrical
+output: 122-quadratic-estimator-recalibrated-yy-none-cylindrical
+iterations: 1000
+

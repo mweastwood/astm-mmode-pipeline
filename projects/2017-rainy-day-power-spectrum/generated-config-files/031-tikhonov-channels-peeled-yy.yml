@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 030-m-modes-peeled-yy
+output-alm: 031-dirty-channel-alm-peeled-yy
+output-map: 031-dirty-channel-map-peeled-yy
+output-directory: 031-dirty-channel-maps-peeled-yy
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

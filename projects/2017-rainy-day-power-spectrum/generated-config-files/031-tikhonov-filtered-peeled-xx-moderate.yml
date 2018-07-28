@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-peeled-xx-moderate
+output-alm: 031-dirty-alm-filtered-peeled-xx-moderate
+output-map: 031-dirty-channel-map-filtered-peeled-xx-moderate
+output-directory: 031-dirty-channel-maps-filtered-peeled-xx-moderate
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-peeled-xx-moderate
+regularization: 0.1
+nside: 512
+mfs: false
+

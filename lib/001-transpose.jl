@@ -12,11 +12,15 @@ struct Config
     input  :: String
     output :: String
     metadata :: String
+    polarization :: String
 end
 
 function load(file)
     dict = YAML.load(open(file))
-    Config(dict["input"], dict["output"], dict["metadata"])
+    Config(dict["input"],
+           dict["output"],
+           dict["metadata"],
+           get(dict, "polarization", "I"))
 end
 
 function go(project_file, config_file)
@@ -25,8 +29,6 @@ function go(project_file, config_file)
     transpose(project, config)
     Project.touch(project, config.output)
 end
-
-# NOTE: code copied extensively from 030-fold.jl
 
 function transpose(project, config)
     path = Project.workspace(project)
@@ -52,7 +54,7 @@ function transpose(project, config)
 
     prg = Progress(Ntime(metadata))
     for idx = 1:Ntime(metadata)
-        _transpose(temp_files, input, idx)
+        _transpose(temp_files, input, idx, config.polarization)
         next!(prg)
     end
     normalize!(output, project, config, metadata)
@@ -63,22 +65,30 @@ function transpose(project, config)
     end
 end
 
-function _transpose(temp_files, input, idx)
+function _transpose(temp_files, input, idx, polarization)
     data = input[idx]
     for β = 1:length(temp_files)
         xx = view(data, 1, β, :)
         yy = view(data, 2, β, :)
-        pack!(temp_files[β], xx, yy, idx)
+        pack!(temp_files[β], xx, yy, idx, polarization)
     end
     nothing
 end
 
-function pack!(temp_file, xx, yy, idx)
+function pack!(temp_file, xx, yy, idx, polarization)
     Nbase = length(xx)
     offset = Nbase*(idx-1)*sizeof(Complex128)
-    I = 0.5 .* (xx .+ yy)
+    if polarization == "I"
+        output = 0.5 .* (xx .+ yy)
+    elseif polarization == "xx"
+        output = xx
+    elseif polarization == "yy"
+        output = yy
+    else
+        error("uknown polarization")
+    end
     seek(temp_file, offset)
-    write(temp_file, I)
+    write(temp_file, output)
     nothing
 end
 

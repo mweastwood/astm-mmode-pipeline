@@ -830,6 +830,324 @@
 		.pipeline/121-fisher-matrix-night-none-cylindrical
 	$(launch)
 
+.pipeline/030-m-modes-interpolated-calibrated-xx: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-interpolated-calibrated-xx.yml \
+		.pipeline/001-calibrated-transposed-data-xx \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/032-predicted-visibilities-calibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/033-transfer-flags-calibrated-xx: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-xx.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-xx
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-calibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-xx.yml \
+		.pipeline/030-m-modes-calibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-calibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-calibrated-xx.yml \
+		.pipeline/030-m-modes-calibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-calibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-xx.yml \
+		.pipeline/033-transfer-flags-calibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-calibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-xx.yml \
+		.pipeline/033-transfer-flags-calibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-calibrated-xx: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-xx.yml \
+		.pipeline/033-transfer-flags-calibrated-xx
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-calibrated-xx: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-xx.yml \
+		.pipeline/101-averaged-m-modes-calibrated-xx \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-xx
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-calibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-xx.yml \
+		.pipeline/103-full-rank-compression-calibrated-xx
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-calibrated-xx-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-xx-extreme.yml \
+		.pipeline/103-full-rank-compression-calibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-xx-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-xx-extreme.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-extreme
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-xx-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-xx-moderate.yml \
+		.pipeline/103-full-rank-compression-calibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-xx-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-xx-moderate.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-moderate
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-xx-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-xx-mild.yml \
+		.pipeline/103-full-rank-compression-calibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-xx-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-xx-mild.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-mild
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-mild-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-xx-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-xx-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-xx-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-xx-none.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-none
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-none-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-xx-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-xx-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-xx-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-none-cylindrical
+	$(launch)
+
+.pipeline/030-m-modes-interpolated-calibrated-yy: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-interpolated-calibrated-yy.yml \
+		.pipeline/001-calibrated-transposed-data-yy \
+		.pipeline/002-flagged-calibrated-data \
+		.pipeline/032-predicted-visibilities-calibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/033-transfer-flags-calibrated-yy: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-calibrated-yy.yml \
+		.pipeline/030-m-modes-interpolated-calibrated-all \
+		.pipeline/030-m-modes-interpolated-calibrated-yy
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-calibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-calibrated-yy.yml \
+		.pipeline/030-m-modes-calibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-calibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-calibrated-yy.yml \
+		.pipeline/030-m-modes-calibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-calibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-calibrated-yy.yml \
+		.pipeline/033-transfer-flags-calibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-calibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-calibrated-yy.yml \
+		.pipeline/033-transfer-flags-calibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-calibrated-yy: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-yy.yml \
+		.pipeline/033-transfer-flags-calibrated-yy
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-calibrated-yy: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-yy.yml \
+		.pipeline/101-averaged-m-modes-calibrated-yy \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-yy
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-calibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-calibrated-yy.yml \
+		.pipeline/103-full-rank-compression-calibrated-yy
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-calibrated-yy-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-yy-extreme.yml \
+		.pipeline/103-full-rank-compression-calibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-yy-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-yy-extreme.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-extreme
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-yy-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-yy-moderate.yml \
+		.pipeline/103-full-rank-compression-calibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-yy-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-yy-moderate.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-moderate
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-yy-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-yy-mild.yml \
+		.pipeline/103-full-rank-compression-calibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-yy-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-yy-mild.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-mild
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-mild-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-yy-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-yy-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-calibrated-yy-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-calibrated-yy-none.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-none
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-none-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-yy-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-yy-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-yy-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-none-cylindrical
+	$(launch)
+
 .pipeline/032-predicted-visibilities-calibrated: \
 		$(LIB)/032-predict-visibilities.jl project.yml generated-config-files/032-predict-visibilities-calibrated.yml \
 		.pipeline/031-dirty-map-calibrated-all \
@@ -2008,6 +2326,420 @@
 		.pipeline/121-fisher-matrix-night-none-cylindrical
 	$(launch)
 
+.pipeline/030-m-modes-interpolated-peeled-xx: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-interpolated-peeled-xx.yml \
+		.pipeline/001-peeled-transposed-data-xx \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-peeled \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/033-transfer-flags-peeled-xx: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-xx.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-xx
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-peeled-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-xx.yml \
+		.pipeline/030-m-modes-peeled-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-peeled-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-peeled-xx.yml \
+		.pipeline/030-m-modes-peeled-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-peeled-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-xx.yml \
+		.pipeline/033-transfer-flags-peeled-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-peeled-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-xx.yml \
+		.pipeline/033-transfer-flags-peeled-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-peeled-xx: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-xx.yml \
+		.pipeline/033-transfer-flags-peeled-xx
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-peeled-xx: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-xx.yml \
+		.pipeline/101-averaged-m-modes-peeled-xx \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-xx
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-peeled-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-xx.yml \
+		.pipeline/103-full-rank-compression-peeled-xx
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-peeled-xx-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-xx-extreme.yml \
+		.pipeline/103-full-rank-compression-peeled-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-xx-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-xx-extreme.yml \
+		.pipeline/112-foreground-filter-peeled-xx-extreme
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-xx-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-xx-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-extreme-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-xx-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-xx-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-xx-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-xx-moderate.yml \
+		.pipeline/103-full-rank-compression-peeled-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-xx-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-xx-moderate.yml \
+		.pipeline/112-foreground-filter-peeled-xx-moderate
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-xx-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-xx-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-moderate-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-xx-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-xx-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-xx-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-xx-mild.yml \
+		.pipeline/103-full-rank-compression-peeled-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-xx-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-xx-mild.yml \
+		.pipeline/112-foreground-filter-peeled-xx-mild
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-xx-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-xx-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-mild-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-xx-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-xx-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-xx-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-xx-none.yml \
+		.pipeline/103-full-rank-compression-peeled-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-xx-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-xx-none.yml \
+		.pipeline/112-foreground-filter-peeled-xx-none
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-xx-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-xx-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-none-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-xx-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-xx-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-xx-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-xx-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-xx-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-none-cylindrical
+	$(launch)
+
+.pipeline/030-m-modes-interpolated-peeled-yy: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-interpolated-peeled-yy.yml \
+		.pipeline/001-peeled-transposed-data-yy \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-peeled \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/033-transfer-flags-peeled-yy: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-peeled-yy.yml \
+		.pipeline/030-m-modes-interpolated-peeled-all \
+		.pipeline/030-m-modes-interpolated-peeled-yy
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-peeled-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-peeled-yy.yml \
+		.pipeline/030-m-modes-peeled-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-peeled-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-peeled-yy.yml \
+		.pipeline/030-m-modes-peeled-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-peeled-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-peeled-yy.yml \
+		.pipeline/033-transfer-flags-peeled-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-peeled-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-peeled-yy.yml \
+		.pipeline/033-transfer-flags-peeled-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-peeled-yy: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-yy.yml \
+		.pipeline/033-transfer-flags-peeled-yy
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-peeled-yy: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-yy.yml \
+		.pipeline/101-averaged-m-modes-peeled-yy \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-yy
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-peeled-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-peeled-yy.yml \
+		.pipeline/103-full-rank-compression-peeled-yy
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-peeled-yy-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-yy-extreme.yml \
+		.pipeline/103-full-rank-compression-peeled-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-yy-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-yy-extreme.yml \
+		.pipeline/112-foreground-filter-peeled-yy-extreme
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-yy-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-yy-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-extreme-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-yy-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-yy-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-yy-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-yy-moderate.yml \
+		.pipeline/103-full-rank-compression-peeled-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-yy-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-yy-moderate.yml \
+		.pipeline/112-foreground-filter-peeled-yy-moderate
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-yy-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-yy-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-moderate-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-yy-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-yy-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-yy-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-yy-mild.yml \
+		.pipeline/103-full-rank-compression-peeled-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-yy-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-yy-mild.yml \
+		.pipeline/112-foreground-filter-peeled-yy-mild
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-yy-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-yy-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-mild-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-yy-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-yy-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-yy-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-yy-none.yml \
+		.pipeline/103-full-rank-compression-peeled-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-peeled-yy-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-peeled-yy-none.yml \
+		.pipeline/112-foreground-filter-peeled-yy-none
+	$(call launch-remote,1)
+
+.pipeline/121-fisher-matrix-yy-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-yy-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-none-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-yy-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-yy-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-yy-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-yy-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-yy-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-none-cylindrical
+	$(launch)
+
 .pipeline/032-predicted-visibilities-peeled: \
 		$(LIB)/032-predict-visibilities.jl project.yml generated-config-files/032-predict-visibilities-peeled.yml \
 		.pipeline/031-dirty-map-peeled-all \
@@ -2944,6 +3676,324 @@
 		.pipeline/112-foreground-filter-recalibrated-night-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-night-none-cylindrical
+	$(launch)
+
+.pipeline/030-m-modes-interpolated-recalibrated-xx: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-interpolated-recalibrated-xx.yml \
+		.pipeline/001-recalibrated-transposed-data-xx \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-recalibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/033-transfer-flags-recalibrated-xx: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-xx.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-xx
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-recalibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-xx.yml \
+		.pipeline/030-m-modes-recalibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-recalibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-recalibrated-xx.yml \
+		.pipeline/030-m-modes-recalibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-recalibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-xx.yml \
+		.pipeline/033-transfer-flags-recalibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-recalibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-xx.yml \
+		.pipeline/033-transfer-flags-recalibrated-xx \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-recalibrated-xx: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-xx.yml \
+		.pipeline/033-transfer-flags-recalibrated-xx
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-recalibrated-xx: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-xx.yml \
+		.pipeline/101-averaged-m-modes-recalibrated-xx \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-xx
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-recalibrated-xx: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-xx.yml \
+		.pipeline/103-full-rank-compression-recalibrated-xx
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-recalibrated-xx-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-xx-extreme.yml \
+		.pipeline/103-full-rank-compression-recalibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-xx-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-xx-extreme.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-extreme
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-xx-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-xx-moderate.yml \
+		.pipeline/103-full-rank-compression-recalibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-xx-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-xx-moderate.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-moderate
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-xx-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-xx-mild.yml \
+		.pipeline/103-full-rank-compression-recalibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-xx-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-xx-mild.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-mild
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-mild-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-xx-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-xx-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-xx \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-xx-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-xx-none.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-none
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-none-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-xx-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-xx-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-xx-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-xx-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-xx-none-cylindrical
+	$(launch)
+
+.pipeline/030-m-modes-interpolated-recalibrated-yy: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-interpolated-recalibrated-yy.yml \
+		.pipeline/001-recalibrated-transposed-data-yy \
+		.pipeline/002-flagged-peeled-data \
+		.pipeline/032-predicted-visibilities-recalibrated \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/033-transfer-flags-recalibrated-yy: \
+		$(LIB)/033-transfer-flags.jl project.yml generated-config-files/033-transfer-flags-recalibrated-yy.yml \
+		.pipeline/030-m-modes-interpolated-recalibrated-all \
+		.pipeline/030-m-modes-interpolated-recalibrated-yy
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-recalibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-recalibrated-yy.yml \
+		.pipeline/030-m-modes-recalibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-recalibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-recalibrated-yy.yml \
+		.pipeline/030-m-modes-recalibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-interpolated-recalibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-interpolated-recalibrated-yy.yml \
+		.pipeline/033-transfer-flags-recalibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-channel-maps-interpolated-recalibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-channels-interpolated-recalibrated-yy.yml \
+		.pipeline/033-transfer-flags-recalibrated-yy \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-recalibrated-yy: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-yy.yml \
+		.pipeline/033-transfer-flags-recalibrated-yy
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-recalibrated-yy: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-yy.yml \
+		.pipeline/101-averaged-m-modes-recalibrated-yy \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-yy
+	$(call launch-remote,1)
+
+.pipeline/031-dirty-map-compressed-recalibrated-yy: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-compressed-recalibrated-yy.yml \
+		.pipeline/103-full-rank-compression-recalibrated-yy
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-recalibrated-yy-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-yy-extreme.yml \
+		.pipeline/103-full-rank-compression-recalibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-yy-extreme: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-yy-extreme.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-extreme
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-yy-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-yy-moderate.yml \
+		.pipeline/103-full-rank-compression-recalibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-yy-moderate: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-yy-moderate.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-moderate
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-yy-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-yy-mild.yml \
+		.pipeline/103-full-rank-compression-recalibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-yy-mild: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-yy-mild.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-mild
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-mild-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-yy-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-yy-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-yy \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/031-dirty-map-filtered-recalibrated-yy-none: \
+		$(LIB)/031-tikhonov.jl project.yml generated-config-files/031-tikhonov-filtered-recalibrated-yy-none.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-none
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-none-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-yy-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-yy-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-yy-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-yy-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-yy-none-cylindrical
 	$(launch)
 
 .pipeline/032-predicted-visibilities-recalibrated: \

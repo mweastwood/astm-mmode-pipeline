@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-calibrated-xx-extreme
+output-alm: 031-dirty-alm-filtered-calibrated-xx-extreme
+output-map: 031-dirty-channel-map-filtered-calibrated-xx-extreme
+output-directory: 031-dirty-channel-maps-filtered-calibrated-xx-extreme
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-calibrated-xx-extreme
+regularization: 0.1
+nside: 512
+mfs: false
+

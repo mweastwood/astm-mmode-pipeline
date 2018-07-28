@@ -1,0 +1,6 @@
+# This file was auto-generated. Do not edit directly!
+input-to-flag: 030-m-modes-interpolated-recalibrated-yy
+input-already-flagged: 030-m-modes-interpolated-recalibrated-all
+output: 033-m-modes-interpolated-recalibrated-yy
+same-across-all-frequencies: true
+

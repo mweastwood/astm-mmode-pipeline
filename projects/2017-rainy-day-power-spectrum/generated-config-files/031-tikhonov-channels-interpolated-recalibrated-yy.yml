@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 033-m-modes-interpolated-recalibrated-yy
+output-alm: 031-dirty-channel-alm-interpolated-recalibrated-yy
+output-map: 031-dirty-channel-map-interpolated-recalibrated-yy
+output-directory: 031-dirty-channel-maps-interpolated-recalibrated-yy
+metadata: metadata
+transfer-matrix: 100-transfer-matrix
+regularization: 100
+nside: 512
+mfs: false
+

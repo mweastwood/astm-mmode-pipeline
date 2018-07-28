@@ -1,0 +1,11 @@
+# This file was auto-generated. Do not edit directly!
+input: 112-filtered-m-modes-calibrated-yy-moderate
+output-alm: 031-dirty-alm-filtered-calibrated-yy-moderate
+output-map: 031-dirty-channel-map-filtered-calibrated-yy-moderate
+output-directory: 031-dirty-channel-maps-filtered-calibrated-yy-moderate
+metadata: metadata
+transfer-matrix: 112-filtered-transfer-matrix-calibrated-yy-moderate
+regularization: 0.1
+nside: 512
+mfs: false
+
