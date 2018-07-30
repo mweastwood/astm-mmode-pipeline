@@ -1,0 +1,13 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-peeled-small-gain-errors
+input-transfer-matrix: 103-compressed-transfer-matrix-peeled-small-gain-errors
+input-noise-matrix: 103-compressed-noise-covariance-matrix-peeled-small-gain-errors
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-peeled-small-gain-errors-none
+output-transfer-matrix: 112-filtered-transfer-matrix-peeled-small-gain-errors-none
+output-covariance-matrix: 112-filtered-covariance-matrix-peeled-small-gain-errors-none
+output-foreground-filter: 112-foreground-filter-peeled-small-gain-errors-none
+output-noise-whitener: 112-noise-whitener-peeled-small-gain-errors-none
+threshold: Inf
+

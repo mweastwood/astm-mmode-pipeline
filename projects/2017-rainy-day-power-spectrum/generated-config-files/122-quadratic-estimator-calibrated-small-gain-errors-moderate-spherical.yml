@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-spherical
+input-m-modes: 112-filtered-m-modes-calibrated-small-gain-errors-moderate
+input-transfer-matrix: 112-filtered-transfer-matrix-calibrated-small-gain-errors-moderate
+input-covariance-matrix: 112-filtered-covariance-matrix-calibrated-small-gain-errors-moderate
+input-fisher-matrix: 121-fisher-matrix-small-gain-errors-moderate-spherical
+output: 122-quadratic-estimator-calibrated-small-gain-errors-moderate-spherical
+iterations: 1000
+

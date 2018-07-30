@@ -1,0 +1,7 @@
+# This file was auto-generated. Do not edit directly!
+input: 101-averaged-m-modes-predicted-peeled
+output: 101-averaged-m-modes-peeled-large-gain-errors
+hierarchy: hierarchy
+gain-errors-percent: 10.0
+same-across-antennas: false
+

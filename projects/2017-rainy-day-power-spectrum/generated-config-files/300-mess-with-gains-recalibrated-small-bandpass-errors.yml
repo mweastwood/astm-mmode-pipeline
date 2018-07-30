@@ -1,0 +1,7 @@
+# This file was auto-generated. Do not edit directly!
+input: 101-averaged-m-modes-predicted-recalibrated
+output: 101-averaged-m-modes-recalibrated-small-bandpass-errors
+hierarchy: hierarchy
+gain-errors-percent: 0.1
+same-across-antennas: true
+

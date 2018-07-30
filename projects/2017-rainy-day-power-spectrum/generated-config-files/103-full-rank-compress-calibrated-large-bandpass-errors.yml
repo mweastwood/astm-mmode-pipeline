@@ -1,0 +1,8 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 101-averaged-m-modes-calibrated-large-bandpass-errors
+input-transfer-matrix: 101-averaged-transfer-matrix
+input-noise-matrix: 102-noise-covariance-matrix-large-bandpass-errors
+output-m-modes: 103-compressed-m-modes-calibrated-large-bandpass-errors
+output-transfer-matrix: 103-compressed-transfer-matrix-calibrated-large-bandpass-errors
+output-noise-matrix: 103-compressed-noise-covariance-matrix-calibrated-large-bandpass-errors
+

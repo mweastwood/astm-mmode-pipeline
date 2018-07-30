@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-cylindrical
+input-m-modes: 112-filtered-m-modes-peeled-small-gain-errors-none
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-small-gain-errors-none
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-small-gain-errors-none
+input-fisher-matrix: 121-fisher-matrix-small-gain-errors-none-cylindrical
+output: 122-quadratic-estimator-peeled-small-gain-errors-none-cylindrical
+iterations: 1000
+

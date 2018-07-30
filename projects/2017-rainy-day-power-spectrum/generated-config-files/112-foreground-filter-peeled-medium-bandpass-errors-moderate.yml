@@ -1,0 +1,13 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-peeled-medium-bandpass-errors
+input-transfer-matrix: 103-compressed-transfer-matrix-peeled-medium-bandpass-errors
+input-noise-matrix: 103-compressed-noise-covariance-matrix-peeled-medium-bandpass-errors
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-peeled-medium-bandpass-errors-moderate
+output-transfer-matrix: 112-filtered-transfer-matrix-peeled-medium-bandpass-errors-moderate
+output-covariance-matrix: 112-filtered-covariance-matrix-peeled-medium-bandpass-errors-moderate
+output-foreground-filter: 112-foreground-filter-peeled-medium-bandpass-errors-moderate
+output-noise-whitener: 112-noise-whitener-peeled-medium-bandpass-errors-moderate
+threshold: 1.0
+

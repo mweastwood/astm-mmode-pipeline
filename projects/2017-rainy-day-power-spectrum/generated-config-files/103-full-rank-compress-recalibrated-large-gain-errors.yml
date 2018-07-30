@@ -1,0 +1,8 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 101-averaged-m-modes-recalibrated-large-gain-errors
+input-transfer-matrix: 101-averaged-transfer-matrix
+input-noise-matrix: 102-noise-covariance-matrix-large-gain-errors
+output-m-modes: 103-compressed-m-modes-recalibrated-large-gain-errors
+output-transfer-matrix: 103-compressed-transfer-matrix-recalibrated-large-gain-errors
+output-noise-matrix: 103-compressed-noise-covariance-matrix-recalibrated-large-gain-errors
+

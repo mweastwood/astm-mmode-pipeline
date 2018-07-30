@@ -1,0 +1,13 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-recalibrated-small-bandpass-errors
+input-transfer-matrix: 103-compressed-transfer-matrix-recalibrated-small-bandpass-errors
+input-noise-matrix: 103-compressed-noise-covariance-matrix-recalibrated-small-bandpass-errors
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-recalibrated-small-bandpass-errors-none
+output-transfer-matrix: 112-filtered-transfer-matrix-recalibrated-small-bandpass-errors-none
+output-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-small-bandpass-errors-none
+output-foreground-filter: 112-foreground-filter-recalibrated-small-bandpass-errors-none
+output-noise-whitener: 112-noise-whitener-recalibrated-small-bandpass-errors-none
+threshold: Inf
+

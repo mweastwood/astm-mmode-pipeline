@@ -1,0 +1,13 @@
+# This file was auto-generated. Do not edit directly!
+input-m-modes: 103-compressed-m-modes-recalibrated-medium-gain-errors
+input-transfer-matrix: 103-compressed-transfer-matrix-recalibrated-medium-gain-errors
+input-noise-matrix: 103-compressed-noise-covariance-matrix-recalibrated-medium-gain-errors
+input-foreground-matrix: 110-foreground-covariance-matrix
+input-signal-matrix: 111-signal-covariance-matrix
+output-m-modes: 112-filtered-m-modes-recalibrated-medium-gain-errors-extreme
+output-transfer-matrix: 112-filtered-transfer-matrix-recalibrated-medium-gain-errors-extreme
+output-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-medium-gain-errors-extreme
+output-foreground-filter: 112-foreground-filter-recalibrated-medium-gain-errors-extreme
+output-noise-whitener: 112-noise-whitener-recalibrated-medium-gain-errors-extreme
+threshold: 0.1
+
