@@ -3,7 +3,7 @@ input: 033-m-modes-interpolated-recalibrated-xx
 output-alm: 031-dirty-alm-interpolated-recalibrated-xx
 output-map: 031-dirty-map-interpolated-recalibrated-xx
 metadata: metadata
-transfer-matrix: 100-transfer-matrix
+transfer-matrix: 100-transfer-matrix-xx
 regularization: 100
 nside: 512
 mfs: true

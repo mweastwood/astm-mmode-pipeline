@@ -4,7 +4,7 @@ output-alm: 031-dirty-channel-alm-calibrated-yy
 output-map: 031-dirty-channel-map-calibrated-yy
 output-directory: 031-dirty-channel-maps-calibrated-yy
 metadata: metadata
-transfer-matrix: 100-transfer-matrix
+transfer-matrix: 100-transfer-matrix-yy
 regularization: 100
 nside: 512
 mfs: false

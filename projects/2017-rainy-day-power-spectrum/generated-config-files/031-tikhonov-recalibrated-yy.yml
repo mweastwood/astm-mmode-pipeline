@@ -3,7 +3,7 @@ input: 030-m-modes-recalibrated-yy
 output-alm: 031-dirty-alm-recalibrated-yy
 output-map: 031-dirty-map-recalibrated-yy
 metadata: metadata
-transfer-matrix: 100-transfer-matrix
+transfer-matrix: 100-transfer-matrix-yy
 regularization: 100
 nside: 512
 mfs: true

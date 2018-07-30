@@ -4,7 +4,7 @@ output-alm: 031-dirty-channel-alm-peeled-xx
 output-map: 031-dirty-channel-map-peeled-xx
 output-directory: 031-dirty-channel-maps-peeled-xx
 metadata: metadata
-transfer-matrix: 100-transfer-matrix
+transfer-matrix: 100-transfer-matrix-xx
 regularization: 100
 nside: 512
 mfs: false
