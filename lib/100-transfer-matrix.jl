@@ -68,6 +68,17 @@ function beam(coeff, threshold, azimuth, elevation)
                 + coeff[7]*TTCal.zernike(8, 0, ρ, θ)
                 + coeff[8]*TTCal.zernike(8, 4, ρ, θ)
                 + coeff[9]*TTCal.zernike(8, 8, ρ, θ))
+    # add the anti-symmetric part of the beam
+    # (this is primarily used to add or subtract the Stokes-Q beam, for example, to generate the xx
+    # or yy beam)
+    if length(coeff) > 9
+        amplitude += (coeff[10]*TTCal.zernike(2, 2, ρ, θ)
+                     + coeff[11]*TTCal.zernike(4, 2, ρ, θ)
+                     + coeff[12]*TTCal.zernike(6, 2, ρ, θ)
+                     + coeff[13]*TTCal.zernike(6, 6, ρ, θ)
+                     + coeff[14]*TTCal.zernike(8, 2, ρ, θ)
+                     + coeff[15]*TTCal.zernike(8, 6, ρ, θ))
+    end
     if elevation < threshold
         # Shaping function from http://www.flong.com/texts/code/shapers_poly/
         x = elevation/threshold

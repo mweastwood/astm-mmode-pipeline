@@ -81,9 +81,9 @@ function pack!(temp_file, xx, yy, idx, polarization)
     if polarization == "I"
         output = 0.5 .* (xx .+ yy)
     elseif polarization == "xx"
-        output = xx
+        output = copy(xx)
     elseif polarization == "yy"
-        output = yy
+        output = copy(yy)
     else
         error("uknown polarization")
     end

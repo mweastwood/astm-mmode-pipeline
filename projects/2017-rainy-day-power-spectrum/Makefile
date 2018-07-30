@@ -262,9 +262,29 @@ sefd: .pipeline/200-measure-system-equivalent-flux-density
 		.pipeline/000-raw-data
 	$(call launch-remote,4)
 
+.pipeline/100-transfer-matrix-xx: \
+		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix-xx.yml \
+		.pipeline/000-raw-data
+	$(call launch-remote,4)
+
+.pipeline/100-transfer-matrix-yy: \
+		$(LIB)/100-transfer-matrix.jl project.yml 100-transfer-matrix-yy.yml \
+		.pipeline/000-raw-data
+	$(call launch-remote,4)
+
 .pipeline/101-averaged-transfer-matrix: \
 		$(LIB)/101-average-channels.jl project.yml 101-average-channels-transfer-matrix.yml \
 		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-transfer-matrix-xx: \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-transfer-matrix-xx.yml \
+		.pipeline/100-transfer-matrix-xx
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-transfer-matrix-yy: \
+		$(LIB)/101-average-channels.jl project.yml 101-average-channels-transfer-matrix-yy.yml \
+		.pipeline/100-transfer-matrix-yy
 	$(call launch-remote,1)
 
 .pipeline/102-noise-covariance-matrix-%: \
