@@ -2,15 +2,15 @@ input: 101-averaged-m-modes-peeled-all
 output: 120-basis-covariance-matrices-spherical
 power-spectrum: spherical
 k:
-    - 0.0
+    - 0.00
     - 0.05
-    - 0.0701267
-    - 0.098355
-    - 0.137946
-    - 0.193474
-    - 0.271354
-    - 0.380583
-    - 0.533781
-    - 0.748645
-    - 1.05
+    - 0.10
+    - 0.15
+    - 0.20
+    - 0.25
+    - 0.30
+    - 0.35
+    - 0.40
+    - 0.45
+    - 0.50
 
