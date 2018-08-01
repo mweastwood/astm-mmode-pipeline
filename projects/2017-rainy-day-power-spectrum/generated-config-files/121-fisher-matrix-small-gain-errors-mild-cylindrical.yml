@@ -1,0 +1,7 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-cylindrical
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-small-gain-errors-mild
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-small-gain-errors-mild
+output: 121-fisher-matrix-small-gain-errors-mild-cylindrical
+iterations: 1000
+

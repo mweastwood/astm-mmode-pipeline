@@ -107,6 +107,9 @@ function main()
                 for filter in filtering
                     create_112_foreground_filter_yml(makefile, process, error, filter)
                     for estimate in estimator
+                        if process == "peeled"
+                            create_121_fisher_matrix_yml(makefile, error, filter, estimate)
+                        end
                         create_122_quadratic_estimator_yml(makefile, process, error, filter, estimate)
                     end
                 end
@@ -580,12 +583,18 @@ function create_103_full_rank_compress_yml(makefile, process, sample)
     else
         pol = ""
     end
+    if sample in ("small-gain-errors",     "medium-gain-errors",     "large-gain-errors",
+                  "small-bandpass-errors", "medium-bandpass-errors", "large-bandpass-errors")
+        noise_sample = "all"
+    else
+        noise_sample = sample
+    end
     open(joinpath(temp, filename), "w") do file
         println(file,
                 """$HEADER
                 input-m-modes: 101-averaged-m-modes-$process-$sample
                 input-transfer-matrix: 101-averaged-transfer-matrix$pol
-                input-noise-matrix: 102-noise-covariance-matrix-$sample
+                input-noise-matrix: 102-noise-covariance-matrix-$noise_sample
                 output-m-modes: 103-compressed-m-modes-$process-$sample
                 output-transfer-matrix: 103-compressed-transfer-matrix-$process-$sample
                 output-noise-matrix: 103-compressed-noise-covariance-matrix-$process-$sample
@@ -598,7 +607,7 @@ function create_103_full_rank_compress_yml(makefile, process, sample)
             \t\t\$(LIB)/103-full-rank-compress.jl project.yml $dirname/$filename \\
             \t\t.pipeline/101-averaged-m-modes-$process-$sample \\
             \t\t.pipeline/101-averaged-transfer-matrix$pol \\
-            \t\t.pipeline/102-noise-covariance-matrix-$sample
+            \t\t.pipeline/102-noise-covariance-matrix-$noise_sample
             \t\$(call launch-remote,1)
             """)
 end

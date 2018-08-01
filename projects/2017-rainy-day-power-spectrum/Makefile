@@ -125,40 +125,43 @@ spherical-power-spectrum: \
 	.pipeline/122-quadratic-estimator-calibrated-all-extreme-spherical \
 	.pipeline/122-quadratic-estimator-peeled-all-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-all-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-all-extreme-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-moderate-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-mild-spherical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-extreme-spherical
+	.pipeline/122-quadratic-estimator-peeled-all-extreme-spherical
 
 .PHONY: spherical-power-spectrum-even-odd
 spherical-power-spectrum-even-odd: \
-	.pipeline/122-quadratic-estimator-peeled-odd-moderate-spherical \
-	.pipeline/122-quadratic-estimator-peeled-even-moderate-spherical \
-	.pipeline/122-quadratic-estimator-peeled-odd-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-even-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-odd-extreme-spherical \
-	.pipeline/122-quadratic-estimator-peeled-even-extreme-spherical
+	.pipeline/122-quadratic-estimator-calibrated-odd-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-even-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-odd-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-even-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-odd-extreme-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-even-extreme-spherical
 
 .PHONY: spherical-power-spectrum-day-night
 spherical-power-spectrum-day-night: \
-	.pipeline/122-quadratic-estimator-peeled-day-moderate-spherical \
-	.pipeline/122-quadratic-estimator-peeled-night-moderate-spherical \
-	.pipeline/122-quadratic-estimator-peeled-day-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-night-mild-spherical \
-	.pipeline/122-quadratic-estimator-peeled-day-extreme-spherical \
-	.pipeline/122-quadratic-estimator-peeled-night-extreme-spherical
+	.pipeline/122-quadratic-estimator-calibrated-day-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-night-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-day-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-night-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-day-extreme-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-night-extreme-spherical
 
-.PHONY: cylindrical-power-spectrum
-cylindrical-power-spectrum: \
-	.pipeline/122-quadratic-estimator-calibrated-all-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-calibrated-all-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-calibrated-all-extreme-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-all-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-all-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-peeled-all-extreme-cylindrical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-moderate-cylindrical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-mild-cylindrical \
-	.pipeline/122-quadratic-estimator-recalibrated-all-extreme-cylindrical
+.PHONY: spherical-power-spectrum-xx-yy
+spherical-power-spectrum-xx-yy: \
+	.pipeline/122-quadratic-estimator-calibrated-xx-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-yy-moderate-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-xx-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-yy-mild-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-xx-extreme-spherical \
+	.pipeline/122-quadratic-estimator-calibrated-yy-extreme-spherical
+
+.PHONY: gain-error-tests
+gain-error-tests: \
+	.pipeline/122-quadratic-estimator-peeled-small-gain-errors-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-medium-gain-errors-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-large-gain-errors-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-moderate-spherical
 
 .PHONY: sefd
 sefd: .pipeline/200-measure-system-equivalent-flux-density

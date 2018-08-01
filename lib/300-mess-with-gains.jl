@@ -8,8 +8,9 @@ using YAML
 include("Project.jl")
 
 struct Config
-    input  :: String
-    output :: String
+    input     :: String
+    output    :: String
+    hierarchy :: String
     gain_errors_percent  :: Float64
     same_across_antennas :: Bool
 end
@@ -58,10 +59,15 @@ function mess_with_gains(input, output, ant1, ant2, hierarchy, gain_errors_perce
         permutation = BPJSpec.baseline_permutation(hierarchy, m)
         for β = 1:Nfreq
             block = input[m, β] :: Vector{Complex128}
-            for α = 1:length(block)
+            for α = 1:length(permutation)
                 a1 = ant1[permutation[α]]
                 a2 = ant2[permutation[α]]
-                block[α] .*= g[a1, β]*conj(g[a2, β])
+                if m == 0
+                    block[α] *= g[a1, β]*conj(g[a2, β])
+                else
+                    block[2α-1] *= g[a1, β]*conj(g[a2, β])
+                    block[2α-0] *= g[a1, β]*conj(g[a2, β])
+                end
             end
             output[m, β] = block
             next!(prg)
@@ -69,7 +75,7 @@ function mess_with_gains(input, output, ant1, ant2, hierarchy, gain_errors_perce
     end
 end
 
-function mess_with_gains(input, output, hierarchy, gain_errors_percent)
+function mess_with_bandpass(input, output, hierarchy, gain_errors_percent)
     mmax  = input.mmax
     Nfreq = length(input.frequencies)
 
@@ -82,8 +88,13 @@ function mess_with_gains(input, output, hierarchy, gain_errors_percent)
         permutation = BPJSpec.baseline_permutation(hierarchy, m)
         for β = 1:Nfreq
             block = input[m, β] :: Vector{Complex128}
-            for α = 1:length(block)
-                block[α] .*= g[β]*conj(g[β])
+            for α = 1:length(permutation)
+                if m == 0
+                    block[α] *= g[β]*conj(g[β])
+                else
+                    block[2α-1] *= g[β]*conj(g[β])
+                    block[2α-0] *= g[β]*conj(g[β])
+                end
             end
             output[m, β] = block
             next!(prg)

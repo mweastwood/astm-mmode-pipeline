@@ -1,7 +1,7 @@
 # This file was auto-generated. Do not edit directly!
 input-m-modes: 101-averaged-m-modes-peeled-small-gain-errors
 input-transfer-matrix: 101-averaged-transfer-matrix
-input-noise-matrix: 102-noise-covariance-matrix-small-gain-errors
+input-noise-matrix: 102-noise-covariance-matrix-all
 output-m-modes: 103-compressed-m-modes-peeled-small-gain-errors
 output-transfer-matrix: 103-compressed-transfer-matrix-peeled-small-gain-errors
 output-noise-matrix: 103-compressed-noise-covariance-matrix-peeled-small-gain-errors

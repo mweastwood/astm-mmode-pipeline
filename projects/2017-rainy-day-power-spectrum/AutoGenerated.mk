@@ -1265,7 +1265,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-small-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-calibrated-small-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-small-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-small-gain-errors-extreme: \
@@ -1361,7 +1361,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-medium-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-calibrated-medium-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-medium-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-medium-gain-errors-extreme: \
@@ -1457,7 +1457,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-large-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-calibrated-large-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-large-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-large-gain-errors-extreme: \
@@ -1553,7 +1553,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-small-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-calibrated-small-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-small-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-small-bandpass-errors-extreme: \
@@ -1649,7 +1649,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-medium-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-calibrated-medium-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-medium-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-medium-bandpass-errors-extreme: \
@@ -1745,7 +1745,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-large-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-calibrated-large-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-large-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-calibrated-large-bandpass-errors-extreme: \
@@ -3433,7 +3433,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-small-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-peeled-small-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-small-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-small-gain-errors-extreme: \
@@ -3443,12 +3443,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-gain-errors-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-gain-errors-extreme \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-gain-errors-extreme-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-gain-errors-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-extreme-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-extreme-cylindrical.yml \
@@ -3464,12 +3476,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-gain-errors-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-moderate-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-gain-errors-moderate \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-gain-errors-moderate-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-gain-errors-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-moderate-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-moderate-cylindrical.yml \
@@ -3485,12 +3509,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-gain-errors-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-gain-errors-mild \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-gain-errors-mild-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-gain-errors-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
 
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-mild-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-mild-cylindrical.yml \
@@ -3506,12 +3542,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-gain-errors-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-none-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-gain-errors-none \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-gain-errors-none-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-gain-errors-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-gain-errors-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-gain-errors-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-small-gain-errors-none-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-gain-errors-none-cylindrical.yml \
@@ -3529,7 +3577,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-medium-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-peeled-medium-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-medium-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-medium-gain-errors-extreme: \
@@ -3539,12 +3587,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-gain-errors-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-gain-errors-extreme \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-gain-errors-extreme-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-gain-errors-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-extreme-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-extreme-cylindrical.yml \
@@ -3560,12 +3620,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-gain-errors-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-moderate-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-gain-errors-moderate \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-gain-errors-moderate-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-gain-errors-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-moderate-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-moderate-cylindrical.yml \
@@ -3581,12 +3653,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-gain-errors-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-gain-errors-mild \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-gain-errors-mild-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-gain-errors-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
 
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-mild-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-mild-cylindrical.yml \
@@ -3602,12 +3686,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-gain-errors-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-none-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-gain-errors-none \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-gain-errors-none-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-gain-errors-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-gain-errors-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-gain-errors-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-medium-gain-errors-none-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-gain-errors-none-cylindrical.yml \
@@ -3625,7 +3721,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-large-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-peeled-large-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-large-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-large-gain-errors-extreme: \
@@ -3635,12 +3731,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-gain-errors-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-gain-errors-extreme \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-gain-errors-extreme-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-gain-errors-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-extreme-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-extreme-cylindrical.yml \
@@ -3656,12 +3764,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-gain-errors-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-moderate-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-gain-errors-moderate \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-gain-errors-moderate-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-gain-errors-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-moderate-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-moderate-cylindrical.yml \
@@ -3677,12 +3797,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-gain-errors-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-gain-errors-mild \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-gain-errors-mild-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-gain-errors-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
 
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-mild-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-mild-cylindrical.yml \
@@ -3698,12 +3830,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-gain-errors-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-none-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-gain-errors-none \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-gain-errors-none-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-gain-errors-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-gain-errors-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-gain-errors-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-large-gain-errors-none-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-gain-errors-none-cylindrical.yml \
@@ -3721,7 +3865,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-small-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-peeled-small-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-small-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-small-bandpass-errors-extreme: \
@@ -3731,12 +3875,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-bandpass-errors-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-extreme \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-bandpass-errors-extreme-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-bandpass-errors-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-extreme-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-extreme-cylindrical.yml \
@@ -3752,12 +3908,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-bandpass-errors-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-moderate-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-moderate \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-bandpass-errors-moderate-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-bandpass-errors-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-moderate-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-moderate-cylindrical.yml \
@@ -3773,12 +3941,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-bandpass-errors-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-mild \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-bandpass-errors-mild-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-bandpass-errors-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
 
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-mild-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-mild-cylindrical.yml \
@@ -3794,12 +3974,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-small-bandpass-errors-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-none-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-none \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-small-bandpass-errors-none-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-small-bandpass-errors-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-small-bandpass-errors-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-small-bandpass-errors-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-small-bandpass-errors-none-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-small-bandpass-errors-none-cylindrical.yml \
@@ -3817,7 +4009,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-medium-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-peeled-medium-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-medium-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-medium-bandpass-errors-extreme: \
@@ -3827,12 +4019,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-bandpass-errors-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-extreme \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-bandpass-errors-extreme-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-bandpass-errors-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-extreme-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-extreme-cylindrical.yml \
@@ -3848,12 +4052,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-bandpass-errors-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-moderate-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-moderate \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-bandpass-errors-moderate-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-bandpass-errors-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-moderate-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-moderate-cylindrical.yml \
@@ -3869,12 +4085,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-bandpass-errors-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-mild \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-bandpass-errors-mild-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-bandpass-errors-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
 
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-mild-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-mild-cylindrical.yml \
@@ -3890,12 +4118,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-medium-bandpass-errors-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-none-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-none \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-medium-bandpass-errors-none-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-medium-bandpass-errors-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-medium-bandpass-errors-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-medium-bandpass-errors-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-medium-bandpass-errors-none-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-medium-bandpass-errors-none-cylindrical.yml \
@@ -3913,7 +4153,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-large-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-peeled-large-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-large-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-peeled-large-bandpass-errors-extreme: \
@@ -3923,12 +4163,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-bandpass-errors-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-extreme-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-extreme-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-extreme \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-bandpass-errors-extreme-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-bandpass-errors-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-extreme-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-extreme-cylindrical.yml \
@@ -3944,12 +4196,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-bandpass-errors-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-moderate-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-moderate-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-moderate \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-bandpass-errors-moderate-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-bandpass-errors-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
 
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-moderate-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-moderate-cylindrical.yml \
@@ -3965,12 +4229,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-bandpass-errors-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-mild-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-mild-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-mild \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-bandpass-errors-mild-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-bandpass-errors-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
 
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-mild-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-mild-cylindrical.yml \
@@ -3986,12 +4262,24 @@
 		.pipeline/111-signal-covariance-matrix
 	$(call launch-remote,2)
 
+.pipeline/121-fisher-matrix-large-bandpass-errors-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-none-spherical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-none-spherical.yml \
 		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-none \
 		.pipeline/120-basis-covariance-matrices-spherical \
 		.pipeline/121-fisher-matrix-large-bandpass-errors-none-spherical
 	$(launch)
+
+.pipeline/121-fisher-matrix-large-bandpass-errors-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-large-bandpass-errors-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-large-bandpass-errors-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
 
 .pipeline/122-quadratic-estimator-peeled-large-bandpass-errors-none-cylindrical: \
 		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-large-bandpass-errors-none-cylindrical.yml \
@@ -5265,7 +5553,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-small-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-recalibrated-small-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-small-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-small-gain-errors-extreme: \
@@ -5361,7 +5649,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-medium-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-recalibrated-medium-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-medium-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-medium-gain-errors-extreme: \
@@ -5457,7 +5745,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-large-gain-errors.yml \
 		.pipeline/101-averaged-m-modes-recalibrated-large-gain-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-large-gain-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-large-gain-errors-extreme: \
@@ -5553,7 +5841,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-small-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-recalibrated-small-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-small-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-small-bandpass-errors-extreme: \
@@ -5649,7 +5937,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-medium-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-recalibrated-medium-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-medium-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-medium-bandpass-errors-extreme: \
@@ -5745,7 +6033,7 @@
 		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-large-bandpass-errors.yml \
 		.pipeline/101-averaged-m-modes-recalibrated-large-bandpass-errors \
 		.pipeline/101-averaged-transfer-matrix \
-		.pipeline/102-noise-covariance-matrix-large-bandpass-errors
+		.pipeline/102-noise-covariance-matrix-all
 	$(call launch-remote,1)
 
 .pipeline/112-foreground-filter-recalibrated-large-bandpass-errors-extreme: \
