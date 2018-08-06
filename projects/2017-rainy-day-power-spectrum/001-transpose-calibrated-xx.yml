@@ -1,0 +1,5 @@
+input: 003-calibrated-data
+output: 001-calibrated-transposed-data-xx
+metadata: metadata
+polarization: xx
+

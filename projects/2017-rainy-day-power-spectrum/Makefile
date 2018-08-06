@@ -11,6 +11,13 @@ all: \
 	cylindrical-power-spectrum \
 	sefd
 
+.PHONY: power-spectra
+power-spectra: \
+	spherical-power-spectrum \
+	spherical-power-spectrum-even-odd \
+	spherical-power-spectrum-day-night \
+	spherical-power-spectrum-xx-yy
+
 BIN=../../bin
 LIB=../../lib
 JULIA=julia-0.6 --color=yes -O3
@@ -131,31 +138,26 @@ spherical-power-spectrum: \
 spherical-power-spectrum-even-odd: \
 	.pipeline/122-quadratic-estimator-calibrated-odd-moderate-spherical \
 	.pipeline/122-quadratic-estimator-calibrated-even-moderate-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-odd-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-even-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-odd-extreme-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-even-extreme-spherical
+	.pipeline/122-quadratic-estimator-peeled-odd-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-even-moderate-spherical
 
 .PHONY: spherical-power-spectrum-day-night
 spherical-power-spectrum-day-night: \
 	.pipeline/122-quadratic-estimator-calibrated-day-moderate-spherical \
 	.pipeline/122-quadratic-estimator-calibrated-night-moderate-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-day-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-night-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-day-extreme-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-night-extreme-spherical
+	.pipeline/122-quadratic-estimator-peeled-day-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-night-moderate-spherical
 
 .PHONY: spherical-power-spectrum-xx-yy
 spherical-power-spectrum-xx-yy: \
 	.pipeline/122-quadratic-estimator-calibrated-xx-moderate-spherical \
 	.pipeline/122-quadratic-estimator-calibrated-yy-moderate-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-xx-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-yy-mild-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-xx-extreme-spherical \
-	.pipeline/122-quadratic-estimator-calibrated-yy-extreme-spherical
+	.pipeline/122-quadratic-estimator-peeled-xx-moderate-spherical \
+	.pipeline/122-quadratic-estimator-peeled-yy-moderate-spherical
 
 .PHONY: gain-error-tests
 gain-error-tests: \
+	.pipeline/122-quadratic-estimator-predicted-peeled-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-small-gain-errors-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-medium-gain-errors-moderate-spherical \
 	.pipeline/122-quadratic-estimator-peeled-large-gain-errors-moderate-spherical \
@@ -194,6 +196,16 @@ sefd: .pipeline/200-measure-system-equivalent-flux-density
 
 .pipeline/001-calibrated-transposed-data: \
 		$(LIB)/001-transpose.jl project.yml 001-transpose-calibrated.yml \
+		.pipeline/003-calibrated-data
+	$(call launch-remote,1)
+
+.pipeline/001-calibrated-transposed-data-xx: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-calibrated-xx.yml \
+		.pipeline/003-calibrated-data
+	$(call launch-remote,1)
+
+.pipeline/001-calibrated-transposed-data-yy: \
+		$(LIB)/001-transpose.jl project.yml 001-transpose-calibrated-yy.yml \
 		.pipeline/003-calibrated-data
 	$(call launch-remote,1)
 
