@@ -1,0 +1,8 @@
+input-basis: 120-basis-covariance-matrices-spherical
+input-m-modes-1: 112-filtered-m-modes-calibrated-odd-moderate
+input-m-modes-2: 112-filtered-m-modes-calibrated-even-moderate
+input-transfer-matrix: 112-filtered-transfer-matrix-calibrated-odd-moderate
+input-covariance-matrix: 112-filtered-covariance-matrix-calibrated-odd-moderate
+input-fisher-matrix: 121-fisher-matrix-odd-moderate-spherical
+output: 124-difference-quadratic-estimator-calibrated-even-odd-moderate-spherical
+
