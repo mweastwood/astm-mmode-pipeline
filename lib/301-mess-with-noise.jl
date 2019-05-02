@@ -13,6 +13,7 @@ struct Config
     output    :: String # output visibilities
     hierarchy :: String
     sefd :: Vector{Float64} # Noise temperature at each sidereal time
+    constant :: Bool # If true, the SEFD is changed to be constant with time
 end
 
 function load(file)
@@ -34,6 +35,9 @@ function mess_with_gains(project, config)
     input  = BPJSpec.load(joinpath(path, config.input))
     output = similar(input, SingleFile(joinpath(path, config.output)))
     sefd   = load(joinpath(path, config.sefd))
+    if config.constant
+        sefd[:] = mean(sefd)
+    end
     mess_with_noise(input, output, ant1, ant2, hierarchy, sefd)
 end
 

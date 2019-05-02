@@ -28,7 +28,7 @@ function load(file)
     dict = YAML.load(open(file))
     option = get(dict, "option", "all")
     Config(dict["input"],
-           dict["input-flags"],
+           get(dict, "input-flags", ""),
            dict["output"],
            dict["metadata"],
            dict["hierarchy"],
@@ -92,8 +92,10 @@ function _getmmodes(input, output, hierarchy, project, config, frequency)
 end
 
 function flag!(V, project, config, frequency)
-    flags = Project.load(project, config.input_flags, "flags")
-    V[flags.bits[:, frequency, :]] = 0 # apply the flags
+    if config.input_flags != ""
+        flags = Project.load(project, config.input_flags, "flags")
+        V[flags.bits[:, frequency, :]] = 0 # apply the flags
+    end
 end
 
 function fold(V, config)
