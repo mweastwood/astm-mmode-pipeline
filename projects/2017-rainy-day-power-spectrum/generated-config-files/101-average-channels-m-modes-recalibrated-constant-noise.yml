@@ -1,0 +1,5 @@
+# This file was auto-generated. Do not edit directly!
+input: 033-m-modes-interpolated-recalibrated-constant-noise
+output: 101-averaged-m-modes-recalibrated-constant-noise
+Navg: 10
+

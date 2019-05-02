@@ -1,0 +1,5 @@
+# This file was auto-generated. Do not edit directly!
+input: 033-m-modes-interpolated-peeled-sidereal-noise
+output: 101-averaged-m-modes-peeled-sidereal-noise
+Navg: 10
+

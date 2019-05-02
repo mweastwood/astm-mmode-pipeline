@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-spherical
+input-m-modes: 112-filtered-m-modes-calibrated-sidereal-noise-none
+input-transfer-matrix: 112-filtered-transfer-matrix-calibrated-sidereal-noise-none
+input-covariance-matrix: 112-filtered-covariance-matrix-calibrated-sidereal-noise-none
+input-fisher-matrix: 121-fisher-matrix-sidereal-noise-none-spherical
+output: 122-quadratic-estimator-calibrated-sidereal-noise-none-spherical
+iterations: 1000
+

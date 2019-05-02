@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-spherical
+input-m-modes: 112-filtered-m-modes-peeled-constant-noise-none
+input-transfer-matrix: 112-filtered-transfer-matrix-peeled-constant-noise-none
+input-covariance-matrix: 112-filtered-covariance-matrix-peeled-constant-noise-none
+input-fisher-matrix: 121-fisher-matrix-constant-noise-none-spherical
+output: 122-quadratic-estimator-peeled-constant-noise-none-spherical
+iterations: 1000
+

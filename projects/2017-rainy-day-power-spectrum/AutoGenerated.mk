@@ -1832,6 +1832,220 @@
 		.pipeline/121-fisher-matrix-large-bandpass-errors-none-cylindrical
 	$(launch)
 
+.pipeline/032-predicted-visibilities-calibrated-error: \
+		$(LIB)/301-mess-with-noise.jl project.yml generated-config-files/301-mess-with-noise-calibrated-sidereal-noise.yml \
+		.pipeline/032-predicted-visibilities-calibrated
+	$(launch)
+
+.pipeline/030-m-modes-calibrated-sidereal-noise: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-calibrated-sidereal-noise.yml \
+		.pipeline/032-predicted-visibilities-calibrated-sidereal-noise \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-calibrated-sidereal-noise: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-sidereal-noise.yml \
+		.pipeline/033-transfer-flags-calibrated-sidereal-noise
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-calibrated-sidereal-noise: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-sidereal-noise.yml \
+		.pipeline/101-averaged-m-modes-calibrated-sidereal-noise \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-sidereal-noise
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-calibrated-sidereal-noise-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-sidereal-noise-extreme.yml \
+		.pipeline/103-full-rank-compression-calibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-sidereal-noise-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-sidereal-noise-moderate.yml \
+		.pipeline/103-full-rank-compression-calibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-sidereal-noise-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-sidereal-noise-mild.yml \
+		.pipeline/103-full-rank-compression-calibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-sidereal-noise-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-sidereal-noise-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-sidereal-noise-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-sidereal-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-none-cylindrical
+	$(launch)
+
+.pipeline/032-predicted-visibilities-calibrated-error: \
+		$(LIB)/301-mess-with-noise.jl project.yml generated-config-files/301-mess-with-noise-calibrated-constant-noise.yml \
+		.pipeline/032-predicted-visibilities-calibrated
+	$(launch)
+
+.pipeline/030-m-modes-calibrated-constant-noise: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-calibrated-constant-noise.yml \
+		.pipeline/032-predicted-visibilities-calibrated-constant-noise \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-calibrated-constant-noise: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-calibrated-constant-noise.yml \
+		.pipeline/033-transfer-flags-calibrated-constant-noise
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-calibrated-constant-noise: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-calibrated-constant-noise.yml \
+		.pipeline/101-averaged-m-modes-calibrated-constant-noise \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-constant-noise
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-calibrated-constant-noise-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-constant-noise-extreme.yml \
+		.pipeline/103-full-rank-compression-calibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-constant-noise-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-constant-noise-moderate.yml \
+		.pipeline/103-full-rank-compression-calibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-constant-noise-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-constant-noise-mild.yml \
+		.pipeline/103-full-rank-compression-calibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-calibrated-constant-noise-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-calibrated-constant-noise-none.yml \
+		.pipeline/103-full-rank-compression-calibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-calibrated-constant-noise-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-calibrated-constant-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-calibrated-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-none-cylindrical
+	$(launch)
+
 .pipeline/030-m-modes-peeled-all: \
 		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-peeled-all.yml \
 		.pipeline/001-peeled-transposed-data \
@@ -4288,6 +4502,316 @@
 		.pipeline/121-fisher-matrix-large-bandpass-errors-none-cylindrical
 	$(launch)
 
+.pipeline/032-predicted-visibilities-peeled-error: \
+		$(LIB)/301-mess-with-noise.jl project.yml generated-config-files/301-mess-with-noise-peeled-sidereal-noise.yml \
+		.pipeline/032-predicted-visibilities-peeled
+	$(launch)
+
+.pipeline/030-m-modes-peeled-sidereal-noise: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-peeled-sidereal-noise.yml \
+		.pipeline/032-predicted-visibilities-peeled-sidereal-noise \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-peeled-sidereal-noise: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-sidereal-noise.yml \
+		.pipeline/033-transfer-flags-peeled-sidereal-noise
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-peeled-sidereal-noise: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-sidereal-noise.yml \
+		.pipeline/101-averaged-m-modes-peeled-sidereal-noise \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-sidereal-noise
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-peeled-sidereal-noise-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-sidereal-noise-extreme.yml \
+		.pipeline/103-full-rank-compression-peeled-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-sidereal-noise-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-extreme-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-sidereal-noise-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-sidereal-noise-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-sidereal-noise-moderate.yml \
+		.pipeline/103-full-rank-compression-peeled-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-sidereal-noise-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-moderate-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-sidereal-noise-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-sidereal-noise-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-sidereal-noise-mild.yml \
+		.pipeline/103-full-rank-compression-peeled-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-sidereal-noise-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-mild-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-sidereal-noise-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-sidereal-noise-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-sidereal-noise-none.yml \
+		.pipeline/103-full-rank-compression-peeled-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-sidereal-noise-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-none-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-sidereal-noise-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-sidereal-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-sidereal-noise-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-sidereal-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-none-cylindrical
+	$(launch)
+
+.pipeline/032-predicted-visibilities-peeled-error: \
+		$(LIB)/301-mess-with-noise.jl project.yml generated-config-files/301-mess-with-noise-peeled-constant-noise.yml \
+		.pipeline/032-predicted-visibilities-peeled
+	$(launch)
+
+.pipeline/030-m-modes-peeled-constant-noise: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-peeled-constant-noise.yml \
+		.pipeline/032-predicted-visibilities-peeled-constant-noise \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-peeled-constant-noise: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-peeled-constant-noise.yml \
+		.pipeline/033-transfer-flags-peeled-constant-noise
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-peeled-constant-noise: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-peeled-constant-noise.yml \
+		.pipeline/101-averaged-m-modes-peeled-constant-noise \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-constant-noise
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-peeled-constant-noise-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-constant-noise-extreme.yml \
+		.pipeline/103-full-rank-compression-peeled-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-constant-noise-extreme-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-extreme-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-constant-noise-extreme-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-constant-noise-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-constant-noise-moderate.yml \
+		.pipeline/103-full-rank-compression-peeled-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-constant-noise-moderate-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-moderate-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-constant-noise-moderate-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,4)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-constant-noise-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-constant-noise-mild.yml \
+		.pipeline/103-full-rank-compression-peeled-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-constant-noise-mild-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-mild-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-constant-noise-mild-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-peeled-constant-noise-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-peeled-constant-noise-none.yml \
+		.pipeline/103-full-rank-compression-peeled-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/121-fisher-matrix-constant-noise-none-spherical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-none-spherical
+	$(launch)
+
+.pipeline/121-fisher-matrix-constant-noise-none-cylindrical: \
+		$(LIB)/121-fisher-matrix.jl project.yml generated-config-files/121-fisher-matrix-constant-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical
+	$(call launch-remote,1)
+
+.pipeline/122-quadratic-estimator-peeled-constant-noise-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-peeled-constant-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-peeled-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-none-cylindrical
+	$(launch)
+
 .pipeline/030-m-modes-recalibrated-all: \
 		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-recalibrated-all.yml \
 		.pipeline/001-recalibrated-transposed-data \
@@ -6118,5 +6642,219 @@
 		.pipeline/112-foreground-filter-recalibrated-large-bandpass-errors-none \
 		.pipeline/120-basis-covariance-matrices-cylindrical \
 		.pipeline/121-fisher-matrix-large-bandpass-errors-none-cylindrical
+	$(launch)
+
+.pipeline/032-predicted-visibilities-recalibrated-error: \
+		$(LIB)/301-mess-with-noise.jl project.yml generated-config-files/301-mess-with-noise-recalibrated-sidereal-noise.yml \
+		.pipeline/032-predicted-visibilities-recalibrated
+	$(launch)
+
+.pipeline/030-m-modes-recalibrated-sidereal-noise: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-recalibrated-sidereal-noise.yml \
+		.pipeline/032-predicted-visibilities-recalibrated-sidereal-noise \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-recalibrated-sidereal-noise: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-sidereal-noise.yml \
+		.pipeline/033-transfer-flags-recalibrated-sidereal-noise
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-recalibrated-sidereal-noise: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-sidereal-noise.yml \
+		.pipeline/101-averaged-m-modes-recalibrated-sidereal-noise \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-sidereal-noise
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-recalibrated-sidereal-noise-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-sidereal-noise-extreme.yml \
+		.pipeline/103-full-rank-compression-recalibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-sidereal-noise-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-sidereal-noise-moderate.yml \
+		.pipeline/103-full-rank-compression-recalibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-sidereal-noise-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-sidereal-noise-mild.yml \
+		.pipeline/103-full-rank-compression-recalibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-sidereal-noise-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-sidereal-noise-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-sidereal-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-sidereal-noise-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-sidereal-noise-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-sidereal-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-sidereal-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-sidereal-noise-none-cylindrical
+	$(launch)
+
+.pipeline/032-predicted-visibilities-recalibrated-error: \
+		$(LIB)/301-mess-with-noise.jl project.yml generated-config-files/301-mess-with-noise-recalibrated-constant-noise.yml \
+		.pipeline/032-predicted-visibilities-recalibrated
+	$(launch)
+
+.pipeline/030-m-modes-recalibrated-constant-noise: \
+		$(LIB)/030-getmmodes.jl project.yml generated-config-files/030-getmmodes-recalibrated-constant-noise.yml \
+		.pipeline/032-predicted-visibilities-recalibrated-constant-noise \
+		.pipeline/100-transfer-matrix
+	$(call launch-remote,1)
+
+.pipeline/101-averaged-m-modes-recalibrated-constant-noise: \
+		$(LIB)/101-average-channels.jl project.yml generated-config-files/101-average-channels-m-modes-recalibrated-constant-noise.yml \
+		.pipeline/033-transfer-flags-recalibrated-constant-noise
+	$(call launch-remote,1)
+
+.pipeline/103-full-rank-compression-recalibrated-constant-noise: \
+		$(LIB)/103-full-rank-compress.jl project.yml generated-config-files/103-full-rank-compress-recalibrated-constant-noise.yml \
+		.pipeline/101-averaged-m-modes-recalibrated-constant-noise \
+		.pipeline/101-averaged-transfer-matrix \
+		.pipeline/102-noise-covariance-matrix-constant-noise
+	$(call launch-remote,1)
+
+.pipeline/112-foreground-filter-recalibrated-constant-noise-extreme: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-constant-noise-extreme.yml \
+		.pipeline/103-full-rank-compression-recalibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-extreme-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-extreme-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-extreme-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-extreme-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-extreme-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-extreme \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-extreme-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-constant-noise-moderate: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-constant-noise-moderate.yml \
+		.pipeline/103-full-rank-compression-recalibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-moderate-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-moderate-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-moderate-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-moderate-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-moderate-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-moderate \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-moderate-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-constant-noise-mild: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-constant-noise-mild.yml \
+		.pipeline/103-full-rank-compression-recalibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-mild-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-mild-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-mild-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-mild-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-mild-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-mild \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-mild-cylindrical
+	$(launch)
+
+.pipeline/112-foreground-filter-recalibrated-constant-noise-none: \
+		$(LIB)/112-foreground-filter.jl project.yml generated-config-files/112-foreground-filter-recalibrated-constant-noise-none.yml \
+		.pipeline/103-full-rank-compression-recalibrated-constant-noise \
+		.pipeline/110-foreground-covariance-matrix \
+		.pipeline/111-signal-covariance-matrix
+	$(call launch-remote,2)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-none-spherical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-none-spherical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-spherical \
+		.pipeline/121-fisher-matrix-constant-noise-none-spherical
+	$(launch)
+
+.pipeline/122-quadratic-estimator-recalibrated-constant-noise-none-cylindrical: \
+		$(LIB)/122-quadratic-estimator.jl project.yml generated-config-files/122-quadratic-estimator-recalibrated-constant-noise-none-cylindrical.yml \
+		.pipeline/112-foreground-filter-recalibrated-constant-noise-none \
+		.pipeline/120-basis-covariance-matrices-cylindrical \
+		.pipeline/121-fisher-matrix-constant-noise-none-cylindrical
 	$(launch)
 

@@ -1,0 +1,8 @@
+# This file was auto-generated. Do not edit directly!
+input: 032-predicted-visibilities-calibrated-sidereal-noise
+output: 030-m-modes-interpolated-calibrated-sidereal-noise
+metadata: metadata
+hierarchy: hierarchy
+integrations-per-day: 6628
+delete-input: false
+

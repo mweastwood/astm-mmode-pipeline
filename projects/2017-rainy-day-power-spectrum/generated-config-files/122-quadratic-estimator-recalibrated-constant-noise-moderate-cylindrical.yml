@@ -1,0 +1,9 @@
+# This file was auto-generated. Do not edit directly!
+input-basis: 120-basis-covariance-matrices-cylindrical
+input-m-modes: 112-filtered-m-modes-recalibrated-constant-noise-moderate
+input-transfer-matrix: 112-filtered-transfer-matrix-recalibrated-constant-noise-moderate
+input-covariance-matrix: 112-filtered-covariance-matrix-recalibrated-constant-noise-moderate
+input-fisher-matrix: 121-fisher-matrix-constant-noise-moderate-cylindrical
+output: 122-quadratic-estimator-recalibrated-constant-noise-moderate-cylindrical
+iterations: 1000
+

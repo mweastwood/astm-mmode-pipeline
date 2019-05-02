@@ -1,0 +1,7 @@
+# This file was auto-generated. Do not edit directly!
+input: 032-predicted-visibilities-calibrated
+output: 032-predicted-visibilities-calibrated-sidereal-noise
+hierarchy: hierarchy
+sefd: xxx-sefd-as-a-function-of-time.jld
+constant: false
+
